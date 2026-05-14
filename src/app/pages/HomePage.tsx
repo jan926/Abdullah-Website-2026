@@ -62,9 +62,12 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    setGames(loadGames());
-    setSettings(loadSiteSettings());
+    const loadedGames = loadGames();
+    const loadedSettings = loadSiteSettings();
+    setGames(loadedGames);
+    setSettings(loadedSettings);
     setCategories(loadCategories());
+    document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
   }, []);
 
   useEffect(() => {
@@ -290,11 +293,11 @@ export default function HomePage() {
               <div key={game.id} className="flex-none w-[200px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
-                    <div className="relative overflow-hidden rounded-lg mb-2 card-3d">
+                    <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
                       <img
                         src={game.cover}
                         alt={game.title}
-                        className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 p-4 w-full">
@@ -356,7 +359,7 @@ export default function HomePage() {
               <div key={game.id} className="flex-none w-[280px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
-                    <div className="relative overflow-hidden rounded-xi mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
+                    <div className="relative overflow-hidden rounded-xl mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
                       <img
                         src={game.cover}
                         alt={game.title}
@@ -401,7 +404,7 @@ export default function HomePage() {
 
         {/* All Games Grid */}
         <section>
-          <h2 className="text-3xl font-bold text-white mb-6">All Games</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">All Games</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {games.map((game, index) => (
               <Link key={game.id} to={`/game/${game.id}`} className="group block stagger-item" style={{ animationDelay: `${(index % 12) * 0.05}s` }}>

@@ -617,9 +617,37 @@ export default function AdminPage() {
                 <p className="text-xs text-slate-500 mt-1">Accepts standard image URLs or figma:asset paths.</p>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">Show Trending Section</Label>
+                  <Switch checked={settings.showTrendingGames} onCheckedChange={value => setSettings({...settings, showTrendingGames: value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">Show Latest Games</Label>
+                  <Switch checked={settings.showLatestGames} onCheckedChange={value => setSettings({...settings, showLatestGames: value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">Show Game of the Day</Label>
+                  <Switch checked={settings.showGameOfTheDay} onCheckedChange={value => setSettings({...settings, showGameOfTheDay: value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">Display Mode</Label>
+                  <Select value={settings.theme} onValueChange={value => setSettings({...settings, theme: value as "light" | "dark"})}>
+                    <SelectTrigger className="border-[var(--border)]">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="pt-4 flex justify-end">
                 <Button onClick={() => {
                   saveSiteSettings(settings);
+                  document.documentElement.classList.toggle("dark", settings.theme === "dark");
                   toast.success("Settings saved successfully!");
                 }} className="bg-sky-500 hover:bg-sky-600 text-white">
                   <Save className="h-4 w-4 mr-2" /> Save Global Settings
