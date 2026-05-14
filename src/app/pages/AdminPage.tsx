@@ -692,18 +692,6 @@ export default function AdminPage() {
                   <Label className="text-[var(--foreground)]">Show Game of the Day</Label>
                   <Switch checked={settings.showGameOfTheDay} onCheckedChange={value => setSettings({...settings, showGameOfTheDay: value})} />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[var(--foreground)]">Display Mode</Label>
-                  <Select value={settings.theme} onValueChange={value => setSettings({...settings, theme: value as "light" | "dark"})}>
-                    <SelectTrigger className="border-[var(--border)]">
-                      <SelectValue placeholder="Select theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="light">Light</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="pt-4 flex justify-end">
