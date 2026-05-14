@@ -4,15 +4,21 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ThemeToggle } from "./ThemeToggle";
 import { useState, useEffect } from "react";
+import { loadSiteSettings } from "../../lib/gameStore";
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [siteName, setSiteName] = useState("Download Your Game");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const authenticated = localStorage.getItem("adminAuthenticated");
     setIsAdminAuthenticated(authenticated === "true");
+    const settings = loadSiteSettings();
+    setSiteName(settings.siteName || "Download Your Game");
+    setLogoUrl(settings.logoUrl || null);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -37,9 +43,17 @@ export function Navbar() {
         <div className="flex items-center justify-between gap-6">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <Gamepad2 className="h-10 w-10 text-cyan-400" />
+            {logoUrl ? (
+              <img src={logoUrl} alt="Site logo" className="h-10 w-10 rounded-full object-cover" />
+            ) : (
+              <Gamepad2 className="h-10 w-10 text-cyan-400" />
+            )}
             <span className="text-2xl font-bold text-[var(--foreground)]">
-              Download <span className="text-cyan-400">Your Game</span>
+              {siteName.split(" ").map((word, index) => (
+                <span key={index} className={index === 1 ? "text-cyan-400" : ""}>
+                  {word}{index < siteName.split(" ").length - 1 ? " " : ""}
+                </span>
+              ))}
             </span>
           </Link>
 

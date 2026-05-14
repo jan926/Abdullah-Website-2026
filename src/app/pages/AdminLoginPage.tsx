@@ -7,8 +7,11 @@ import { Label } from "../components/ui/label";
 import { Shield, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
-const ADMIN_USERNAME = "Malik0cr7";
-const ADMIN_PASSWORD = "hycr7070";
+const ADMINS = [
+  { username: "Malik0cr7", password: "hycr7070" },
+  { username: "Admin2", password: "adminpass2" },
+  { username: "Admin3", password: "adminpass3" },
+];
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -24,7 +27,11 @@ export default function AdminLoginPage() {
 
     // Simulate authentication delay
     setTimeout(() => {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      const matchedAdmin = ADMINS.find(
+        (admin) => admin.username === username && admin.password === password
+      );
+
+      if (matchedAdmin) {
         localStorage.setItem("adminAuthenticated", "true");
         localStorage.setItem("adminUsername", username);
         toast.success("Login successful! Welcome to the admin dashboard.");
@@ -97,7 +104,8 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="mt-6 text-center text-sm text-slate-500">
-            <p>Protected area - authorized access only</p>
+            <p>Protected area - authorized access only.</p>
+            <p>Only registered admin accounts can sign in.</p>
           </div>
         </Card>
       </div>
