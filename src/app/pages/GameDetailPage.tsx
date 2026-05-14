@@ -173,16 +173,10 @@ export default function GameDetailPage() {
                   {game.trending && <Badge className="bg-pink-500/10 text-pink-300 border-pink-500/20">Popular</Badge>}
                   {game.gameOfTheDay && <Badge className="bg-orange-500/10 text-orange-300 border-orange-500/20">Game of the Day</Badge>}
                 </div>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="mt-6">
                   <Button onClick={handleDownloadClick} className="bg-cyan-500 hover:bg-cyan-600 text-white">
                     <Download className="mr-2 h-4 w-4" /> Download Now
                   </Button>
-                  {game.trailer && (
-                    <div className="rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[var(--foreground)]">
-                      <p className="font-semibold">Trailer available</p>
-                      <p className="mt-1 text-[var(--muted-foreground)]">This trailer will play behind the cover art and at the bottom of the page.</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
