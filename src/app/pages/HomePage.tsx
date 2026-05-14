@@ -206,7 +206,7 @@ export default function HomePage() {
         {settings.showMostViewed && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className=\"text-3xl font-bold text-gray-900 dark:text-white\">Trending Games</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Trending Games</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => scroll(trendingScrollRef, 'left')}
