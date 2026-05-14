@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
+import { loadSiteSettings, saveSiteSettings } from "../../lib/gameStore";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -21,12 +22,9 @@ export function ThemeToggle() {
     const newTheme = isDark ? "light" : "dark";
     setTheme(newTheme);
     
-    // Apply theme to document
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    // Save to site settings
+    const settings = loadSiteSettings();
+    saveSiteSettings({ ...settings, theme: newTheme as "light" | "dark" });
   };
   
   return (
