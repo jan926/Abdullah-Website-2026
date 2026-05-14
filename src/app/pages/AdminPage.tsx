@@ -8,7 +8,7 @@ import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories } from "../data/games";
-import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings } from "../../lib/gameStore";
+import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home
@@ -23,7 +23,7 @@ export default function AdminPage() {
   
   // Data State
   const [games, setGames] = useState<Game[]>([]);
-  const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [categories, setCategories] = useState<string[]>([]);
   const [dailyGameId, setDailyGameId] = useState<string>("");
   
   // New Game Form State
@@ -68,6 +68,7 @@ export default function AdminPage() {
     setGames(storedGames);
     setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
     setSettings(loadSiteSettings());
+    setCategories(loadCategories());
   }, [navigate]);
 
   const handleLogout = () => {
@@ -234,6 +235,7 @@ export default function AdminPage() {
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
           <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
           <SidebarItem icon={Tags} label="Categories" value="categories" />
+          <SidebarItem icon={Save} label="Game of the Day" value="gameofday" />
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
         </div>
         
@@ -568,7 +570,9 @@ export default function AdminPage() {
                 <Button onClick={() => {
                   const val = (document.getElementById('new-category') as HTMLInputElement).value;
                   if (val && !categories.includes(val)) {
-                    setCategories([...categories, val]);
+                    const newCategories = [...categories, val];
+                    setCategories(newCategories);
+                    saveCategories(newCategories);
                     toast.success("Category added");
                     (document.getElementById('new-category') as HTMLInputElement).value = '';
                   }
@@ -581,7 +585,9 @@ export default function AdminPage() {
                     <span className="font-medium text-[var(--foreground)]">{cat}</span>
                     {cat !== "All" && (
                       <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => {
-                        setCategories(categories.filter(c => c !== cat));
+                        const newCategories = categories.filter(c => c !== cat);
+                        setCategories(newCategories);
+                        saveCategories(newCategories);
                         toast.success("Category removed");
                       }}>
                         <Trash2 className="h-4 w-4" />
@@ -619,6 +625,67 @@ export default function AdminPage() {
                   <Save className="h-4 w-4 mr-2" /> Save Global Settings
                 </Button>
               </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Game of the Day Tab */}
+        {activeTab === "gameofday" && (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Game of the Day</h1>
+            
+            <Card className="p-6 border-[var(--border)] shadow-sm space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[var(--foreground)]">Select Game of the Day</Label>
+                <Select value={dailyGameId} onValueChange={setDailyGameId}>
+                  <SelectTrigger className="border-[var(--border)]">
+                    <SelectValue placeholder="Choose a game..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {games.map(game => (
+                      <SelectItem key={game.id} value={game.id}>
+                        {game.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="pt-4 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setDailyGameId("")} className="border-[var(--border)]">
+                  Clear
+                </Button>
+                <Button onClick={() => {
+                  const updatedGames = games.map(g => ({
+                    ...g,
+                    gameOfTheDay: g.id === dailyGameId
+                  }));
+                  setGames(updatedGames);
+                  saveGames(updatedGames);
+                  toast.success("Game of the Day updated!");
+                }} className="bg-sky-500 hover:bg-sky-600 text-white">
+                  <Save className="h-4 w-4 mr-2" /> Set as Game of the Day
+                </Button>
+              </div>
+            </Card>
+
+            <Card className="p-6 border-[var(--border)] shadow-sm">
+              <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Current Game of the Day</h2>
+              {games.find(g => g.gameOfTheDay) ? (
+                <div className="flex items-center gap-4 p-4 border border-[var(--border)] rounded-lg">
+                  <img src={games.find(g => g.gameOfTheDay)!.cover} alt="cover" className="w-20 h-20 rounded object-cover" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-[var(--foreground)]">{games.find(g => g.gameOfTheDay)?.title}</p>
+                    <p className="text-sm text-slate-500">{games.find(g => g.gameOfTheDay)?.category}</p>
+                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-4 border border-dashed border-[var(--border)] rounded-lg text-slate-500">
+                  <XCircle className="h-5 w-5" />
+                  No game selected
+                </div>
+              )}
             </Card>
           </div>
         )}

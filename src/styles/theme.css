@@ -180,6 +180,33 @@ button, input, textarea, select {
   100% { background-position: 1000px 0; }
 }
 
+@keyframes shine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(34, 211, 238, 0.5), 0 0 10px rgba(34, 211, 238, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.8), 0 0 20px rgba(34, 211, 238, 0.5);
+  }
+}
+
+@keyframes card-shine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
@@ -205,6 +232,37 @@ button, input, textarea, select {
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-shine {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background-size: 1000px 100%;
+  animation: shine 2s infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.card-hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+  pointer-events: none;
+}
+
+.card-hover-shine:hover::before {
+  left: 100%;
 }
 
 /* Staggered reveal animation */

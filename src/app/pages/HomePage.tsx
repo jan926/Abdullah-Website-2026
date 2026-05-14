@@ -4,13 +4,14 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
 import { Link } from "react-router";
 import { Game } from "../data/games";
-import { loadGames, loadSiteSettings, SiteSettings } from "../../lib/gameStore";
+import { loadGames, loadSiteSettings, SiteSettings, loadCategories } from "../../lib/gameStore";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
   const trendingScrollRef = useRef<HTMLDivElement>(null);
   const latestScrollRef = useRef<HTMLDivElement>(null);
@@ -23,16 +24,22 @@ export default function HomePage() {
     .slice(0, 12);
   const gameOfTheDay = games.filter((game) => game.gameOfTheDay).slice(0, 5);
 
-  const categoryColors = [
-    { name: "Action", color: "bg-blue-500 hover:bg-blue-600", icon: "⚔️" },
-    { name: "Adventure", color: "bg-orange-500 hover:bg-orange-600", icon: "🗺️" },
-    { name: "RPG", color: "bg-purple-500 hover:bg-purple-600", icon: "🎮" },
-    { name: "Racing", color: "bg-green-500 hover:bg-green-600", icon: "🏎️" },
-    { name: "Survival", color: "bg-red-500 hover:bg-red-600", icon: "🔥" },
-    { name: "Shooter", color: "bg-cyan-500 hover:bg-cyan-600", icon: "🎯" },
-    { name: "Sports", color: "bg-yellow-500 hover:bg-yellow-600", icon: "⚽" },
-    { name: "Strategy", color: "bg-pink-500 hover:bg-pink-600", icon: "♟️" },
-  ];
+  const categoryColorMap: Record<string, { color: string; icon: string }> = {
+    "Action": { color: "bg-blue-500 hover:bg-blue-600", icon: "⚔️" },
+    "Adventure": { color: "bg-orange-500 hover:bg-orange-600", icon: "🗺️" },
+    "RPG": { color: "bg-purple-500 hover:bg-purple-600", icon: "🎮" },
+    "Racing": { color: "bg-green-500 hover:bg-green-600", icon: "🏎️" },
+    "Survival": { color: "bg-red-500 hover:bg-red-600", icon: "🔥" },
+    "Shooter": { color: "bg-cyan-500 hover:bg-cyan-600", icon: "🎯" },
+    "Sports": { color: "bg-yellow-500 hover:bg-yellow-600", icon: "⚽" },
+    "Strategy": { color: "bg-pink-500 hover:bg-pink-600", icon: "♟️" },
+  };
+
+  const categoryColors = categories.map(cat => ({
+    name: cat,
+    color: categoryColorMap[cat]?.color || "bg-gray-500 hover:bg-gray-600",
+    icon: categoryColorMap[cat]?.icon || "🎯",
+  }));
 
   const nextSlide = () => {
     if (heroGames.length === 0) return;
@@ -57,6 +64,7 @@ export default function HomePage() {
   useEffect(() => {
     setGames(loadGames());
     setSettings(loadSiteSettings());
+    setCategories(loadCategories());
   }, []);
 
   useEffect(() => {
@@ -195,7 +203,7 @@ export default function HomePage() {
         {settings.showMostViewed && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-white">Trending Games</h2>
+              <h2 className=\"text-3xl font-bold text-gray-900 dark:text-white\">Trending Games</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => scroll(trendingScrollRef, 'left')}
@@ -220,11 +228,11 @@ export default function HomePage() {
                 <div key={game.id} className="flex-none w-[200px]">
                   <div className="group block">
                     <Link to={`/game/${game.id}`} className="block">
-                      <div className="relative overflow-hidden rounded-lg mb-2">
+                      <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
                         <img
                           src={game.cover}
                           alt={game.title}
-                          className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110"
+                          className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
@@ -238,6 +246,14 @@ export default function HomePage() {
                         {game.title}
                       </h3>
                     </Link>
+                    <div className="mt-3">
+                      <Button asChild className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
+                        <Link to={`/game/${game.id}`}>
+                          <Download className="mr-2 h-4 w-4 inline-block" />
+                          Download
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -249,7 +265,7 @@ export default function HomePage() {
         {settings.showLatestGames && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-white">Latest Games</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Latest Games</h2>
               <div className="flex gap-2">
               <button
                 onClick={() => scroll(latestScrollRef, 'left')}
@@ -292,6 +308,14 @@ export default function HomePage() {
                       {game.title}
                     </h3>
                   </Link>
+                  <div className="mt-3">
+                    <Button asChild className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
+                      <Link to={`/game/${game.id}`}>
+                        <Download className="mr-2 h-4 w-4 inline-block" />
+                        Download
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -303,7 +327,7 @@ export default function HomePage() {
           <section>
             <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">
+              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-600 to-red-700 dark:from-yellow-400 dark:via-orange-500 dark:to-red-500">
                 🏆 Game of the Day
               </h2>
               <p className="text-gray-400 text-sm mt-1">Hand-picked favorites from our collection</p>
@@ -332,11 +356,11 @@ export default function HomePage() {
               <div key={game.id} className="flex-none w-[280px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
-                    <div className="relative overflow-hidden rounded-xl mb-3 card-3d border-2 border-orange-500/30 hover:border-orange-500">
+                    <div className="relative overflow-hidden rounded-xi mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
                       <img
                         src={game.cover}
                         alt={game.title}
-                        className="w-full h-[350px] object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-[350px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
                       <div className="absolute top-3 left-3">
                         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -361,6 +385,14 @@ export default function HomePage() {
                     </h3>
                     <p className="text-gray-400 text-xs mt-1">{game.category}</p>
                   </Link>
+                  <div className="mt-3">
+                    <Button asChild className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
+                      <Link to={`/game/${game.id}`}>
+                        <Download className="mr-2 h-4 w-4 inline-block" />
+                        Download
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}

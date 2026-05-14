@@ -1,7 +1,8 @@
-import { gamesData, Game } from "../app/data/games";
+import { gamesData, Game, categories as defaultCategories } from "../app/data/games";
 
 const GAMES_KEY = "dyg-games-v1";
 const SETTINGS_KEY = "dyg-site-settings-v1";
+const CATEGORIES_KEY = "dyg-categories-v1";
 
 export interface SiteSettings {
   siteName: string;
@@ -9,6 +10,7 @@ export interface SiteSettings {
   showLatestGames: boolean;
   showMostViewed: boolean;
   showGameOfTheDay: boolean;
+  showTrendingGames: boolean;
   theme: "light" | "dark";
 }
 
@@ -18,6 +20,7 @@ const defaultSettings: SiteSettings = {
   showLatestGames: true,
   showMostViewed: true,
   showGameOfTheDay: true,
+  showTrendingGames: true,
   theme: "dark",
 };
 
@@ -88,4 +91,32 @@ export const resetGameStorage = () => {
   if (!storage) return;
   storage.removeItem(GAMES_KEY);
   storage.removeItem(SETTINGS_KEY);
+  storage.removeItem(CATEGORIES_KEY);
+};
+
+export const loadCategories = (): string[] => {
+  const storage = safeLocalStorage();
+  if (!storage) return defaultCategories;
+
+  const raw = storage.getItem(CATEGORIES_KEY);
+  if (!raw) {
+    storage.setItem(CATEGORIES_KEY, JSON.stringify(defaultCategories));
+    return defaultCategories;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as string[];
+    if (!Array.isArray(parsed)) throw new Error("Invalid categories payload");
+    return parsed;
+  } catch (error) {
+    console.error("Failed to parse categories storage, resetting to defaults.", error);
+    storage.setItem(CATEGORIES_KEY, JSON.stringify(defaultCategories));
+    return defaultCategories;
+  }
+};
+
+export const saveCategories = (cats: string[]) => {
+  const storage = safeLocalStorage();
+  if (!storage) return;
+  storage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
 };
