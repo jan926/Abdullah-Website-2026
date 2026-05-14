@@ -3,6 +3,7 @@ import { gamesData, Game, categories as defaultCategories } from "../app/data/ga
 const GAMES_KEY = "dyg-games-v1";
 const SETTINGS_KEY = "dyg-site-settings-v1";
 const CATEGORIES_KEY = "dyg-categories-v1";
+const ANALYTICS_KEY = "dyg-site-analytics-v1";
 
 export interface SiteSettings {
   siteName: string;
@@ -80,10 +81,72 @@ export const loadSiteSettings = (): SiteSettings => {
   }
 };
 
+export interface SiteAnalytics {
+  totalPageViews: number;
+  lastUpdated: string;
+}
+
 export const saveSiteSettings = (settings: SiteSettings) => {
   const storage = safeLocalStorage();
   if (!storage) return;
   storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+};
+
+export const loadSiteAnalytics = (): SiteAnalytics => {
+  const storage = safeLocalStorage();
+  if (!storage) return { totalPageViews: 0, lastUpdated: new Date().toISOString() };
+
+  const raw = storage.getItem(ANALYTICS_KEY);
+  if (!raw) {
+    const defaultAnalytics = { totalPageViews: 0, lastUpdated: new Date().toISOString() };
+    storage.setItem(ANALYTICS_KEY, JSON.stringify(defaultAnalytics));
+    return defaultAnalytics;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as SiteAnalytics;
+    return { totalPageViews: 0, lastUpdated: new Date().toISOString(), ...parsed };
+  } catch (error) {
+    console.error("Failed to parse analytics storage, resetting to defaults.", error);
+    const defaultAnalytics = { totalPageViews: 0, lastUpdated: new Date().toISOString() };
+    storage.setItem(ANALYTICS_KEY, JSON.stringify(defaultAnalytics));
+    return defaultAnalytics;
+  }
+};
+
+export const saveSiteAnalytics = (analytics: SiteAnalytics) => {
+  const storage = safeLocalStorage();
+  if (!storage) return;
+  storage.setItem(ANALYTICS_KEY, JSON.stringify(analytics));
+};
+
+export const incrementGameView = (id: string) => {
+  const games = loadGames();
+  const updatedGames = games.map((game) =>
+    game.id === id ? { ...game, views: (game.views || 0) + 1 } : game
+  );
+  saveGames(updatedGames);
+  return updatedGames.find((game) => game.id === id);
+};
+
+export const incrementGameDownload = (id: string) => {
+  const games = loadGames();
+  const updatedGames = games.map((game) =>
+    game.id === id ? { ...game, downloads: (game.downloads || 0) + 1 } : game
+  );
+  saveGames(updatedGames);
+  return updatedGames.find((game) => game.id === id);
+};
+
+export const incrementSiteViews = () => {
+  const analytics = loadSiteAnalytics();
+  const updatedAnalytics = {
+    ...analytics,
+    totalPageViews: analytics.totalPageViews + 1,
+    lastUpdated: new Date().toISOString(),
+  };
+  saveSiteAnalytics(updatedAnalytics);
+  return updatedAnalytics;
 };
 
 export const resetGameStorage = () => {

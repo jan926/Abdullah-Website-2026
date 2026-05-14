@@ -32,6 +32,8 @@ export interface Game {
   comments: Comment[];
   trailer?: string;
   backgroundImage?: string;
+  heroMedia?: string;
+  views?: number;
   gameOfTheDay?: boolean;
 }
 

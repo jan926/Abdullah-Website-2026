@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
-import { getGameById, saveGames, loadGames } from "../../lib/gameStore";
+import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -30,13 +30,64 @@ export default function GameDetailPage() {
   useEffect(() => {
     if (!id) return;
     const currentGame = getGameById(id);
-    setGame(currentGame || null);
+    if (!currentGame) {
+      setGame(null);
+      return;
+    }
+    const updatedGame = incrementGameView(id);
+    setGame(updatedGame || currentGame);
+    incrementSiteViews();
   }, [id]);
 
   const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
     const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
     return m ? m[1] : null;
+  };
+
+  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+  const normalizeMediaUrl = (url: string) => {
+    if (url.includes("drive.google.com")) {
+      const idMatch = url.match(/(?:file\/d\/|id=)([A-Za-z0-9_-]+)/);
+      if (idMatch) {
+        return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
+      }
+    }
+    if (url.includes("dropbox.com")) {
+      return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", "?raw=1");
+    }
+    return url;
+  };
+
+  const renderHeroMedia = () => {
+    const mediaUrl = game.heroMedia ? normalizeMediaUrl(game.heroMedia) : game.backgroundImage || game.cover;
+
+    if (game.heroMedia && isYouTubeUrl(mediaUrl)) {
+      const id = getYouTubeId(mediaUrl) || "";
+      return (
+        <iframe
+          title="Game hero media"
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
+          className="h-full w-full object-cover"
+          allow="autoplay; encrypted-media"
+        />
+      );
+    }
+
+    if (game.heroMedia && isVideoUrl(mediaUrl)) {
+      return (
+        <video
+          src={mediaUrl}
+          className="h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      );
+    }
+
+    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-full w-full object-cover" />;
   };
 
   if (!game) {
@@ -88,14 +139,19 @@ export default function GameDetailPage() {
     setUserRating(0);
   };
 
+  const handleDownloadClick = () => {
+    if (!game?.downloadLink) return;
+    const updatedGame = incrementGameDownload(game.id);
+    if (updatedGame) {
+      setGame(updatedGame);
+    }
+    window.open(game.downloadLink, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <div className="relative overflow-hidden">
-        <ImageWithFallback
-          src={game.backgroundImage || game.cover}
-          alt={game.title}
-          className="h-[420px] w-full object-cover"
-        />
+        {renderHeroMedia()}
         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,23,42,0.95)] via-[rgba(15,23,42,0.65)] to-transparent" />
       </div>
 
@@ -113,12 +169,17 @@ export default function GameDetailPage() {
                   {game.trending && <Badge className="bg-pink-500/10 text-pink-300 border-pink-500/20">Popular</Badge>}
                   {game.gameOfTheDay && <Badge className="bg-orange-500/10 text-orange-300 border-orange-500/20">Game of the Day</Badge>}
                 </div>
-                {game.trailer && (
-                  <div className="mt-6 rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[var(--foreground)]">
-                    <p className="font-semibold">Trailer available</p>
-                    <p className="mt-1 text-[var(--muted-foreground)]">This trailer will play behind the cover art and at the bottom of the page.</p>
-                  </div>
-                )}
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <Button onClick={handleDownloadClick} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                    <Download className="mr-2 h-4 w-4" /> Download Now
+                  </Button>
+                  {game.trailer && (
+                    <div className="rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[var(--foreground)]">
+                      <p className="font-semibold">Trailer available</p>
+                      <p className="mt-1 text-[var(--muted-foreground)]">This trailer will play behind the cover art and at the bottom of the page.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

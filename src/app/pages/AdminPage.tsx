@@ -8,10 +8,10 @@ import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories } from "../data/games";
-import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories } from "../../lib/gameStore";
+import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dailyGameId, setDailyGameId] = useState<string>("");
+  const [analytics, setAnalytics] = useState<SiteAnalytics>(loadSiteAnalytics());
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -69,6 +70,7 @@ export default function AdminPage() {
     setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
     setSettings(loadSiteSettings());
     setCategories(loadCategories());
+    setAnalytics(loadSiteAnalytics());
   }, [navigate]);
 
   const handleLogout = () => {
@@ -232,6 +234,7 @@ export default function AdminPage() {
         
         <div className="flex-1 p-4 space-y-2 overflow-y-auto">
           <SidebarItem icon={LayoutDashboard} label="Dashboard" value="dashboard" />
+          <SidebarItem icon={BarChart3} label="Analytics" value="analytics" />
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
           <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
           <SidebarItem icon={Tags} label="Categories" value="categories" />
@@ -333,6 +336,65 @@ export default function AdminPage() {
         )}
 
         {/* Manage Games Tab */}
+        {activeTab === "analytics" && (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Analytics</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <p className="text-sm text-slate-500 font-medium">Total Site Views</p>
+                <p className="text-3xl font-bold text-[var(--foreground)]">{analytics.totalPageViews.toLocaleString()}</p>
+                <p className="mt-2 text-xs text-[var(--muted-foreground)]">Last updated {new Date(analytics.lastUpdated).toLocaleDateString()}</p>
+              </Card>
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <p className="text-sm text-slate-500 font-medium">Total Game Views</p>
+                <p className="text-3xl font-bold text-[var(--foreground)]">{games.reduce((sum, g) => sum + (g.views || 0), 0).toLocaleString()}</p>
+              </Card>
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <p className="text-sm text-slate-500 font-medium">Total Downloads</p>
+                <p className="text-3xl font-bold text-[var(--foreground)]">{games.reduce((sum, g) => sum + (g.downloads || 0), 0).toLocaleString()}</p>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Top Viewed Games</h2>
+                <div className="space-y-3">
+                  {[...games]
+                    .sort((a, b) => (b.views || 0) - (a.views || 0))
+                    .slice(0, 4)
+                    .map((game) => (
+                      <div key={game.id} className="flex items-center justify-between gap-3 rounded-3xl bg-[rgba(255,255,255,0.04)] p-4">
+                        <div>
+                          <p className="font-medium text-[var(--foreground)]">{game.title}</p>
+                          <p className="text-sm text-[var(--muted-foreground)]">{game.category}</p>
+                        </div>
+                        <span className="text-sm text-slate-400">{(game.views || 0).toLocaleString()} views</span>
+                      </div>
+                    ))}
+                </div>
+              </Card>
+
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Top Downloads</h2>
+                <div className="space-y-3">
+                  {[...games]
+                    .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
+                    .slice(0, 4)
+                    .map((game) => (
+                      <div key={game.id} className="flex items-center justify-between gap-3 rounded-3xl bg-[rgba(255,255,255,0.04)] p-4">
+                        <div>
+                          <p className="font-medium text-[var(--foreground)]">{game.title}</p>
+                          <p className="text-sm text-[var(--muted-foreground)]">{game.category}</p>
+                        </div>
+                        <span className="text-sm text-slate-400">{(game.downloads || 0).toLocaleString()} downloads</span>
+                      </div>
+                    ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {activeTab === "games" && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center justify-between">
