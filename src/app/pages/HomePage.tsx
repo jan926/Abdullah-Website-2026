@@ -238,22 +238,6 @@ export default function HomePage() {
                         {game.title}
                       </h3>
                     </Link>
-                    <div className="mt-3 flex gap-2">
-                      <Button asChild className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
-                        <Link to={`/game/${game.id}`}>
-                          <Download className="mr-2 h-4 w-4 inline-block" />
-                          Download
-                        </Link>
-                      </Button>
-                      {game.trailer && (
-                        <Button asChild variant="outline" className="flex-1 border border-white/20 text-white py-2 text-sm font-semibold rounded-lg hover:bg-white/10">
-                          <Link to={`/game/${game.id}`}>
-                            <Play className="mr-2 h-4 w-4 inline-block" />
-                            Trailer
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -308,22 +292,6 @@ export default function HomePage() {
                       {game.title}
                     </h3>
                   </Link>
-                  <div className="mt-3 flex gap-2">
-                    <Button asChild className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
-                      <Link to={`/game/${game.id}`}>
-                        <Download className="mr-2 h-4 w-4 inline-block" />
-                        Download
-                      </Link>
-                    </Button>
-                    {game.trailer && (
-                      <Button asChild variant="outline" className="flex-1 border border-white/20 text-white py-2 text-sm font-semibold rounded-lg hover:bg-white/10">
-                        <Link to={`/game/${game.id}`}>
-                          <Play className="mr-2 h-4 w-4 inline-block" />
-                          Trailer
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </div>
             ))}
@@ -393,22 +361,6 @@ export default function HomePage() {
                     </h3>
                     <p className="text-gray-400 text-xs mt-1">{game.category}</p>
                   </Link>
-                  <div className="mt-3 flex gap-2">
-                    <Button asChild className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg">
-                      <Link to={`/game/${game.id}`}>
-                        <Download className="mr-2 h-4 w-4 inline-block" />
-                        Download
-                      </Link>
-                    </Button>
-                    {game.trailer && (
-                      <Button asChild variant="outline" className="flex-1 border border-white/20 text-white py-2 text-sm font-semibold rounded-lg hover:bg-white/10">
-                        <Link to={`/game/${game.id}`}>
-                          <Play className="mr-2 h-4 w-4 inline-block" />
-                          Trailer
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </div>
             ))}
