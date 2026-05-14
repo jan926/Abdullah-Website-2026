@@ -59,26 +59,30 @@ export default function GameDetailPage() {
     return url;
   };
 
-  const renderHeroMedia = () => {
-    const mediaUrl = game.heroMedia ? normalizeMediaUrl(game.heroMedia) : game.backgroundImage || game.cover;
+  const renderBackgroundMedia = () => {
+    if (!game.backgroundImage) {
+      return <div className="h-[420px] w-full bg-gradient-to-br from-slate-800 to-slate-900" />;
+    }
 
-    if (game.heroMedia && isYouTubeUrl(mediaUrl)) {
+    const mediaUrl = normalizeMediaUrl(game.backgroundImage);
+
+    if (isYouTubeUrl(mediaUrl)) {
       const id = getYouTubeId(mediaUrl) || "";
       return (
         <iframe
-          title="Game hero media"
+          title="Game background video"
           src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
-          className="h-full w-full object-cover"
+          className="h-[420px] w-full object-cover"
           allow="autoplay; encrypted-media"
         />
       );
     }
 
-    if (game.heroMedia && isVideoUrl(mediaUrl)) {
+    if (isVideoUrl(mediaUrl)) {
       return (
         <video
           src={mediaUrl}
-          className="h-full w-full object-cover"
+          className="h-[420px] w-full object-cover"
           autoPlay
           muted
           loop
@@ -87,7 +91,7 @@ export default function GameDetailPage() {
       );
     }
 
-    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-full w-full object-cover" />;
+    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-[420px] w-full object-cover" />;
   };
 
   if (!game) {
@@ -151,7 +155,7 @@ export default function GameDetailPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <div className="relative overflow-hidden">
-        {renderHeroMedia()}
+        {renderBackgroundMedia()}
         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,23,42,0.95)] via-[rgba(15,23,42,0.65)] to-transparent" />
       </div>
 
