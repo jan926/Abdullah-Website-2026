@@ -496,9 +496,9 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">Use a direct image URL that ends with .jpg, .png, or .webp. Google Drive share links usually do not work.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Background Image URL</Label>
-                    <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="Optional background image URL" />
-                    <p className="text-xs text-slate-500">Optional background image for the game hero/banner. If empty, the cover image will be used.</p>
+                    <Label className="text-[var(--foreground)]">Background Media URL</Label>
+                    <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="YouTube / video / image URL" />
+                    <p className="text-xs text-slate-500">Optional background media for the game hero/banner. Supports YouTube, MP4/WebM, direct image URLs, Google Drive, and Dropbox links.</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Download Link</Label>
