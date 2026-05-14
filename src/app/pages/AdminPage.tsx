@@ -1,0 +1,629 @@
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Button } from "../components/ui/button";
+import { Label } from "../components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
+import { Game, categories as initialCategories } from "../data/games";
+import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings } from "../../lib/gameStore";
+import { 
+  Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home
+} from "lucide-react";
+import { toast } from "sonner";
+
+export default function AdminPage() {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminUsername, setAdminUsername] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
+  
+  // Data State
+  const [games, setGames] = useState<Game[]>([]);
+  const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [dailyGameId, setDailyGameId] = useState<string>("");
+  
+  // New Game Form State
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentEditId, setCurrentEditId] = useState("");
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    description: "",
+    cover: "",
+    backgroundImage: "",
+    size: "",
+    developer: "",
+    downloadLink: "",
+    trailer: "",
+    screenshots: [""],
+    systemRequirements: {
+      minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
+      recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" },
+    },
+    featured: false,
+    trending: false,
+    gameOfTheDay: false,
+  });
+
+  // Settings State
+  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+
+  useEffect(() => {
+    const authenticated = localStorage.getItem("adminAuthenticated");
+    const username = localStorage.getItem("adminUsername");
+    
+    if (authenticated === "true" && username) {
+      setIsAuthenticated(true);
+      setAdminUsername(username);
+    } else {
+      navigate("/admin/login");
+      return;
+    }
+
+    const storedGames = loadGames();
+    setGames(storedGames);
+    setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
+    setSettings(loadSiteSettings());
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminAuthenticated");
+    localStorage.removeItem("adminUsername");
+    toast.success("Logged out successfully");
+    navigate("/admin/login");
+  };
+
+  const handleGameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (isEditing) {
+      const updatedGames = games.map((g) => {
+        if (g.id !== currentEditId) {
+          return formData.gameOfTheDay ? { ...g, gameOfTheDay: false } : g;
+        }
+        return { ...g, ...formData } as Game;
+      });
+      setGames(updatedGames);
+      saveGames(updatedGames);
+      toast.success("Game updated successfully!");
+    } else {
+      const newGame: Game = {
+        id: Math.random().toString(36).substr(2, 9),
+        title: formData.title,
+        category: formData.category,
+        description: formData.description,
+        cover: formData.cover,
+        size: formData.size,
+        developer: formData.developer,
+        downloadLink: formData.downloadLink,
+        trailer: formData.trailer,
+        backgroundImage: formData.backgroundImage,
+        screenshots: formData.screenshots.filter(Boolean),
+        featured: formData.featured,
+        trending: formData.trending,
+        gameOfTheDay: formData.gameOfTheDay,
+        rating: 0,
+        downloads: 0,
+        releaseDate: new Date().toISOString().split("T")[0],
+        systemRequirements: formData.systemRequirements,
+        comments: []
+      };
+
+      const updatedGames = formData.gameOfTheDay
+        ? [newGame, ...games.map((g) => ({ ...g, gameOfTheDay: false }))]
+        : [newGame, ...games];
+
+      setGames(updatedGames);
+      saveGames(updatedGames);
+      toast.success("Game uploaded successfully!");
+    }
+
+    resetForm();
+    setActiveTab("games");
+  };
+
+  const editGame = (game: Game) => {
+    setFormData({
+      title: game.title,
+      category: game.category,
+      description: game.description,
+      cover: game.cover,
+      backgroundImage: game.backgroundImage || "",
+      size: game.size,
+      developer: game.developer,
+      downloadLink: game.downloadLink,
+      trailer: game.trailer || "",
+      screenshots: [...game.screenshots],
+      systemRequirements: game.systemRequirements || {
+        minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
+        recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" }
+      },
+      featured: game.featured || false,
+      trending: game.trending || false,
+      gameOfTheDay: game.gameOfTheDay || false,
+    });
+    setIsEditing(true);
+    setCurrentEditId(game.id);
+    setActiveTab("upload");
+  };
+
+  const deleteGame = (id: string) => {
+    if (confirm("Are you sure you want to delete this game?")) {
+      const updatedGames = games.filter(g => g.id !== id);
+      setGames(updatedGames);
+      saveGames(updatedGames);
+      toast.success("Game deleted");
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      category: "",
+      description: "",
+      cover: "",
+      backgroundImage: "",
+      size: "",
+      developer: "",
+      downloadLink: "",
+      trailer: "",
+      screenshots: [""],
+      systemRequirements: {
+        minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
+        recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" },
+      },
+      featured: false,
+      trending: false,
+      gameOfTheDay: false,
+    });
+    setIsEditing(false);
+    setCurrentEditId("");
+  };
+
+  // UI Components
+  const SidebarItem = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
+    <button
+      onClick={() => setActiveTab(value)}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        activeTab === value 
+        ? "bg-sky-600 text-white font-medium" 
+        : "text-[var(--muted-foreground)] hover:bg-[var(--card)] hover:text-[var(--foreground)]"
+      }`}
+    >
+      <Icon className={`h-5 w-5 ${activeTab === value ? "text-sky-300" : "text-[var(--muted-foreground)]"}`} />
+      {label}
+    </button>
+  );
+
+  if (!isAuthenticated) return null;
+
+  return (
+    <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+      {/* Sidebar */}
+      <div className="w-64 bg-[var(--card)] border-r border-[var(--border)] flex flex-col">
+        {/* Back to Home Button */}
+        <div className="p-4 border-b border-[var(--border)]">
+          <Button 
+            asChild 
+            variant="outline" 
+            className="w-full justify-start text-cyan-400 hover:text-cyan-300 hover:bg-[var(--background)] border-[var(--border)]"
+          >
+            <Link to="/">
+              <Home className="h-4 w-4 mr-2" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
+
+        <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
+          <div className="bg-sky-500 rounded-lg p-2">
+            <Gamepad2 className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="font-bold text-[var(--foreground)] tracking-tight">Admin Panel</h2>
+            <p className="text-xs text-slate-500">Download Your Game</p>
+          </div>
+        </div>
+        
+        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <SidebarItem icon={LayoutDashboard} label="Dashboard" value="dashboard" />
+          <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
+          <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
+          <SidebarItem icon={Tags} label="Categories" value="categories" />
+          <SidebarItem icon={Settings} label="Site Settings" value="settings" />
+        </div>
+        
+        <div className="p-4 border-t border-slate-200">
+          <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-[var(--card)]">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-indigo-100 font-bold">
+              {adminUsername.charAt(0).toUpperCase()}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-[var(--foreground)] truncate">{adminUsername}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Administrator</p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/30 border-[var(--border)]"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto bg-[var(--background)] p-8">
+        
+        {/* Dashboard Tab */}
+        {activeTab === "dashboard" && (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Overview</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-sky-100 rounded-lg"><Gamepad2 className="h-6 w-6 text-sky-600" /></div>
+                  <div>
+                    <p className="text-sm text-slate-500 font-medium">Total Games</p>
+                    <p className="text-3xl font-bold text-[var(--foreground)]">{games.length}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-100 rounded-lg"><Tags className="h-6 w-6 text-emerald-600" /></div>
+                  <div>
+                    <p className="text-sm text-slate-500 font-medium">Categories</p>
+                    <p className="text-3xl font-bold text-[var(--foreground)]">{categories.length}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 rounded-lg"><Save className="h-6 w-6 text-purple-600" /></div>
+                  <div>
+                    <p className="text-sm text-slate-500 font-medium">Total Downloads</p>
+                    <p className="text-3xl font-bold text-[var(--foreground)]">
+                      {(games.reduce((acc, g) => acc + (g.downloads || 0), 0) / 1000).toFixed(1)}k
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+            
+            <h2 className="text-xl font-bold text-[var(--foreground)] mt-8 mb-4">Recent Uploads</h2>
+            <div className="border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-[var(--muted)] border-b border-[var(--border)] text-[var(--muted-foreground)] font-medium uppercase">
+                  <tr>
+                    <th className="px-6 py-4">Game</th>
+                    <th className="px-6 py-4">Category</th>
+                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {games.slice(0, 5).map(game => (
+                    <tr key={game.id} className="hover:bg-[var(--card)]">
+                      <td className="px-6 py-4 flex items-center gap-3">
+                        <img src={game.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                        <span className="font-medium text-[var(--foreground)]">{game.title}</span>
+                      </td>
+                      <td className="px-6 py-4 text-[var(--muted-foreground)]">{game.category}</td>
+                      <td className="px-6 py-4 text-[var(--muted-foreground)]">{game.releaseDate || "Recently"}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                          <CheckCircle2 className="h-3 w-3" /> Published
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Manage Games Tab */}
+        {activeTab === "games" && (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Games</h1>
+              <Button onClick={() => { resetForm(); setActiveTab("upload"); }} className="bg-sky-500 hover:bg-sky-600 text-white">
+                <Plus className="h-4 w-4 mr-2" /> Add New Game
+              </Button>
+            </div>
+            
+            <div className="border border-[var(--border)] rounded-xl p-4 flex items-center gap-4 shadow-sm">
+              <Search className="h-5 w-5 text-slate-400" />
+              <Input placeholder="Search games by title..." className="border-0 shadow-none focus-visible:ring-0 px-0" />
+            </div>
+
+            <div className="grid gap-4">
+              {games.map(game => (
+                <Card key={game.id} className="flex items-center gap-6 p-4 border-[var(--border)] shadow-sm hover:shadow-md transition-shadow">
+                  <img src={game.cover} alt={game.title} className="w-24 h-16 rounded object-cover" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-[var(--foreground)]">{game.title}</h3>
+                    <p className="text-sm text-slate-500">{game.category} • {game.developer} • {game.size}</p>
+                    <div className="flex gap-2 mt-2">
+                      {game.featured && <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-amber-100 text-amber-700 rounded-md">Featured</span>}
+                      {game.trending && <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-red-100 text-red-700 rounded-md">Trending</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => editGame(game)} className="text-slate-600 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50">
+                      <Edit className="h-4 w-4 mr-2" /> Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => deleteGame(game.id)} className="text-red-600 hover:text-red-700 hover:border-red-200 hover:bg-red-50">
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upload/Edit Form Tab */}
+        {activeTab === "upload" && (
+          <div className="max-w-4xl mx-auto space-y-6 pb-20">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">{isEditing ? "Edit Game" : "Upload New Game"}</h1>
+              {isEditing && (
+                <Button variant="ghost" onClick={() => { resetForm(); setActiveTab("games"); }}>
+                  Cancel Editing
+                </Button>
+              )}
+            </div>
+            
+            <form onSubmit={handleGameSubmit} className="space-y-8">
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">1</span> 
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Game Title</Label>
+                    <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Category</Label>
+                    <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
+                      <SelectTrigger className="border-[var(--border)]">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.filter(c => c !== "All").map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
+                    <Input value={formData.developer} onChange={e => setFormData({...formData, developer: e.target.value})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">File Size</Label>
+                    <Input value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} placeholder="e.g. 45 GB" className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[var(--foreground)]">Description</Label>
+                    <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="h-32 border-[var(--border)]" required />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">2</span>
+                  Media & Links
+                </h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Cover Image URL</Label>
+                    <Input type="url" value={formData.cover} onChange={e => setFormData({...formData, cover: e.target.value})} required className="border-[var(--border)]" placeholder="https://..." />
+                    <p className="text-xs text-slate-500">Use a direct image URL that ends with .jpg, .png, or .webp. Google Drive share links usually do not work.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Background Image URL</Label>
+                    <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="Optional background image URL" />
+                    <p className="text-xs text-slate-500">Optional background image for the game hero/banner. If empty, the cover image will be used.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Download Link</Label>
+                    <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Trailer Video URL</Label>
+                    <Input type="url" value={formData.trailer} onChange={e => setFormData({...formData, trailer: e.target.value})} className="border-[var(--border)]" placeholder="https://... .mp4" />
+                    <p className="text-xs text-slate-500">Use a direct MP4 URL. Google Drive share links usually do not work here.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[var(--foreground)]">Screenshots</Label>
+                      <Button type="button" size="sm" variant="outline" onClick={() => setFormData({...formData, screenshots: [...formData.screenshots, ""]})}>
+                        <Plus className="h-3 w-3 mr-1" /> Add Image
+                      </Button>
+                    </div>
+                    {formData.screenshots.map((s, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input value={s} onChange={e => {
+                          const newS = [...formData.screenshots];
+                          newS[i] = e.target.value;
+                          setFormData({...formData, screenshots: newS});
+                        }} className="border-[var(--border)]" placeholder="Screenshot URL..." />
+                        {formData.screenshots.length > 1 && (
+                          <Button type="button" variant="outline" onClick={() => setFormData({...formData, screenshots: formData.screenshots.filter((_, idx) => idx !== i)})} className="text-red-500 px-3">
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">3</span> 
+                  Visibility Settings
+                </h3>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
+                    <div>
+                      <Label className="text-base text-[var(--foreground)] font-semibold">Featured Game</Label>
+                      <p className="text-sm text-[var(--muted-foreground)]">Show this game in the large featured hero banner on the homepage.</p>
+                    </div>
+                    <Switch checked={formData.featured} onCheckedChange={c => setFormData({...formData, featured: c})} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
+                    <div>
+                      <Label className="text-base text-[var(--foreground)] font-semibold">Trending / Popular</Label>
+                      <p className="text-sm text-[var(--muted-foreground)]">Add a 'Trending' badge and show in Most Viewed sections.</p>
+                    </div>
+                    <Switch checked={formData.trending} onCheckedChange={c => setFormData({...formData, trending: c})} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
+                    <div>
+                      <Label className="text-base text-[var(--foreground)] font-semibold">Game of the Day</Label>
+                      <p className="text-sm text-[var(--muted-foreground)]">Promote this game as the daily highlighted release.</p>
+                    </div>
+                    <Switch checked={formData.gameOfTheDay} onCheckedChange={c => setFormData({...formData, gameOfTheDay: c})} />
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
+                  System Requirements
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Minimum OS</Label>
+                    <Input value={formData.systemRequirements.minimum.os} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, os: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Recommended OS</Label>
+                    <Input value={formData.systemRequirements.recommended.os} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, os: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Minimum Processor</Label>
+                    <Input value={formData.systemRequirements.minimum.processor} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, processor: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Recommended Processor</Label>
+                    <Input value={formData.systemRequirements.recommended.processor} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, processor: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Minimum Memory</Label>
+                    <Input value={formData.systemRequirements.minimum.memory} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, memory: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Recommended Memory</Label>
+                    <Input value={formData.systemRequirements.recommended.memory} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, memory: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Minimum Graphics</Label>
+                    <Input value={formData.systemRequirements.minimum.graphics} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, graphics: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Recommended Graphics</Label>
+                    <Input value={formData.systemRequirements.recommended.graphics} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, graphics: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[var(--foreground)]">Minimum Storage</Label>
+                    <Input value={formData.systemRequirements.minimum.storage} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, storage: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[var(--foreground)]">Recommended Storage</Label>
+                    <Input value={formData.systemRequirements.recommended.storage} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, storage: e.target.value}}})} className="border-[var(--border)]" />
+                  </div>
+                </div>
+              </Card>
+
+              <div className="flex justify-end gap-4">
+                <Button type="button" variant="outline" onClick={() => setActiveTab("games")}>Cancel</Button>
+                <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white">
+                  <Save className="h-4 w-4 mr-2" /> {isEditing ? "Save Changes" : "Publish Game"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Categories Tab */}
+        {activeTab === "categories" && (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Categories</h1>
+            <Card className="p-6 border-[var(--border)] shadow-sm">
+              <div className="flex gap-2 mb-6">
+                <Input placeholder="New Category Name..." className="border-[var(--border)]" id="new-category" />
+                <Button onClick={() => {
+                  const val = (document.getElementById('new-category') as HTMLInputElement).value;
+                  if (val && !categories.includes(val)) {
+                    setCategories([...categories, val]);
+                    toast.success("Category added");
+                    (document.getElementById('new-category') as HTMLInputElement).value = '';
+                  }
+                }} className="bg-sky-500 text-white hover:bg-sky-600"><Plus className="h-4 w-4 mr-2"/> Add</Button>
+              </div>
+              
+              <div className="space-y-2">
+                {categories.map(cat => (
+                  <div key={cat} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg bg-[var(--card)] hover:bg-[var(--muted)]">
+                    <span className="font-medium text-[var(--foreground)]">{cat}</span>
+                    {cat !== "All" && (
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => {
+                        setCategories(categories.filter(c => c !== cat));
+                        toast.success("Category removed");
+                      }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && (
+          <div className="max-w-3xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Global Settings</h1>
+            
+            <Card className="p-6 border-[var(--border)] shadow-sm space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[var(--foreground)]">Site Name</Label>
+                <Input value={settings.siteName} onChange={e => setSettings({...settings, siteName: e.target.value})} className="border-[var(--border)]" />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-[var(--foreground)]">Site Logo URL</Label>
+                <Input value={settings.logoUrl} onChange={e => setSettings({...settings, logoUrl: e.target.value})} className="border-[var(--border)]" />
+                <p className="text-xs text-slate-500 mt-1">Accepts standard image URLs or figma:asset paths.</p>
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <Button onClick={() => {
+                  saveSiteSettings(settings);
+                  toast.success("Settings saved successfully!");
+                }} className="bg-sky-500 hover:bg-sky-600 text-white">
+                  <Save className="h-4 w-4 mr-2" /> Save Global Settings
+                </Button>
+              </div>
+            </Card>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}

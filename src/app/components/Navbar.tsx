@@ -1,0 +1,85 @@
+import { Link, useNavigate } from "react-router";
+import { Search, Shield, Gamepad2 } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { ThemeToggle } from "./ThemeToggle";
+import { useState, useEffect } from "react";
+
+export function Navbar() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const authenticated = localStorage.getItem("adminAuthenticated");
+    setIsAdminAuthenticated(authenticated === "true");
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleAdminClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAdminAuthenticated) {
+      navigate("/admin");
+    } else {
+      navigate("/admin/login");
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 bg-[var(--card)] border-b border-[var(--border)] shadow-lg">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between gap-6">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <Gamepad2 className="h-10 w-10 text-cyan-400" />
+            <span className="text-2xl font-bold text-[var(--foreground)]">
+              Download <span className="text-cyan-400">Your Game</span>
+            </span>
+          </Link>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl">
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="search"
+                  placeholder="Search for games..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 rounded-full"
+                />
+              </div>
+            </form>
+          </div>
+
+          {/* Right section */}
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              to="/categories"
+              className="text-[var(--foreground)] hover:text-cyan-400 transition-colors font-medium hidden md:block"
+            >
+              Browse
+            </Link>
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-4 py-2 rounded-full neon-glow-cyan"
+              onClick={handleAdminClick}
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Admin
+            </Button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+}
