@@ -53,7 +53,7 @@ export default function GameDetailPage() {
     // Local video element
     if (bgVideoRef.current) {
       try {
-        bgVideoRef.current.volume = 0.4;
+        bgVideoRef.current.volume = 0.2;
         // Unmute so volume takes effect
         bgVideoRef.current.muted = false;
       } catch (e) {
@@ -77,7 +77,7 @@ export default function GameDetailPage() {
                 onReady: (event: any) => {
                   try {
                     event.target.unMute && event.target.unMute();
-                    event.target.setVolume && event.target.setVolume(40);
+                    event.target.setVolume && event.target.setVolume(20);
                   } catch (err) {}
                 }
               }
