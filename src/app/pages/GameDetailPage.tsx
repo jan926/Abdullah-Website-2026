@@ -59,6 +59,53 @@ export default function GameDetailPage() {
     return url;
   };
 
+  const renderMediaElement = (src: string, alt: string, className: string, isThumbnail = false) => {
+    const mediaUrl = normalizeMediaUrl(src);
+
+    if (isYouTubeUrl(mediaUrl)) {
+      if (isThumbnail) {
+        return (
+          <div className={`relative overflow-hidden ${className}`}>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs uppercase tracking-[0.14em] text-white">YouTube</div>
+          </div>
+        );
+      }
+
+      const id = getYouTubeId(mediaUrl) || "";
+      return (
+        <iframe
+          title={alt}
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
+          className={className}
+          allow="autoplay; encrypted-media"
+        />
+      );
+    }
+
+    if (isVideoUrl(mediaUrl)) {
+      if (isThumbnail) {
+        return (
+          <div className={`relative overflow-hidden ${className}`}>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs uppercase tracking-[0.14em] text-white">Video</div>
+          </div>
+        );
+      }
+
+      return (
+        <video
+          src={mediaUrl}
+          className={className}
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      );
+    }
+
+    return <ImageWithFallback src={mediaUrl} alt={alt} className={className} />;
+  };
+
   const renderBackgroundMedia = () => {
     if (!game.backgroundImage) {
       return <div className="h-[420px] w-full bg-gradient-to-br from-slate-800 to-slate-900" />;
@@ -216,13 +263,13 @@ export default function GameDetailPage() {
               </div>
               <div className="relative overflow-hidden rounded-3xl bg-black/30">
                 {game.screenshots.length > 0 ? (
-                  <ImageWithFallback
-                    src={game.screenshots[currentScreenshot]}
-                    alt={`Screenshot ${currentScreenshot + 1}`}
-                    className="h-[280px] w-full object-cover"
-                  />
+                  renderMediaElement(
+                    game.screenshots[currentScreenshot],
+                    `Screenshot ${currentScreenshot + 1}`,
+                    "h-[420px] w-full object-cover"
+                  )
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
+                  <div className="flex h-[420px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
                 )}
                 {game.screenshots.length > 1 && (
                   <>
@@ -250,7 +297,7 @@ export default function GameDetailPage() {
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-20 w-full object-cover" />
+                    {renderMediaElement(screenshot, `Thumbnail ${index + 1}`, "h-20 w-full object-cover", true)}
                   </button>
                 ))}
               </div>
