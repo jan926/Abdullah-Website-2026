@@ -35,10 +35,36 @@ export default function HomePage() {
     "Strategy": { color: "bg-pink-500 hover:bg-pink-600", icon: "♟️" },
   };
 
+  const getColorForCategory = (cat: string): { color: string; icon: string } => {
+    if (categoryColorMap[cat]) {
+      return categoryColorMap[cat];
+    }
+
+    // Generate consistent color for new categories based on name hash
+    const colors = [
+      { color: "bg-indigo-500 hover:bg-indigo-600", icon: "🎪" },
+      { color: "bg-teal-500 hover:bg-teal-600", icon: "🌊" },
+      { color: "bg-rose-500 hover:bg-rose-600", icon: "💎" },
+      { color: "bg-amber-500 hover:bg-amber-600", icon: "⭐" },
+      { color: "bg-emerald-500 hover:bg-emerald-600", icon: "🌳" },
+      { color: "bg-fuchsia-500 hover:bg-fuchsia-600", icon: "🎭" },
+      { color: "bg-lime-500 hover:bg-lime-600", icon: "🚀" },
+      { color: "bg-sky-500 hover:bg-sky-600", icon: "☁️" },
+    ];
+
+    let hash = 0;
+    for (let i = 0; i < cat.length; i++) {
+      hash = ((hash << 5) - hash) + cat.charCodeAt(i);
+      hash = hash & hash;
+    }
+
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
   const categoryColors = categories.map(cat => ({
     name: cat,
-    color: categoryColorMap[cat]?.color || "bg-gray-500 hover:bg-gray-600",
-    icon: categoryColorMap[cat]?.icon || "🎯",
+    ...getColorForCategory(cat),
   }));
 
   const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
