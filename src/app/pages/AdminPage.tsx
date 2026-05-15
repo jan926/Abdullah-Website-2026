@@ -516,7 +516,7 @@ export default function AdminPage() {
                         <Plus className="h-3 w-3 mr-1" /> Add Image
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">Use a direct image or short video URL (.jpg/.png/.webp/.mp4/.webm/.ogg). Google Drive and Dropbox links are normalized automatically.</p>
+                    <p className="text-xs text-slate-500">Use a direct image URL (.jpg/.png/.webp) or short video URL (.mp4/.webm/.ogg). The first screenshot is also used as the homepage hero fallback when no background media is set.</p>
                     {formData.screenshots.map((s, i) => (
                       <div key={i} className="flex gap-2">
                         <Input value={s} onChange={e => {
