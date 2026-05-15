@@ -7,6 +7,7 @@ import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { GameCard } from "../components/GameCard";
+import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { getRecommendedGames } from "../../lib/aiHelpers";
 import {
   Download,
