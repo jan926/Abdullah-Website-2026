@@ -99,7 +99,7 @@ export default function HomePage() {
         <iframe
           title={alt}
           src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
           allow="autoplay; encrypted-media"
         />
       );
@@ -109,7 +109,7 @@ export default function HomePage() {
       return (
         <video
           src={mediaUrl}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
           autoPlay
           muted
           loop
@@ -120,13 +120,11 @@ export default function HomePage() {
     }
 
     return (
-      <div className="w-full h-full bg-black/40 flex items-center justify-center">
-        <ImageWithFallback
-          src={mediaUrl}
-          alt={alt}
-          className="w-full h-full object-contain object-center"
-        />
-      </div>
+      <ImageWithFallback
+        src={mediaUrl}
+        alt={alt}
+        className="w-full h-full object-cover object-center"
+      />
     );
   };
 
@@ -167,7 +165,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[500px] overflow-hidden">
+      <section className="relative h-[540px] md:h-[580px] overflow-hidden">
         {heroGames.map((game, index) => (
           <div
             key={game.id}
