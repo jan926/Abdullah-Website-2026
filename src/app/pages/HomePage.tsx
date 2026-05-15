@@ -41,6 +41,59 @@ export default function HomePage() {
     icon: categoryColorMap[cat]?.icon || "🎯",
   }));
 
+  const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
+  const getYouTubeId = (url: string) => {
+    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  };
+
+  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+  const normalizeMediaUrl = (url: string) => {
+    if (url.includes("drive.google.com")) {
+      const idMatch = url.match(/(?:file\/d\/|id=)([A-Za-z0-9_-]+)/);
+      if (idMatch) {
+        return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
+      }
+    }
+    if (url.includes("dropbox.com")) {
+      return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", "?raw=1");
+    }
+
+    return url;
+  };
+
+  const renderHeroMedia = (src: string, alt: string) => {
+    const mediaUrl = normalizeMediaUrl(src);
+
+    if (isYouTubeUrl(mediaUrl)) {
+      const id = getYouTubeId(mediaUrl) || "";
+      return (
+        <iframe
+          title={alt}
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
+          className="w-full h-full object-cover"
+          allow="autoplay; encrypted-media"
+        />
+      );
+    }
+
+    if (isVideoUrl(mediaUrl)) {
+      return (
+        <video
+          src={mediaUrl}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+      );
+    }
+
+    return <ImageWithFallback src={mediaUrl} alt={alt} className="w-full h-full object-cover" />;
+  };
+
   const nextSlide = () => {
     if (heroGames.length === 0) return;
     setCurrentSlide((prev) => (prev + 1) % heroGames.length);
@@ -86,11 +139,7 @@ export default function HomePage() {
               index === currentSlide ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none"
             }`}
           >
-            <img
-              src={game.backgroundImage || game.cover}
-              alt={game.title}
-              className="w-full h-full object-cover"
-            />
+            {renderHeroMedia(game.backgroundImage || game.cover, game.title)}
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
             <div className="absolute inset-0 flex items-center">
               <div className="container mx-auto px-6">

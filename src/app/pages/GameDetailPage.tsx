@@ -83,14 +83,6 @@ export default function GameDetailPage() {
     }
 
     if (isVideoUrl(mediaUrl)) {
-      if (isThumbnail) {
-        return (
-          <div className={`relative overflow-hidden ${className}`}>
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs uppercase tracking-[0.14em] text-white">Video</div>
-          </div>
-        );
-      }
-
       return (
         <video
           src={mediaUrl}
@@ -99,6 +91,7 @@ export default function GameDetailPage() {
           muted
           loop
           playsInline
+          preload={isThumbnail ? "metadata" : "auto"}
         />
       );
     }
