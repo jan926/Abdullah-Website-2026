@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories, DownloadPart } from "../data/games";
 import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
-import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isOllamaRunning } from "../../lib/huggingFaceHelper";
+import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isAiAvailable } from "../../lib/huggingFaceHelper";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, Zap, Loader
@@ -60,7 +60,7 @@ export default function AdminPage() {
 
   // AI Generation State
   const [aiLoading, setAiLoading] = useState(false);
-  const [ollamaAvailable, setOllamaAvailable] = useState(false);
+  const [aiAvailable, setAiAvailable] = useState(false);
 
   const handleGenerateDescription = async () => {
     if (!formData.title.trim()) {
@@ -120,8 +120,8 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    // Check if Ollama is available
-    isOllamaRunning().then(setOllamaAvailable);
+    // Check if AI service is available
+    isAiAvailable().then(setAiAvailable);
     
     const authenticated = localStorage.getItem("adminAuthenticated");
     const username = localStorage.getItem("adminUsername");
@@ -531,7 +531,7 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">1</span> 
                   Basic Information
-                  {ollamaAvailable && (
+                  {aiAvailable && (
                     <span className="ml-auto text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full flex items-center gap-1">
                       <Zap className="h-3 w-3" /> AI Ready
                     </span>
@@ -556,7 +556,7 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
-                      {ollamaAvailable && (
+                      {aiAvailable && (
                         <Button
                           type="button"
                           size="sm"
@@ -588,7 +588,7 @@ export default function AdminPage() {
                   <div className="space-y-2 md:col-span-2">
                     <div className="flex items-center justify-between">
                       <Label className="text-[var(--foreground)]">Description</Label>
-                      {ollamaAvailable && (
+                      {aiAvailable && (
                         <Button
                           type="button"
                           size="sm"
@@ -749,7 +749,7 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
-                  {ollamaAvailable && (
+                  {aiAvailable && (
                     <Button
                       type="button"
                       size="sm"

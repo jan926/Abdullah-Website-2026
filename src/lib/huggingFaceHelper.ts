@@ -3,30 +3,39 @@
 // No local installation needed - works everywhere!
 
 const HF_API_TOKEN = "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";
-const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1";
+const HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-small";
 
 async function callHuggingFace(prompt: string): Promise<string> {
   try {
     const response = await fetch(HF_API_URL, {
-      headers: { Authorization: `Bearer ${HF_API_TOKEN}` },
+      headers: {
+        Authorization: `Bearer ${HF_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
       method: "POST",
-      body: JSON.stringify({ inputs: prompt }),
+      body: JSON.stringify({
+        inputs: prompt,
+        options: { wait_for_model: true },
+      }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Hugging Face API returned error:", response.status, errorText);
       throw new Error(`HF API error: ${response.statusText}`);
     }
 
     const result = await response.json();
     
+    // Support different Hugging Face response formats
     if (Array.isArray(result) && result.length > 0) {
-      return result[0]?.generated_text?.trim() || "";
+      return (result[0]?.generated_text || result[0]?.text || "").trim();
     }
-    
-    return result?.generated_text?.trim() || "";
+
+    return (result?.generated_text || result?.text || "").trim();
   } catch (error) {
     console.error("Hugging Face API error:", error);
-    throw new Error("Failed to generate content. Check your internet connection.");
+    throw new Error("Failed to generate content. Check your internet connection or Hugging Face API token.");
   }
 }
 
@@ -106,7 +115,7 @@ Return ONLY the JSON, no other text.`;
   }
 }
 
-export async function isOllamaRunning(): Promise<boolean> {
-  // Always return true for Hugging Face - it's always "running" online
+export async function isAiAvailable(): Promise<boolean> {
+  // Always return true for Hugging Face - the online API is available if internet works
   return true;
 }
