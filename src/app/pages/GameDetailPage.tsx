@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
@@ -42,6 +42,76 @@ export default function GameDetailPage() {
     incrementSiteViews();
   }, [id]);
 
+  // Refs for background media control
+  const bgVideoRef = useRef<HTMLVideoElement | null>(null);
+  const ytPlayerRef = useRef<any>(null);
+
+  // Ensure background video and YouTube volumes are set to ~40%
+  useEffect(() => {
+    if (!game) return;
+
+    // Local video element
+    if (bgVideoRef.current) {
+      try {
+        bgVideoRef.current.volume = 0.4;
+        // Unmute so volume takes effect
+        bgVideoRef.current.muted = false;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // YouTube iframe: use Player API to set volume
+    const mediaUrl = game.backgroundImage || "";
+    if (isYouTubeUrl(mediaUrl)) {
+      const vid = getYouTubeId(mediaUrl) || "";
+      const iframeId = `yt-bg-${vid}`;
+
+      const initYT = () => {
+        try {
+          // @ts-ignore
+          if (window.YT && window.YT.Player) {
+            // @ts-ignore
+            ytPlayerRef.current = new window.YT.Player(iframeId, {
+              events: {
+                onReady: (event: any) => {
+                  try {
+                    event.target.unMute && event.target.unMute();
+                    event.target.setVolume && event.target.setVolume(40);
+                  } catch (err) {}
+                }
+              }
+            });
+          }
+        } catch (err) {
+          // ignore
+        }
+      };
+
+      // Load YT API if needed
+      if (typeof window !== 'undefined') {
+        // @ts-ignore
+        if (!window.YT) {
+          const tag = document.createElement('script');
+          tag.src = "https://www.youtube.com/iframe_api";
+          document.body.appendChild(tag);
+          // YouTube API will call onYouTubeIframeAPIReady
+          // Attach ready handler
+          // @ts-ignore
+          window.onYouTubeIframeAPIReady = initYT;
+        } else {
+          initYT();
+        }
+      }
+    }
+
+    return () => {
+      try {
+        if (ytPlayerRef.current && ytPlayerRef.current.destroy) ytPlayerRef.current.destroy();
+      } catch (e) {}
+    };
+  }, [game]);
+
   const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
     const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
@@ -75,12 +145,16 @@ export default function GameDetailPage() {
       }
 
       const id = getYouTubeId(mediaUrl) || "";
+      // enable JS API so we can set volume programmatically
+      const iframeId = `yt-bg-${id}`;
+      const srcWithApi = `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=1&loop=1&playlist=${id}&enablejsapi=1`;
       return (
         <iframe
+          id={iframeId}
           title={alt}
-          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
+          src={srcWithApi}
           className={className}
-          allow="autoplay; encrypted-media"
+          allow="autoplay; encrypted-media; fullscreen"
         />
       );
     }
@@ -88,12 +162,13 @@ export default function GameDetailPage() {
     if (isVideoUrl(mediaUrl)) {
       return (
         <video
+          ref={isThumbnail ? undefined : bgVideoRef}
           src={mediaUrl}
           className={className}
           autoPlay
-          muted
           loop
           playsInline
+          controls={isThumbnail}
           preload={isThumbnail ? "metadata" : "auto"}
         />
       );
