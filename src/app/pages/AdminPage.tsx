@@ -54,6 +54,7 @@ export default function AdminPage() {
 
   // Settings State
   const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+  const [heroSelectId, setHeroSelectId] = useState<string>("");
 
   useEffect(() => {
     const authenticated = localStorage.getItem("adminAuthenticated");
@@ -246,6 +247,7 @@ export default function AdminPage() {
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
           <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
           <SidebarItem icon={Tags} label="Categories" value="categories" />
+          <SidebarItem icon={Home} label="Homepage Hero" value="homepagehero" />
           <SidebarItem icon={Save} label="Game of the Day" value="gameofday" />
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
         </div>
@@ -710,6 +712,127 @@ export default function AdminPage() {
                     )}
                   </div>
                 ))}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Homepage Hero Tab */}
+        {activeTab === "homepagehero" && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Homepage Hero Slider</h1>
+            <Card className="p-6 border-[var(--border)] shadow-sm space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[var(--foreground)]">Choose Hero Slider Games</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Select value={heroSelectId} onValueChange={setHeroSelectId}>
+                    <SelectTrigger className="border-[var(--border)]">
+                      <SelectValue placeholder="Select a game to add" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {games.map(game => (
+                        <SelectItem key={game.id} value={game.id}>{game.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={() => {
+                      if (!heroSelectId) return;
+                      if (settings.heroSliderGameIds.includes(heroSelectId)) {
+                        toast.error("Game is already in the hero slider");
+                        return;
+                      }
+                      if (settings.heroSliderGameIds.length >= 6) {
+                        toast.error("Hero slider can contain up to 6 games");
+                        return;
+                      }
+                      setSettings({
+                        ...settings,
+                        heroSliderGameIds: [...settings.heroSliderGameIds, heroSelectId],
+                      });
+                      setHeroSelectId("");
+                    }}
+                    className="bg-sky-500 hover:bg-sky-600 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add to Slider
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">Select up to 6 games that should appear in the homepage hero animation.</p>
+              </div>
+
+              <div className="space-y-4">
+                {settings.heroSliderGameIds.length === 0 ? (
+                  <p className="text-sm text-[var(--muted-foreground)]">No hero games selected yet.</p>
+                ) : (
+                  settings.heroSliderGameIds.map((id, index) => {
+                    const game = games.find((g) => g.id === id);
+                    if (!game) return null;
+
+                    return (
+                      <div key={id} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)]">
+                        <div className="flex items-center gap-3 flex-1">
+                          <img src={game.cover} alt={game.title} className="w-20 h-20 rounded-lg object-cover" />
+                          <div>
+                            <p className="font-semibold text-[var(--foreground)]">{game.title}</p>
+                            <p className="text-sm text-[var(--muted-foreground)]">{game.category}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={index === 0}
+                            onClick={() => {
+                              const newOrder = [...settings.heroSliderGameIds];
+                              [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+                              setSettings({ ...settings, heroSliderGameIds: newOrder });
+                            }}
+                          >
+                            Up
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={index === settings.heroSliderGameIds.length - 1}
+                            onClick={() => {
+                              const newOrder = [...settings.heroSliderGameIds];
+                              [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+                              setSettings({ ...settings, heroSliderGameIds: newOrder });
+                            }}
+                          >
+                            Down
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500"
+                            onClick={() => setSettings({
+                              ...settings,
+                              heroSliderGameIds: settings.heroSliderGameIds.filter((gameId) => gameId !== id),
+                            })}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  onClick={() => {
+                    saveSiteSettings(settings);
+                    toast.success("Homepage hero games saved successfully!");
+                  }}
+                  className="bg-sky-500 hover:bg-sky-600 text-white"
+                >
+                  <Save className="h-4 w-4 mr-2" /> Save Hero Slider
+                </Button>
               </div>
             </Card>
           </div>

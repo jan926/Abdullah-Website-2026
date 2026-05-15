@@ -13,6 +13,7 @@ export interface SiteSettings {
   showGameOfTheDay: boolean;
   showTrendingGames: boolean;
   theme: "light" | "dark";
+  heroSliderGameIds: string[];
 }
 
 const defaultSettings: SiteSettings = {
@@ -23,6 +24,7 @@ const defaultSettings: SiteSettings = {
   showGameOfTheDay: true,
   showTrendingGames: true,
   theme: "dark",
+  heroSliderGameIds: [],
 };
 
 const safeLocalStorage = () => {

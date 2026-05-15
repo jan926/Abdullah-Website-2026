@@ -17,7 +17,19 @@ export default function HomePage() {
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
 
-  const heroGames = games.slice(0, 5);
+  const heroGames = (() => {
+    const selectedIds = settings.heroSliderGameIds || [];
+    const selectedGames = selectedIds
+      .map((id) => games.find((game) => game.id === id))
+      .filter((game): game is Game => Boolean(game));
+
+    if (selectedGames.length > 0) {
+      const remainingGames = games.filter((game) => !selectedIds.includes(game.id)).slice(0, 5 - selectedGames.length);
+      return [...selectedGames, ...remainingGames];
+    }
+
+    return games.slice(0, 5);
+  })();
   const trendingGames = games.filter((game) => game.trending).slice(0, 5);
   const latestGames = [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
