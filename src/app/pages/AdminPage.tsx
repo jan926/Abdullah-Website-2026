@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories, DownloadPart } from "../data/games";
 import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
+import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isOllamaRunning } from "../../lib/ollamaHelper";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, Zap, Loader
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,7 +58,71 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
   const [heroSelectId, setHeroSelectId] = useState<string>("");
 
+  // AI Generation State
+  const [aiLoading, setAiLoading] = useState(false);
+  const [ollamaAvailable, setOllamaAvailable] = useState(false);
+
+  const handleGenerateDescription = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Please enter a game title first");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const description = await generateGameDescription(formData.title);
+      setFormData({ ...formData, description });
+      toast.success("Description generated!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate description");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenerateDeveloper = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Please enter a game title first");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const developer = await generateDeveloperName(formData.title);
+      setFormData({ ...formData, developer });
+      toast.success("Developer name generated!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate developer name");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenerateSystemRequirements = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Please enter a game title first");
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const requirements = await generateSystemRequirements(formData.title);
+      setFormData({
+        ...formData,
+        systemRequirements: requirements,
+      });
+      toast.success("System requirements generated!");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate system requirements");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   useEffect(() => {
+    // Check if Ollama is available
+    isOllamaRunning().then(setOllamaAvailable);
+  }, []);
     const authenticated = localStorage.getItem("adminAuthenticated");
     const username = localStorage.getItem("adminUsername");
     
@@ -466,6 +531,11 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">1</span> 
                   Basic Information
+                  {ollamaAvailable && (
+                    <span className="ml-auto text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full flex items-center gap-1">
+                      <Zap className="h-3 w-3" /> AI Ready
+                    </span>
+                  )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -484,7 +554,31 @@ export default function AdminPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
+                      {ollamaAvailable && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleGenerateDeveloper}
+                          disabled={aiLoading || !formData.title.trim()}
+                          className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+                        >
+                          {aiLoading ? (
+                            <>
+                              <Loader className="h-3 w-3 mr-1 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="h-3 w-3 mr-1" />
+                              Generate
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                     <Input value={formData.developer} onChange={e => setFormData({...formData, developer: e.target.value})} className="border-[var(--border)]" />
                   </div>
                   <div className="space-y-2">
@@ -492,7 +586,31 @@ export default function AdminPage() {
                     <Input value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} placeholder="e.g. 45 GB" className="border-[var(--border)]" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label className="text-[var(--foreground)]">Description</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[var(--foreground)]">Description</Label>
+                      {ollamaAvailable && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleGenerateDescription}
+                          disabled={aiLoading || !formData.title.trim()}
+                          className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+                        >
+                          {aiLoading ? (
+                            <>
+                              <Loader className="h-3 w-3 mr-1 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="h-3 w-3 mr-1" />
+                              Generate
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                     <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="h-32 border-[var(--border)]" required />
                   </div>
                 </div>
@@ -631,6 +749,28 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
+                  {ollamaAvailable && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleGenerateSystemRequirements}
+                      disabled={aiLoading || !formData.title.trim()}
+                      className="ml-auto text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
+                    >
+                      {aiLoading ? (
+                        <>
+                          <Loader className="h-3 w-3 mr-1 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-3 w-3 mr-1" />
+                          Generate All
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
