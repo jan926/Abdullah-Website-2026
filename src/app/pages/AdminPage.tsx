@@ -35,6 +35,7 @@ export default function AdminPage() {
     category: "",
     description: "",
     cover: "",
+    heroMedia: "",
     backgroundImage: "",
     size: "",
     developer: "",
@@ -100,6 +101,7 @@ export default function AdminPage() {
         category: formData.category,
         description: formData.description,
         cover: formData.cover,
+        heroMedia: formData.heroMedia,
         size: formData.size,
         developer: formData.developer,
         downloadLink: formData.downloadLink,
@@ -135,6 +137,7 @@ export default function AdminPage() {
       category: game.category,
       description: game.description,
       cover: game.cover,
+      heroMedia: game.heroMedia || "",
       backgroundImage: game.backgroundImage || "",
       size: game.size,
       developer: game.developer,
@@ -169,6 +172,7 @@ export default function AdminPage() {
       category: "",
       description: "",
       cover: "",
+      heroMedia: "",
       backgroundImage: "",
       size: "",
       developer: "",
@@ -494,6 +498,11 @@ export default function AdminPage() {
                     <Label className="text-[var(--foreground)]">Cover Image URL</Label>
                     <Input type="url" value={formData.cover} onChange={e => setFormData({...formData, cover: e.target.value})} required className="border-[var(--border)]" placeholder="https://..." />
                     <p className="text-xs text-slate-500">Use a direct image URL that ends with .jpg, .png, or .webp. Google Drive share links usually do not work.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">Homepage Hero Image URL</Label>
+                    <Input type="url" value={formData.heroMedia} onChange={e => setFormData({...formData, heroMedia: e.target.value})} className="border-[var(--border)]" placeholder="https://..." />
+                    <p className="text-xs text-slate-500">Optional hero image used on the homepage animation slider. If set, it overrides the first screenshot or background media.</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Background Media URL</Label>

@@ -139,7 +139,7 @@ export default function HomePage() {
               index === currentSlide ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none"
             }`}
           >
-            {renderHeroMedia(game.backgroundImage || game.screenshots?.[0] || game.cover, game.title)}
+            {renderHeroMedia(game.heroMedia || game.backgroundImage || game.screenshots?.[0] || game.cover, game.title)}
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
             <div className="absolute inset-0 flex items-center">
               <div className="container mx-auto px-6">
