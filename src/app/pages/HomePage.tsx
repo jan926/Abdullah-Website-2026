@@ -74,6 +74,8 @@ export default function HomePage() {
   };
 
   const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+  const isImageUrl = (url: string) => /\.(jpe?g|png|webp|gif|avif|svg)(\?.*)?$/i.test(url);
+
   const normalizeMediaUrl = (url: string) => {
     if (url.includes("drive.google.com")) {
       const idMatch = url.match(/(?:file\/d\/|id=)([A-Za-z0-9_-]+)/);
@@ -117,7 +119,15 @@ export default function HomePage() {
       );
     }
 
-    return <ImageWithFallback src={mediaUrl} alt={alt} className="w-full h-full object-cover" />;
+    return (
+      <div className="w-full h-full bg-black/40 flex items-center justify-center">
+        <ImageWithFallback
+          src={mediaUrl}
+          alt={alt}
+          className="w-full h-full object-contain object-center"
+        />
+      </div>
+    );
   };
 
   const nextSlide = () => {
