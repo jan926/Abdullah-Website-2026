@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
-import { Game, categories as initialCategories } from "../data/games";
+import { Game, categories as initialCategories, DownloadPart } from "../data/games";
 import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
@@ -40,6 +40,7 @@ export default function AdminPage() {
     size: "",
     developer: "",
     downloadLink: "",
+    downloadParts: [{id: "1", name: "", link: "", size: ""}],
     trailer: "",
     screenshots: [""],
     systemRequirements: {
@@ -105,6 +106,7 @@ export default function AdminPage() {
         size: formData.size,
         developer: formData.developer,
         downloadLink: formData.downloadLink,
+        downloadParts: formData.downloadParts?.filter(p => p.link),
         trailer: formData.trailer,
         backgroundImage: formData.backgroundImage,
         screenshots: formData.screenshots.filter(Boolean),
@@ -142,6 +144,7 @@ export default function AdminPage() {
       size: game.size,
       developer: game.developer,
       downloadLink: game.downloadLink,
+      downloadParts: game.downloadParts || [{id: "1", name: "", link: "", size: ""}],
       trailer: game.trailer || "",
       screenshots: [...game.screenshots],
       systemRequirements: game.systemRequirements || {
@@ -177,6 +180,7 @@ export default function AdminPage() {
       size: "",
       developer: "",
       downloadLink: "",
+      downloadParts: [{id: "1", name: "", link: "", size: ""}],
       trailer: "",
       screenshots: [""],
       systemRequirements: {
@@ -510,8 +514,47 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">Optional background media for the game hero/banner. Supports YouTube, MP4/WebM, direct image URLs, Google Drive, and Dropbox links.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Download Link</Label>
+                    <Label className="text-[var(--foreground)]">Main Download Link</Label>
                     <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
+                    <p className="text-xs text-slate-500">Primary download link. Optional if using download parts.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[var(--foreground)]">Download Parts (Multi-Part)</Label>
+                      <Button type="button" size="sm" variant="outline" onClick={() => {
+                        const newId = Math.random().toString(36).substr(2, 9);
+                        setFormData({...formData, downloadParts: [...(formData.downloadParts || []), {id: newId, name: "", link: "", size: ""}]});
+                      }}>
+                        <Plus className="h-3 w-3 mr-1" /> Add Part
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500">For multi-part games (e.g., Part 1, Part 2). Leave empty if using a single main download link.</p>
+                    {formData.downloadParts?.map((part, i) => (
+                      <div key={part.id} className="space-y-2 p-3 border border-[var(--border)] rounded-lg bg-[rgba(255,255,255,0.02)]">
+                        <div className="flex gap-2">
+                          <Input value={part.name} onChange={e => {
+                            const newParts = [...(formData.downloadParts || [])];
+                            newParts[i].name = e.target.value;
+                            setFormData({...formData, downloadParts: newParts});
+                          }} className="border-[var(--border)] flex-1" placeholder="e.g. Part 1, Part 2" />
+                          {(formData.downloadParts?.length || 0) > 1 && (
+                            <Button type="button" variant="outline" onClick={() => setFormData({...formData, downloadParts: formData.downloadParts?.filter((_, idx) => idx !== i)})} className="text-red-500 px-3">
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <Input type="url" value={part.link} onChange={e => {
+                          const newParts = [...(formData.downloadParts || [])];
+                          newParts[i].link = e.target.value;
+                          setFormData({...formData, downloadParts: newParts});
+                        }} className="border-[var(--border)]" placeholder="Download link for this part" />
+                        <Input value={part.size || ""} onChange={e => {
+                          const newParts = [...(formData.downloadParts || [])];
+                          newParts[i].size = e.target.value;
+                          setFormData({...formData, downloadParts: newParts});
+                        }} className="border-[var(--border)]" placeholder="Size (optional, e.g. 5 GB)" />
+                      </div>
+                    ))}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Trailer Video URL</Label>

@@ -5,38 +5,50 @@ import { loadGames } from "../../lib/gameStore";
 import { GameCard } from "../components/GameCard";
 import { Input } from "../components/ui/input";
 import { Search } from "lucide-react";
+import { getSearchSuggestions, fuzzySearch } from "../../lib/aiHelpers";
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [results, setResults] = useState<Game[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
-    const games = loadGames();
+    const loadedGames = loadGames();
+    setGames(loadedGames);
     const query = searchParams.get("q") || "";
     setSearchQuery(query);
 
     if (query.trim()) {
-      const filtered = games.filter(
-        (game) =>
-          game.title.toLowerCase().includes(query.toLowerCase()) ||
-          game.description.toLowerCase().includes(query.toLowerCase()) ||
-          game.category.toLowerCase().includes(query.toLowerCase()) ||
-          game.developer.toLowerCase().includes(query.toLowerCase())
-      );
+      const filtered = fuzzySearch(query, loadedGames);
       setResults(filtered);
     } else {
-      setResults(games);
+      setResults(loadedGames);
     }
   }, [searchParams]);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
+    setShowSuggestions(value.length > 0);
+
     if (value.trim()) {
+      // Generate suggestions
+      const sug = getSearchSuggestions(value, games);
+      setSuggestions(sug);
+
+      // Search with fuzzy matching
       setSearchParams({ q: value });
     } else {
       setSearchParams({});
+      setSuggestions([]);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    handleSearch(suggestion);
+    setShowSuggestions(false);
   };
 
   return (
@@ -54,8 +66,24 @@ export default function SearchPage() {
               placeholder="Search by title, category, or developer..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setShowSuggestions(searchQuery.length > 0)}
               className="w-full pl-12 bg-[#151b38] border-[#1e2952] text-white placeholder:text-gray-500 focus-visible:ring-cyan-500 text-lg py-6 rounded-lg"
             />
+
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-[#0f1724] border border-[#1e2952] rounded-lg overflow-hidden shadow-xl">
+                {suggestions.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-4 py-3 hover:bg-[#1e2952] transition flex items-center gap-2"
+                  >
+                    <Search className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-200">{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

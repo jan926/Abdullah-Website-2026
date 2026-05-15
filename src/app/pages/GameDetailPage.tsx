@@ -7,6 +7,7 @@ import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { GameCard } from "../components/GameCard";
+import { getRecommendedGames } from "../../lib/aiHelpers";
 import {
   Download,
   Star,
@@ -26,6 +27,7 @@ export default function GameDetailPage() {
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState("");
   const [showMinimum, setShowMinimum] = useState(true);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -145,9 +147,8 @@ export default function GameDetailPage() {
     );
   }
 
-  const relatedGames = loadGames()
-    .filter((g) => g.category === game.category && g.id !== game.id)
-    .slice(0, 4);
+  const allGames = loadGames();
+  const relatedGames = getRecommendedGames(game, allGames, 4);
 
   const nextScreenshot = () => {
     if (game.screenshots.length === 0) return;
@@ -184,12 +185,21 @@ export default function GameDetailPage() {
   };
 
   const handleDownloadClick = () => {
-    if (!game?.downloadLink) return;
     const updatedGame = incrementGameDownload(game.id);
     if (updatedGame) {
       setGame(updatedGame);
     }
-    window.open(game.downloadLink, "_blank");
+
+    // Show modal if there are download parts
+    if (game?.downloadParts && game.downloadParts.length > 0) {
+      setShowDownloadModal(true);
+      return;
+    }
+
+    // Direct download if only main link
+    if (game?.downloadLink) {
+      window.open(game.downloadLink, "_blank");
+    }
   };
 
   return (
@@ -422,6 +432,14 @@ export default function GameDetailPage() {
           </section>
         )}
       </div>
+
+      <DownloadPartsModal
+        open={showDownloadModal}
+        onOpenChange={setShowDownloadModal}
+        gameTitle={game?.title || "Game"}
+        downloadParts={game?.downloadParts || []}
+        mainLink={game?.downloadLink}
+      />
     </div>
   );
 }

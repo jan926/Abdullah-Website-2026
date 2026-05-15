@@ -29,12 +29,20 @@ export interface Game {
   featured: boolean;
   trending: boolean;
   downloadLink: string;
+  downloadParts?: DownloadPart[];
   comments: Comment[];
   trailer?: string;
   backgroundImage?: string;
   heroMedia?: string;
   views?: number;
   gameOfTheDay?: boolean;
+}
+
+export interface DownloadPart {
+  id: string;
+  name: string;
+  link: string;
+  size?: string;
 }
 
 export interface Comment {
