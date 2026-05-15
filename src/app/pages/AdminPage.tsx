@@ -122,7 +122,7 @@ export default function AdminPage() {
   useEffect(() => {
     // Check if Ollama is available
     isOllamaRunning().then(setOllamaAvailable);
-  }, []);
+    
     const authenticated = localStorage.getItem("adminAuthenticated");
     const username = localStorage.getItem("adminUsername");
     
