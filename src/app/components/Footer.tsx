@@ -98,11 +98,22 @@ export function Footer() {
                 <Youtube className="h-5 w-5" />
               </a>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm mb-4">
               <Mail className="h-4 w-4" />
               <a href="mailto:malikwork72@gmail.com" className="hover:text-cyan-400 transition">
                 malikwork72@gmail.com
               </a>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.24em] text-gray-500">Creators</p>
+              <div className="space-y-1 text-sm">
+                <p className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-violet-400">
+                  Malik Muhammad Abdullah Jan Zia
+                </p>
+                <p className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-rose-300 to-fuchsia-500">
+                  Awais Qammar
+                </p>
+              </div>
             </div>
           </div>
         </div>
