@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories, DownloadPart } from "../data/games";
 import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
-import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isOllamaRunning } from "../../lib/ollamaHelper";
+import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isOllamaRunning } from "../../lib/huggingFaceHelper";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, Zap, Loader
