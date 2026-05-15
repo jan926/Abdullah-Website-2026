@@ -228,6 +228,12 @@ export default function GameDetailPage() {
                   <Button onClick={handleDownloadClick} className="bg-cyan-500 hover:bg-cyan-600 text-white">
                     <Download className="mr-2 h-4 w-4" /> Download Now
                   </Button>
+                  {game.filePassword && (
+                    <div className="mt-4 rounded-3xl border border-cyan-500/40 bg-cyan-500/10 p-4 text-white">
+                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">Password</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{game.filePassword}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -440,6 +446,7 @@ export default function GameDetailPage() {
         gameTitle={game?.title || "Game"}
         downloadParts={game?.downloadParts || []}
         mainLink={game?.downloadLink}
+        filePassword={game?.filePassword}
       />
     </div>
   );

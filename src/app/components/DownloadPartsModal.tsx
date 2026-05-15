@@ -10,6 +10,7 @@ interface DownloadPartsModalProps {
   gameTitle: string;
   downloadParts: DownloadPart[];
   mainLink?: string;
+  filePassword?: string;
 }
 
 export function DownloadPartsModal({
@@ -18,6 +19,7 @@ export function DownloadPartsModal({
   gameTitle,
   downloadParts,
   mainLink,
+  filePassword,
 }: DownloadPartsModalProps) {
   const handleCopyLink = (link: string) => {
     navigator.clipboard.writeText(link);
@@ -43,6 +45,12 @@ export function DownloadPartsModal({
           {mainLink && (
             <div className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-lg">
               <p className="text-sm text-[var(--muted-foreground)] mb-3">Main Download</p>
+              {filePassword && (
+                <div className="mb-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 p-3 text-cyan-100">
+                  <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">Password</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{filePassword}</p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button
                   onClick={() => handleDownload(mainLink)}

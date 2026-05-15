@@ -40,6 +40,7 @@ export default function AdminPage() {
     size: "",
     developer: "",
     downloadLink: "",
+    filePassword: "",
     downloadParts: [{id: "1", name: "", link: "", size: ""}],
     trailer: "",
     screenshots: [""],
@@ -107,6 +108,7 @@ export default function AdminPage() {
         size: formData.size,
         developer: formData.developer,
         downloadLink: formData.downloadLink,
+        filePassword: formData.filePassword,
         downloadParts: formData.downloadParts?.filter(p => p.link),
         trailer: formData.trailer,
         backgroundImage: formData.backgroundImage,
@@ -145,6 +147,7 @@ export default function AdminPage() {
       size: game.size,
       developer: game.developer,
       downloadLink: game.downloadLink,
+      filePassword: game.filePassword || "",
       downloadParts: game.downloadParts || [{id: "1", name: "", link: "", size: ""}],
       trailer: game.trailer || "",
       screenshots: [...game.screenshots],
@@ -181,6 +184,7 @@ export default function AdminPage() {
       size: "",
       developer: "",
       downloadLink: "",
+      filePassword: "",
       downloadParts: [{id: "1", name: "", link: "", size: ""}],
       trailer: "",
       screenshots: [""],
@@ -519,6 +523,11 @@ export default function AdminPage() {
                     <Label className="text-[var(--foreground)]">Main Download Link</Label>
                     <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
                     <p className="text-xs text-slate-500">Primary download link. Optional if using download parts.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">File Password</Label>
+                    <Input value={formData.filePassword} onChange={e => setFormData({...formData, filePassword: e.target.value})} className="border-[var(--border)]" placeholder="Password for the download file" />
+                    <p className="text-xs text-slate-500">Optional password that will be displayed beneath the download button on the game page.</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">

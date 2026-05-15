@@ -30,6 +30,7 @@ export interface Game {
   trending: boolean;
   downloadLink: string;
   downloadParts?: DownloadPart[];
+  filePassword?: string;
   comments: Comment[];
   trailer?: string;
   backgroundImage?: string;
