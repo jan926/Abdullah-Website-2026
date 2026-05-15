@@ -11,6 +11,7 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>([]);
+  const [fallbackTrendingGames, setFallbackTrendingGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
   const trendingScrollRef = useRef<HTMLDivElement>(null);
@@ -30,7 +31,17 @@ export default function HomePage() {
 
     return games.slice(0, 5);
   })();
-  const trendingGames = games.filter((game) => game.trending).slice(0, 5);
+  const trendingGames = (() => {
+    const trending = games.filter((game) => game.trending).slice(0, 5);
+    if (trending.length > 0) {
+      return trending;
+    }
+
+    return fallbackTrendingGames.length > 0
+      ? fallbackTrendingGames
+      : games.slice(0, Math.min(3, games.length));
+  })();
+
   const latestGames = [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 12);
@@ -164,6 +175,15 @@ export default function HomePage() {
     const loadedGames = loadGames();
     const loadedSettings = loadSiteSettings();
     setGames(loadedGames);
+
+    const trending = loadedGames.filter((game) => game.trending);
+    if (trending.length === 0 && loadedGames.length > 0) {
+      const shuffled = [...loadedGames].sort(() => Math.random() - 0.5);
+      setFallbackTrendingGames(shuffled.slice(0, Math.min(3, loadedGames.length)));
+    } else {
+      setFallbackTrendingGames([]);
+    }
+
     setSettings(loadedSettings);
     setCategories(loadCategories());
     document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");

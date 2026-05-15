@@ -114,7 +114,7 @@ export default function GameDetailPage() {
       return (
         <iframe
           title="Game background video"
-          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=1&loop=1&playlist=${id}`}
           className="h-[420px] w-full object-cover"
           allow="autoplay; encrypted-media"
         />
@@ -127,9 +127,9 @@ export default function GameDetailPage() {
           src={mediaUrl}
           className="h-[420px] w-full object-cover"
           autoPlay
-          muted
           loop
           playsInline
+          controls
         />
       );
     }
