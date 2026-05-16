@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories } from "../../lib/gameStore";
+
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
@@ -13,7 +14,17 @@ export default function HomePage() {
   const [games, setGames] = useState<Game[]>([]);
   const [fallbackTrendingGames, setFallbackTrendingGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+  const [settings, setSettings] = useState<SiteSettings>({
+    siteName: "Download Your Games",
+    logoUrl: "",
+    showLatestGames: true,
+    showMostViewed: true,
+    showGameOfTheDay: true,
+    showTrendingGames: true,
+    theme: "dark",
+    heroSliderGameIds: [],
+  });
+
   const trendingScrollRef = useRef<HTMLDivElement>(null);
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
@@ -172,22 +183,35 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const loadedGames = loadGames();
-    const loadedSettings = loadSiteSettings();
-    setGames(loadedGames);
+    let mounted = true;
+    (async () => {
+      const [loadedGames, loadedSettings, loadedCategories] = await Promise.all([
+        loadGames(),
+        loadSiteSettings(),
+        loadCategories(),
+      ]);
+      if (!mounted) return;
 
-    const trending = loadedGames.filter((game) => game.trending);
-    if (trending.length === 0 && loadedGames.length > 0) {
-      const shuffled = [...loadedGames].sort(() => Math.random() - 0.5);
-      setFallbackTrendingGames(shuffled.slice(0, Math.min(3, loadedGames.length)));
-    } else {
-      setFallbackTrendingGames([]);
-    }
+      setGames(loadedGames);
 
-    setSettings(loadedSettings);
-    setCategories(loadCategories());
-    document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
+      const trending = loadedGames.filter((game) => game.trending);
+      if (trending.length === 0 && loadedGames.length > 0) {
+        const shuffled = [...loadedGames].sort(() => Math.random() - 0.5);
+        setFallbackTrendingGames(shuffled.slice(0, Math.min(3, loadedGames.length)));
+      } else {
+        setFallbackTrendingGames([]);
+      }
+
+      setSettings(loadedSettings);
+      setCategories(loadedCategories);
+      document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
 
   useEffect(() => {
     const interval = setInterval(nextSlide, 5000);

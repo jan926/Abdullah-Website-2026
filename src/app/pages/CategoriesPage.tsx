@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { categories } from "../data/games";
 import { Game } from "../data/games";
 import { loadGames } from "../../lib/gameStore";
+
 import { GameCard } from "../components/GameCard";
 import { Card } from "../components/ui/card";
 
@@ -10,8 +11,16 @@ export default function CategoriesPage() {
   const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
-    setGames(loadGames());
+    let mounted = true;
+    (async () => {
+      const loaded = await loadGames();
+      if (mounted) setGames(loaded);
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
+
 
   const categoryStats = categories.slice(1).map((category) => {
     const gamesInCategory = games.filter((game) => game.category === category);

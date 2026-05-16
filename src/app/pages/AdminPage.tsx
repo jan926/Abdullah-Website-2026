@@ -26,7 +26,8 @@ export default function AdminPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dailyGameId, setDailyGameId] = useState<string>("");
-  const [analytics, setAnalytics] = useState<SiteAnalytics>(loadSiteAnalytics());
+  const [analytics, setAnalytics] = useState<SiteAnalytics>({ totalPageViews: 0, lastUpdated: new Date().toISOString() });
+
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -55,7 +56,17 @@ export default function AdminPage() {
   });
 
   // Settings State
-  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+  const [settings, setSettings] = useState<SiteSettings>({
+    siteName: "Download Your Game",
+    logoUrl: "",
+    showLatestGames: true,
+    showMostViewed: true,
+    showGameOfTheDay: true,
+    showTrendingGames: true,
+    theme: "dark",
+    heroSliderGameIds: [],
+  });
+
   const [heroSelectId, setHeroSelectId] = useState<string>("");
 
   // AI Generation State
@@ -134,12 +145,21 @@ export default function AdminPage() {
       return;
     }
 
-    const storedGames = loadGames();
-    setGames(storedGames);
-    setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
-    setSettings(loadSiteSettings());
-    setCategories(loadCategories());
-    setAnalytics(loadSiteAnalytics());
+    (async () => {
+      const [storedGames, loadedSettings, loadedCategories, loadedAnalytics] = await Promise.all([
+        loadGames(),
+        loadSiteSettings(),
+        loadCategories(),
+        loadSiteAnalytics(),
+      ]);
+
+      setGames(storedGames);
+      setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
+      setSettings(loadedSettings);
+      setCategories(loadedCategories);
+      setAnalytics(loadedAnalytics);
+    })();
+
   }, [navigate]);
 
   const handleLogout = () => {

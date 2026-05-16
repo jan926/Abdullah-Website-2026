@@ -1,9 +1,5 @@
 import { gamesData, Game, categories as defaultCategories } from "../app/data/games";
-
-const GAMES_KEY = "dyg-games-v1";
-const SETTINGS_KEY = "dyg-site-settings-v1";
-const CATEGORIES_KEY = "dyg-categories-v1";
-const ANALYTICS_KEY = "dyg-site-analytics-v1";
+import { supabase } from "./supabaseClient";
 
 export interface SiteSettings {
   siteName: string;
@@ -27,161 +23,264 @@ const defaultSettings: SiteSettings = {
   heroSliderGameIds: [],
 };
 
-const safeLocalStorage = () => {
-  if (typeof window === "undefined") return null;
-  return window.localStorage;
-};
-
-export const loadGames = (): Game[] => {
-  const storage = safeLocalStorage();
-  if (!storage) return gamesData;
-
-  const raw = storage.getItem(GAMES_KEY);
-  if (!raw) {
-    storage.setItem(GAMES_KEY, JSON.stringify(gamesData));
-    return gamesData;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Game[];
-    if (!Array.isArray(parsed)) throw new Error("Invalid games payload");
-    return parsed;
-  } catch (error) {
-    console.error("Failed to parse game storage, resetting to defaults.", error);
-    storage.setItem(GAMES_KEY, JSON.stringify(gamesData));
-    return gamesData;
-  }
-};
-
-export const saveGames = (games: Game[]) => {
-  const storage = safeLocalStorage();
-  if (!storage) return;
-  storage.setItem(GAMES_KEY, JSON.stringify(games));
-};
-
-export const getGameById = (id: string): Game | undefined => {
-  return loadGames().find((game) => game.id === id);
-};
-
-export const loadSiteSettings = (): SiteSettings => {
-  const storage = safeLocalStorage();
-  if (!storage) return defaultSettings;
-
-  const raw = storage.getItem(SETTINGS_KEY);
-  if (!raw) {
-    storage.setItem(SETTINGS_KEY, JSON.stringify(defaultSettings));
-    return defaultSettings;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as SiteSettings;
-    return { ...defaultSettings, ...parsed };
-  } catch (error) {
-    console.error("Failed to parse settings storage, resetting to defaults.", error);
-    storage.setItem(SETTINGS_KEY, JSON.stringify(defaultSettings));
-    return defaultSettings;
-  }
-};
-
 export interface SiteAnalytics {
   totalPageViews: number;
   lastUpdated: string;
 }
 
-export const saveSiteSettings = (settings: SiteSettings) => {
-  const storage = safeLocalStorage();
-  if (!storage) return;
-  storage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-};
-
-export const loadSiteAnalytics = (): SiteAnalytics => {
-  const storage = safeLocalStorage();
-  if (!storage) return { totalPageViews: 0, lastUpdated: new Date().toISOString() };
-
-  const raw = storage.getItem(ANALYTICS_KEY);
-  if (!raw) {
-    const defaultAnalytics = { totalPageViews: 0, lastUpdated: new Date().toISOString() };
-    storage.setItem(ANALYTICS_KEY, JSON.stringify(defaultAnalytics));
-    return defaultAnalytics;
-  }
-
+const toJsonbArray = <T,>(v: unknown, fallback: T[] = []): T[] => {
+  if (!v) return fallback;
   try {
-    const parsed = JSON.parse(raw) as SiteAnalytics;
-    return { totalPageViews: 0, lastUpdated: new Date().toISOString(), ...parsed };
-  } catch (error) {
-    console.error("Failed to parse analytics storage, resetting to defaults.", error);
-    const defaultAnalytics = { totalPageViews: 0, lastUpdated: new Date().toISOString() };
-    storage.setItem(ANALYTICS_KEY, JSON.stringify(defaultAnalytics));
-    return defaultAnalytics;
+    return Array.isArray(v) ? (v as T[]) : fallback;
+  } catch {
+    return fallback;
   }
 };
 
-export const saveSiteAnalytics = (analytics: SiteAnalytics) => {
-  const storage = safeLocalStorage();
-  if (!storage) return;
-  storage.setItem(ANALYTICS_KEY, JSON.stringify(analytics));
+const mapGameRowToGame = (row: any): Game => {
+  // Supabase returns snake_case columns exactly as created.
+  // Our frontend Game type uses camelCase in places.
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    description: row.description,
+    cover: row.cover,
+    heroMedia: row.heroMedia ?? "",
+    backgroundImage: row.backgroundImage ?? "",
+    size: row.size ?? "",
+    developer: row.developer ?? "",
+    downloadLink: row.downloadLink ?? "",
+    filePassword: row.filePassword ?? "",
+    downloadParts: toJsonbArray(row.downloadParts, []),
+    trailer: row.trailer ?? "",
+    screenshots: toJsonbArray(row.screenshots, []),
+    featured: !!row.featured,
+    trending: !!row.trending,
+    gameOfTheDay: !!row.gameOfTheDay,
+    rating: row.rating ?? 0,
+    downloads: row.downloads ?? 0,
+    views: row.views ?? 0,
+    releaseDate: row.releaseDate ?? "",
+    systemRequirements: row.systemRequirements ?? { minimum: {}, recommended: {} },
+    comments: [], // comments separate table (optional). Frontend currently uses comments from storage only.
+  } as Game;
 };
 
-export const incrementGameView = (id: string) => {
-  const games = loadGames();
-  const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, views: (game.views || 0) + 1 } : game
-  );
-  saveGames(updatedGames);
-  return updatedGames.find((game) => game.id === id);
+// --------------------
+// GAMES
+// --------------------
+export const loadGames = async (): Promise<Game[]> => {
+  // App ke code me is function ko sync treat kiya ja raha hai.
+  // Isliye browser me data load karne ke liye calling pages me useEffect async add karna padega.
+  // Lekin "instant" fallback ke liye we keep default games while fetch in progress.
+
+  // For now: fetch and return.
+  const { data, error } = await supabase
+    .from("games")
+    .select(
+      "id,title,category,description,cover,heroMedia,backgroundImage,size,developer,downloadLink,filePassword,downloadParts,trailer,screenshots,systemRequirements,featured,trending,gameOfTheDay,rating,downloads,views,releaseDate"
+    )
+    .order("releaseDate", { ascending: false });
+
+  if (error) {
+    console.error("loadGames error:", error);
+    return gamesData;
+  }
+
+  return (data ?? []).map(mapGameRowToGame);
 };
 
-export const incrementGameDownload = (id: string) => {
-  const games = loadGames();
-  const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, downloads: (game.downloads || 0) + 1 } : game
-  );
-  saveGames(updatedGames);
-  return updatedGames.find((game) => game.id === id);
+export const saveGames = async (games: Game[]): Promise<void> => {
+  // Upsert all games by primary key id.
+  const rows = games.map((g) => ({
+    id: g.id,
+    title: g.title,
+    category: g.category,
+    description: g.description,
+    cover: g.cover,
+    heroMedia: g.heroMedia ?? null,
+    backgroundImage: g.backgroundImage ?? null,
+    size: g.size ?? null,
+    developer: g.developer ?? null,
+    downloadLink: g.downloadLink ?? null,
+    filePassword: g.filePassword ?? null,
+    downloadParts: (g.downloadParts ?? []) as any,
+    trailer: g.trailer ?? null,
+    screenshots: (g.screenshots ?? []) as any,
+    systemRequirements: g.systemRequirements ?? ({ minimum: {}, recommended: {} } as any),
+    featured: !!g.featured,
+    trending: !!g.trending,
+    gameOfTheDay: !!g.gameOfTheDay,
+    rating: g.rating ?? 0,
+    downloads: g.downloads ?? 0,
+    views: g.views ?? 0,
+    releaseDate: g.releaseDate ?? null,
+  }));
+
+  const { error } = await supabase.from("games").upsert(rows, { onConflict: "id" });
+  if (error) console.error("saveGames error:", error);
 };
 
-export const incrementSiteViews = () => {
-  const analytics = loadSiteAnalytics();
-  const updatedAnalytics = {
-    ...analytics,
-    totalPageViews: analytics.totalPageViews + 1,
+export const getGameById = (id: string): Game | undefined => {
+  // Existing synchronous callers rely on local cache.
+  // Until pages are updated to await loadGames(), keep returning from static data.
+  // If you want fully correct behavior, update callers to use an async fetch.
+  return gamesData.find((g) => g.id === id);
+};
+
+export const incrementGameView = async (id: string): Promise<Game | undefined> => {
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    console.error("incrementGameView fetch error:", error);
+    return undefined;
+  }
+
+  const currentViews = (data?.views ?? 0) as number;
+  const newViews = currentViews + 1;
+
+  const { error: upErr } = await supabase.from("games").update({ views: newViews }).eq("id", id);
+  if (upErr) console.error("incrementGameView update error:", upErr);
+
+  return data ? mapGameRowToGame({ ...data, views: newViews }) : undefined;
+};
+
+export const incrementGameDownload = async (id: string): Promise<Game | undefined> => {
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    console.error("incrementGameDownload fetch error:", error);
+    return undefined;
+  }
+
+  const currentDownloads = (data?.downloads ?? 0) as number;
+  const newDownloads = currentDownloads + 1;
+
+  const { error: upErr } = await supabase.from("games").update({ downloads: newDownloads }).eq("id", id);
+  if (upErr) console.error("incrementGameDownload update error:", upErr);
+
+  return data ? mapGameRowToGame({ ...data, downloads: newDownloads }) : undefined;
+};
+
+export const incrementSiteViews = async (): Promise<SiteAnalytics | undefined> => {
+  const { data, error } = await supabase
+    .from("site_analytics")
+    .select("*")
+    .eq("id", 1)
+    .single();
+
+  if (error) {
+    console.error("incrementSiteViews fetch error:", error);
+    return undefined;
+  }
+
+  const current = (data?.totalPageViews ?? 0) as number;
+  const updated = {
+    totalPageViews: current + 1,
     lastUpdated: new Date().toISOString(),
   };
-  saveSiteAnalytics(updatedAnalytics);
-  return updatedAnalytics;
+
+  const { error: upErr } = await supabase.from("site_analytics").update(updated).eq("id", 1);
+  if (upErr) console.error("incrementSiteViews update error:", upErr);
+
+  return { totalPageViews: updated.totalPageViews, lastUpdated: updated.lastUpdated };
 };
 
-export const resetGameStorage = () => {
-  const storage = safeLocalStorage();
-  if (!storage) return;
-  storage.removeItem(GAMES_KEY);
-  storage.removeItem(SETTINGS_KEY);
-  storage.removeItem(CATEGORIES_KEY);
+export const resetGameStorage = async (): Promise<void> => {
+  const { error } = await supabase.from("games").delete().neq("id", "");
+  if (error) console.error("resetGameStorage error:", error);
 };
 
-export const loadCategories = (): string[] => {
-  const storage = safeLocalStorage();
-  if (!storage) return defaultCategories;
-
-  const raw = storage.getItem(CATEGORIES_KEY);
-  if (!raw) {
-    storage.setItem(CATEGORIES_KEY, JSON.stringify(defaultCategories));
+// --------------------
+// CATEGORIES
+// --------------------
+export const loadCategories = async (): Promise<string[]> => {
+  const { data, error } = await supabase.from("categories").select("name").order("name");
+  if (error) {
+    console.error("loadCategories error:", error);
     return defaultCategories;
   }
+  const names = (data ?? []).map((r: any) => r.name).filter(Boolean);
+  // keep existing UI expectation of having an "All" category in local code
+  return names.includes("All") ? names : ["All", ...names];
+};
 
-  try {
-    const parsed = JSON.parse(raw) as string[];
-    if (!Array.isArray(parsed)) throw new Error("Invalid categories payload");
-    return parsed;
-  } catch (error) {
-    console.error("Failed to parse categories storage, resetting to defaults.", error);
-    storage.setItem(CATEGORIES_KEY, JSON.stringify(defaultCategories));
-    return defaultCategories;
+export const saveCategories = async (cats: string[]): Promise<void> => {
+  // Upsert by name primary key.
+  const rows = cats
+    .filter(Boolean)
+    .map((name) => ({ name }));
+
+  const { error } = await supabase.from("categories").upsert(rows, { onConflict: "name" });
+  if (error) console.error("saveCategories error:", error);
+};
+
+// --------------------
+// SITE SETTINGS
+// --------------------
+export const loadSiteSettings = async (): Promise<SiteSettings> => {
+  const { data, error } = await supabase.from("site_settings").select("*").eq("id", 1).single();
+  if (error) {
+    console.error("loadSiteSettings error:", error);
+    return defaultSettings;
   }
+
+  return {
+    ...defaultSettings,
+    siteName: data?.siteName ?? defaultSettings.siteName,
+    logoUrl: data?.logoUrl ?? defaultSettings.logoUrl,
+    showLatestGames: data?.showLatestGames ?? defaultSettings.showLatestGames,
+    showMostViewed: data?.showMostViewed ?? defaultSettings.showMostViewed,
+    showGameOfTheDay: data?.showGameOfTheDay ?? defaultSettings.showGameOfTheDay,
+    showTrendingGames: data?.showTrendingGames ?? defaultSettings.showTrendingGames,
+    theme: (data?.theme ?? defaultSettings.theme) as any,
+    heroSliderGameIds: toJsonbArray<string>(data?.heroSliderGameIds, []),
+  };
 };
 
-export const saveCategories = (cats: string[]) => {
-  const storage = safeLocalStorage();
-  if (!storage) return;
-  storage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+export const saveSiteSettings = async (settings: SiteSettings): Promise<void> => {
+  const payload = {
+    id: 1,
+    siteName: settings.siteName,
+    logoUrl: settings.logoUrl,
+    showLatestGames: settings.showLatestGames,
+    showMostViewed: settings.showMostViewed,
+    showGameOfTheDay: settings.showGameOfTheDay,
+    showTrendingGames: settings.showTrendingGames,
+    theme: settings.theme,
+    heroSliderGameIds: (settings.heroSliderGameIds ?? []) as any,
+  };
+
+  const { error } = await supabase.from("site_settings").upsert(payload, { onConflict: "id" });
+  if (error) console.error("saveSiteSettings error:", error);
 };
+
+// --------------------
+// ANALYTICS
+// --------------------
+export const loadSiteAnalytics = async (): Promise<SiteAnalytics> => {
+  const { data, error } = await supabase.from("site_analytics").select("*").eq("id", 1).single();
+  if (error) {
+    console.error("loadSiteAnalytics error:", error);
+    return { totalPageViews: 0, lastUpdated: new Date().toISOString() };
+  }
+
+  return {
+    totalPageViews: data?.totalPageViews ?? 0,
+    lastUpdated: (data?.lastUpdated ?? new Date().toISOString()) as string,
+  };
+};
+
+export const saveSiteAnalytics = async (_analytics: SiteAnalytics): Promise<void> => {
+  // optional: you can implement update.
+};
+

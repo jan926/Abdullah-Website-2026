@@ -16,18 +16,29 @@ export default function SearchPage() {
   const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
-    const loadedGames = loadGames();
-    setGames(loadedGames);
-    const query = searchParams.get("q") || "";
-    setSearchQuery(query);
+    let mounted = true;
+    (async () => {
+      const loadedGames = await loadGames();
+      if (!mounted) return;
 
-    if (query.trim()) {
-      const filtered = fuzzySearch(query, loadedGames);
-      setResults(filtered);
-    } else {
-      setResults(loadedGames);
-    }
+      setGames(loadedGames);
+
+      const query = searchParams.get("q") || "";
+      setSearchQuery(query);
+
+      if (query.trim()) {
+        const filtered = fuzzySearch(query, loadedGames);
+        setResults(filtered);
+      } else {
+        setResults(loadedGames);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, [searchParams]);
+
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
