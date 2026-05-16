@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
-import { Game, categories as initialCategories } from "../data/games";
+import { Game, DownloadPart, categories as initialCategories } from "../data/games";
 import {
   loadGames,
   saveGames,
@@ -23,7 +23,7 @@ import {
 } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,10 +72,17 @@ export default function AdminPage() {
       minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
       recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" },
     },
+    heroMedia: "",
     featured: false,
     trending: false,
     gameOfTheDay: false,
+    heroFeatured: false,
+    filePassword: "",
+    tags: "",
+    useMultiPart: false,
+    downloadParts: [{ id: "part-1", name: "Part 1", link: "", size: "" }] as DownloadPart[],
   });
+  const [heroSelection, setHeroSelection] = useState<string[]>([]);
 
   // Settings State
   const [settings, setSettings] = useState<SiteSettings>(defaultAdminSettings);
@@ -92,7 +99,43 @@ export default function AdminPage() {
     setSettings(loadedSettings);
     setCategories(loadedCategories);
     setAnalytics(loadedAnalytics);
+    setHeroSelection(storedGames.filter((g) => g.heroFeatured).map((g) => g.id));
     setDbNeedsSetup(getDatabaseStatus() === "missing_tables");
+  };
+
+  const buildGameFromForm = (id: string, existing?: Game): Game => ({
+    id,
+    title: formData.title,
+    category: formData.category,
+    description: formData.description,
+    cover: formData.cover,
+    backgroundImage: formData.backgroundImage,
+    heroMedia: formData.heroMedia || undefined,
+    size: formData.size,
+    developer: formData.developer,
+    downloadLink: formData.downloadLink,
+    trailer: formData.trailer || undefined,
+    screenshots: formData.screenshots.filter(Boolean),
+    featured: formData.featured,
+    trending: formData.trending,
+    gameOfTheDay: formData.gameOfTheDay,
+    heroFeatured: formData.heroFeatured,
+    filePassword: formData.filePassword || undefined,
+    tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
+    downloadParts: formData.useMultiPart
+      ? formData.downloadParts.filter((p) => p.link.trim())
+      : undefined,
+    rating: existing?.rating ?? 0,
+    downloads: existing?.downloads ?? 0,
+    releaseDate: existing?.releaseDate ?? new Date().toISOString().split("T")[0],
+    systemRequirements: formData.systemRequirements,
+    comments: existing?.comments ?? [],
+    views: existing?.views,
+  });
+
+  const enforceHeroLimit = (gamesList: Game[], selectedIds: string[]) => {
+    const heroes = selectedIds.slice(0, 6);
+    return gamesList.map((g) => ({ ...g, heroFeatured: heroes.includes(g.id) }));
   };
 
   const tablesMissingMessage =
@@ -150,42 +193,35 @@ export default function AdminPage() {
 
     try {
       if (isEditing) {
-        const updatedGames = games.map((g) => {
-          if (g.id !== currentEditId) {
-            return formData.gameOfTheDay ? { ...g, gameOfTheDay: false } : g;
-          }
-          return { ...g, ...formData } as Game;
+        const existing = games.find((g) => g.id === currentEditId);
+        const updatedGame = buildGameFromForm(currentEditId, existing);
+        let updatedGames = games.map((g) => {
+          if (g.id === currentEditId) return updatedGame;
+          if (formData.gameOfTheDay) return { ...g, gameOfTheDay: false };
+          return g;
         });
+        if (formData.heroFeatured) {
+          const heroIds = [
+            currentEditId,
+            ...updatedGames.filter((g) => g.heroFeatured && g.id !== currentEditId).map((g) => g.id),
+          ].slice(0, 6);
+          updatedGames = enforceHeroLimit(updatedGames, heroIds);
+          setHeroSelection(heroIds);
+        }
         await saveGames(updatedGames);
         setGames(updatedGames);
         toast.success("Game updated successfully!");
       } else {
-        const newGame: Game = {
-          id: Math.random().toString(36).substr(2, 9),
-          title: formData.title,
-          category: formData.category,
-          description: formData.description,
-          cover: formData.cover,
-          size: formData.size,
-          developer: formData.developer,
-          downloadLink: formData.downloadLink,
-          trailer: formData.trailer,
-          backgroundImage: formData.backgroundImage,
-          screenshots: formData.screenshots.filter(Boolean),
-          featured: formData.featured,
-          trending: formData.trending,
-          gameOfTheDay: formData.gameOfTheDay,
-          rating: 0,
-          downloads: 0,
-          releaseDate: new Date().toISOString().split("T")[0],
-          systemRequirements: formData.systemRequirements,
-          comments: [],
-        };
-
-        const updatedGames = formData.gameOfTheDay
+        const newId = Math.random().toString(36).substr(2, 9);
+        const newGame = buildGameFromForm(newId);
+        let updatedGames = formData.gameOfTheDay
           ? [newGame, ...games.map((g) => ({ ...g, gameOfTheDay: false }))]
           : [newGame, ...games];
-
+        if (formData.heroFeatured) {
+          const heroIds = [newId, ...updatedGames.filter((g) => g.heroFeatured).map((g) => g.id)].slice(0, 6);
+          updatedGames = enforceHeroLimit(updatedGames, heroIds);
+          setHeroSelection(heroIds);
+        }
         await saveGames(updatedGames);
         setGames(updatedGames);
         toast.success("Game uploaded successfully!");
@@ -199,24 +235,33 @@ export default function AdminPage() {
   };
 
   const editGame = (game: Game) => {
+    const parts = game.downloadParts?.length
+      ? game.downloadParts
+      : [{ id: "part-1", name: "Part 1", link: "", size: "" }];
     setFormData({
       title: game.title,
       category: game.category,
       description: game.description,
       cover: game.cover,
       backgroundImage: game.backgroundImage || "",
+      heroMedia: game.heroMedia || "",
       size: game.size,
       developer: game.developer,
       downloadLink: game.downloadLink,
       trailer: game.trailer || "",
-      screenshots: [...game.screenshots],
+      screenshots: game.screenshots.length ? [...game.screenshots] : [""],
       systemRequirements: game.systemRequirements || {
         minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
-        recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" }
+        recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" },
       },
       featured: game.featured || false,
       trending: game.trending || false,
       gameOfTheDay: game.gameOfTheDay || false,
+      heroFeatured: game.heroFeatured || false,
+      filePassword: game.filePassword || "",
+      tags: (game.tags || []).join(", "),
+      useMultiPart: Boolean(game.downloadParts?.some((p) => p.link)),
+      downloadParts: parts,
     });
     setIsEditing(true);
     setCurrentEditId(game.id);
@@ -252,9 +297,15 @@ export default function AdminPage() {
         minimum: { os: "", processor: "", memory: "", graphics: "", storage: "" },
         recommended: { os: "", processor: "", memory: "", graphics: "", storage: "" },
       },
+      heroMedia: "",
       featured: false,
       trending: false,
       gameOfTheDay: false,
+      heroFeatured: false,
+      filePassword: "",
+      tags: "",
+      useMultiPart: false,
+      downloadParts: [{ id: "part-1", name: "Part 1", link: "", size: "" }],
     });
     setIsEditing(false);
     setCurrentEditId("");
@@ -312,6 +363,7 @@ export default function AdminPage() {
           <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
           <SidebarItem icon={Tags} label="Categories" value="categories" />
           <SidebarItem icon={Save} label="Game of the Day" value="gameofday" />
+          <SidebarItem icon={Sparkles} label="Hero Banner" value="hero" />
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
         </div>
         
@@ -597,14 +649,72 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">Use a direct image URL that ends with .jpg, .png, or .webp. Google Drive share links usually do not work.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Background Media URL</Label>
-                    <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="YouTube / video / image URL" />
-                    <p className="text-xs text-slate-500">Optional background media for the game hero/banner. Supports YouTube, MP4/WebM, direct image URLs, Google Drive, and Dropbox links.</p>
+                    <Label className="text-[var(--foreground)]">Homepage Hero Animation Image/Video URL</Label>
+                    <Input type="url" value={formData.heroMedia} onChange={e => setFormData({...formData, heroMedia: e.target.value})} className="border-[var(--border)]" placeholder="Separate image/video for homepage carousel" />
+                    <p className="text-xs text-slate-500">Used only on the homepage hero slider. Leave empty to use background image or cover.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Download Link</Label>
-                    <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
+                    <Label className="text-[var(--foreground)]">Game Page Background Media URL</Label>
+                    <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="YouTube / video / image URL" />
+                    <p className="text-xs text-slate-500">Shown on the game detail page header (not the homepage carousel).</p>
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">SEO Tags (comma separated)</Label>
+                    <Input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="border-[var(--border)]" placeholder="cyberpunk, open world, fps, free download" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">File Password (optional)</Label>
+                    <Input value={formData.filePassword} onChange={e => setFormData({...formData, filePassword: e.target.value})} className="border-[var(--border)]" placeholder="e.g. www.example.com" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4">
+                    <div>
+                      <Label className="text-[var(--foreground)]">Multi-part download</Label>
+                      <p className="text-xs text-slate-500">Enable if the game has multiple download parts</p>
+                    </div>
+                    <Switch checked={formData.useMultiPart} onCheckedChange={c => setFormData({...formData, useMultiPart: c})} />
+                  </div>
+                  {formData.useMultiPart ? (
+                    <div className="space-y-3 rounded-lg border border-[var(--border)] p-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[var(--foreground)]">Download Parts</Label>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setFormData({
+                          ...formData,
+                          downloadParts: [...formData.downloadParts, { id: `part-${Date.now()}`, name: `Part ${formData.downloadParts.length + 1}`, link: "", size: "" }],
+                        })}>
+                          <Plus className="h-3 w-3 mr-1" /> Add Part
+                        </Button>
+                      </div>
+                      {formData.downloadParts.map((part, i) => (
+                        <div key={part.id} className="grid gap-2 md:grid-cols-[1fr_1fr_120px_auto]">
+                          <Input value={part.name} onChange={e => {
+                            const downloadParts = [...formData.downloadParts];
+                            downloadParts[i] = { ...part, name: e.target.value };
+                            setFormData({ ...formData, downloadParts });
+                          }} placeholder="Part name" className="border-[var(--border)]" />
+                          <Input value={part.link} onChange={e => {
+                            const downloadParts = [...formData.downloadParts];
+                            downloadParts[i] = { ...part, link: e.target.value };
+                            setFormData({ ...formData, downloadParts });
+                          }} placeholder="Download URL" className="border-[var(--border)]" />
+                          <Input value={part.size || ""} onChange={e => {
+                            const downloadParts = [...formData.downloadParts];
+                            downloadParts[i] = { ...part, size: e.target.value };
+                            setFormData({ ...formData, downloadParts });
+                          }} placeholder="Size" className="border-[var(--border)]" />
+                          {formData.downloadParts.length > 1 && (
+                            <Button type="button" variant="outline" onClick={() => setFormData({ ...formData, downloadParts: formData.downloadParts.filter((_, idx) => idx !== i) })}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-[var(--foreground)]">Download Link</Label>
+                      <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required={!formData.useMultiPart} className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Trailer Video URL</Label>
                     <Input type="url" value={formData.trailer} onChange={e => setFormData({...formData, trailer: e.target.value})} className="border-[var(--border)]" placeholder="https://... .mp4" />
@@ -654,6 +764,13 @@ export default function AdminPage() {
                       <p className="text-sm text-[var(--muted-foreground)]">Add a 'Trending' badge and show in Most Viewed sections.</p>
                     </div>
                     <Switch checked={formData.trending} onCheckedChange={c => setFormData({...formData, trending: c})} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
+                    <div>
+                      <Label className="text-base text-[var(--foreground)] font-semibold">Homepage Hero Carousel</Label>
+                      <p className="text-sm text-[var(--muted-foreground)]">Top homepage slider (max 6 — use Hero Banner tab).</p>
+                    </div>
+                    <Switch checked={formData.heroFeatured} onCheckedChange={c => setFormData({...formData, heroFeatured: c})} />
                   </div>
                   <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
                     <div>
@@ -785,7 +902,10 @@ export default function AdminPage() {
               <div className="space-y-2">
                 <Label className="text-[var(--foreground)]">Site Logo URL</Label>
                 <Input value={settings.logoUrl} onChange={e => setSettings({...settings, logoUrl: e.target.value})} className="border-[var(--border)]" />
-                <p className="text-xs text-slate-500 mt-1">Accepts standard image URLs or figma:asset paths.</p>
+                <p className="text-xs text-slate-500 mt-1">Paste a direct image URL. Shown in navbar and browser tab.</p>
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo preview" className="mt-2 h-16 w-16 rounded-full object-cover border border-[var(--border)]" />
+                ) : null}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -816,6 +936,55 @@ export default function AdminPage() {
                   <Save className="h-4 w-4 mr-2" /> Save Global Settings
                 </Button>
               </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Hero Banner Tab */}
+        {activeTab === "hero" && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Homepage Hero Banner (max 6)</h1>
+            <p className="text-sm text-slate-500">Select games for the top homepage carousel. Add a separate Hero Animation URL when uploading each game.</p>
+            <Card className="p-6 border-[var(--border)] shadow-sm space-y-3">
+              {games.map((game) => (
+                <label key={game.id} className="flex cursor-pointer items-center gap-4 rounded-lg border border-[var(--border)] p-3 hover:bg-[var(--muted)]">
+                  <input
+                    type="checkbox"
+                    checked={heroSelection.includes(game.id)}
+                    onChange={() => {
+                      setHeroSelection((prev) => {
+                        if (prev.includes(game.id)) return prev.filter((id) => id !== game.id);
+                        if (prev.length >= 6) {
+                          toast.error("Maximum 6 hero games allowed");
+                          return prev;
+                        }
+                        return [...prev, game.id];
+                      });
+                    }}
+                    className="h-4 w-4"
+                  />
+                  <img src={game.cover} alt="" className="h-14 w-20 rounded object-cover" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-[var(--foreground)]">{game.title}</p>
+                    <p className="text-xs text-slate-500">{game.category}</p>
+                  </div>
+                </label>
+              ))}
+              <Button
+                className="bg-sky-500 hover:bg-sky-600 text-white"
+                onClick={async () => {
+                  const updated = enforceHeroLimit(games, heroSelection);
+                  setGames(updated);
+                  try {
+                    await saveGames(updated);
+                    toast.success("Hero banner updated!");
+                  } catch (error) {
+                    handleSaveError(error);
+                  }
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" /> Save Hero Games ({heroSelection.length}/6)
+              </Button>
             </Card>
           </div>
         )}
@@ -889,3 +1058,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
+
+

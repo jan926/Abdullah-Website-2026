@@ -2,40 +2,39 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames } from "../../lib/gameStore";
+import { getCategoryStyle } from "../../lib/categoryStyles";
 import { GameCard } from "../components/GameCard";
 import { ChevronLeft } from "lucide-react";
+import { Skeleton } from "../components/ui/skeleton";
 
 export default function CategoryPage() {
   const { category } = useParams();
-  const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : "";
+  const raw = category?.toLowerCase() || "";
+  const isAll = raw === "all";
+  const categoryName = isAll
+    ? "All"
+    : category
+      ? decodeURIComponent(category).charAt(0).toUpperCase() + decodeURIComponent(category).slice(1)
+      : "";
   const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     loadGames()
       .then(setGames)
-      .catch((error) => console.error("Failed to load games:", error));
+      .catch((error) => console.error("Failed to load games:", error))
+      .finally(() => setLoading(false));
   }, []);
 
-  const categoryGames = games.filter(
-    (game) => game.category.toLowerCase() === category?.toLowerCase()
-  );
+  const categoryGames = isAll
+    ? games
+    : games.filter((game) => game.category.toLowerCase() === raw);
 
-  const categoryColors: Record<string, string> = {
-    action: "from-blue-500 to-blue-700",
-    adventure: "from-orange-500 to-orange-700",
-    rpg: "from-purple-500 to-purple-700",
-    racing: "from-green-500 to-green-700",
-    survival: "from-red-500 to-red-700",
-    shooter: "from-cyan-500 to-cyan-700",
-    sports: "from-yellow-500 to-yellow-700",
-    strategy: "from-pink-500 to-pink-700",
-  };
-
-  const gradientClass = categoryColors[category?.toLowerCase() || ""] || "from-cyan-500 to-purple-500";
+  const gradientClass = isAll ? "from-indigo-500 to-purple-700" : getCategoryStyle(categoryName).gradient;
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* Category Header */}
       <div className={`bg-gradient-to-r ${gradientClass} py-16 relative overflow-hidden`}>
         <div className="absolute inset-0 bg-black/30" />
         <div className="container mx-auto px-6 relative z-10">
@@ -46,16 +45,25 @@ export default function CategoryPage() {
             <ChevronLeft className="h-5 w-5" />
             Back to Home
           </Link>
-          <h1 className="text-5xl font-bold text-white mb-4">{categoryName} Games</h1>
+          <h1 className="text-5xl font-bold text-white mb-4">
+            {isAll ? "All Games" : `${categoryName} Games`}
+          </h1>
           <p className="text-white/90 text-lg">
-            Discover {categoryGames.length} amazing {categoryName.toLowerCase()} games
+            {loading
+              ? "Loading games..."
+              : `Discover ${categoryGames.length} amazing ${isAll ? "" : categoryName.toLowerCase() + " "}games`}
           </p>
         </div>
       </div>
 
-      {/* Games Grid */}
       <div className="container mx-auto px-6 py-12">
-        {categoryGames.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-[380px] w-full rounded-xl" />
+            ))}
+          </div>
+        ) : categoryGames.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {categoryGames.map((game, index) => (
               <div key={game.id} className="stagger-item" style={{ animationDelay: `${index * 0.05}s` }}>
@@ -67,7 +75,7 @@ export default function CategoryPage() {
           <div className="text-center py-20">
             <h3 className="text-2xl font-bold text-white mb-2">No games found</h3>
             <p className="text-gray-400 mb-6">
-              We couldn't find any games in the {categoryName} category
+              {isAll ? "No games in the catalog yet." : `We couldn't find any games in the ${categoryName} category`}
             </p>
             <Link
               to="/"

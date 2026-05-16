@@ -37,6 +37,8 @@ export interface Game {
   heroMedia?: string;
   views?: number;
   gameOfTheDay?: boolean;
+  heroFeatured?: boolean;
+  tags?: string[];
 }
 
 export interface DownloadPart {

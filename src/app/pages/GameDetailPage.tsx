@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
+import { buildGameJsonLd, injectJsonLd, setDocumentMeta } from "../../lib/seo";
+import { DownloadPartsModal } from "../components/DownloadPartsModal";
+import { Skeleton } from "../components/ui/skeleton";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -27,25 +30,60 @@ export default function GameDetailPage() {
   const [comment, setComment] = useState("");
   const [showMinimum, setShowMinimum] = useState(true);
   const [relatedGames, setRelatedGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [downloadOpen, setDownloadOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
+    let active = true;
+    setLoading(true);
+    setGame(null);
+
     (async () => {
       try {
         const currentGame = await getGameById(id);
+        if (!active) return;
+
         if (!currentGame) {
           setGame(null);
           return;
         }
-        const updatedGame = await incrementGameView(id);
-        setGame(updatedGame || currentGame);
-        await incrementSiteViews();
+
+        setGame(currentGame);
+
+        setDocumentMeta({
+          title: `${currentGame.title} Download PC | Free Game`,
+          description: `Download ${currentGame.title} for PC free. ${currentGame.description.slice(0, 140)}... Size: ${currentGame.size}.`,
+          keywords: [
+            currentGame.title,
+            `${currentGame.title} download`,
+            `${currentGame.title} free download`,
+            currentGame.category,
+            currentGame.developer,
+            ...(currentGame.tags || []),
+          ].join(", "),
+          image: currentGame.cover,
+          url: `https://steamfree.games/game/${currentGame.id}`,
+          type: "article",
+        });
+        injectJsonLd("game-jsonld", buildGameJsonLd(currentGame));
+
+        incrementGameView(id).then((updated) => {
+          if (active && updated) setGame(updated);
+        });
+        incrementSiteViews().catch(() => undefined);
       } catch (error) {
         console.error("Failed to load game:", error);
-        setGame(null);
+        if (active) setGame(null);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -112,6 +150,22 @@ export default function GameDetailPage() {
     return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-[420px] w-full object-cover" />;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--background)]">
+        <Skeleton className="h-[420px] w-full rounded-none" />
+        <div className="container mx-auto grid gap-8 px-6 py-10 lg:grid-cols-[320px_1fr]">
+          <Skeleton className="h-[520px] w-full rounded-3xl" />
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-2/3" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!game) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -122,6 +176,8 @@ export default function GameDetailPage() {
       </div>
     );
   }
+
+  const hasDownloadParts = (game.downloadParts?.filter((p) => p.link).length ?? 0) > 0;
 
   const nextScreenshot = () => {
     if (game.screenshots.length === 0) return;
@@ -163,12 +219,18 @@ export default function GameDetailPage() {
   };
 
   const handleDownloadClick = async () => {
-    if (!game?.downloadLink) return;
+    if (!game) return;
+
+    if (hasDownloadParts) {
+      setDownloadOpen(true);
+      return;
+    }
+
+    if (!game.downloadLink) return;
+
     try {
       const updatedGame = await incrementGameDownload(game.id);
-      if (updatedGame) {
-        setGame(updatedGame);
-      }
+      if (updatedGame) setGame(updatedGame);
     } catch (error) {
       console.error("Failed to update download count:", error);
     }
@@ -196,10 +258,17 @@ export default function GameDetailPage() {
                   {game.trending && <Badge className="bg-pink-500/10 text-pink-300 border-pink-500/20">Popular</Badge>}
                   {game.gameOfTheDay && <Badge className="bg-orange-500/10 text-orange-300 border-orange-500/20">Game of the Day</Badge>}
                 </div>
-                <div className="mt-6">
-                  <Button onClick={handleDownloadClick} className="bg-cyan-500 hover:bg-cyan-600 text-white">
+                <div className="mt-6 space-y-4">
+                  <Button onClick={handleDownloadClick} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white neon-glow-cyan">
                     <Download className="mr-2 h-4 w-4" /> Download Now
                   </Button>
+                  {game.filePassword && (
+                    <div className="rounded-2xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/10 p-4 text-center shadow-lg shadow-amber-500/10">
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-200">Download Password</p>
+                      <p className="mt-2 text-2xl font-black text-amber-300">{game.filePassword}</p>
+                      <p className="mt-1 text-xs text-amber-100/80">Use this password when the host asks for extraction</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -405,6 +474,15 @@ export default function GameDetailPage() {
           </section>
         )}
       </div>
+
+      <DownloadPartsModal
+        open={downloadOpen}
+        onOpenChange={setDownloadOpen}
+        gameTitle={game.title}
+        downloadParts={game.downloadParts || []}
+        mainLink={game.downloadLink}
+        filePassword={game.filePassword}
+      />
     </div>
   );
 }

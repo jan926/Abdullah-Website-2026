@@ -5,6 +5,8 @@ import { Button } from "../components/ui/button";
 import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges } from "../../lib/gameStore";
+import { getCategoryStyle, getCategoryPath } from "../../lib/categoryStyles";
+import { LazyImage } from "../../components/LazyImage";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
@@ -25,38 +27,28 @@ export default function HomePage() {
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
 
-  const heroGames = games.slice(0, 5);
+  const heroGames = games.filter((g) => g.heroFeatured).slice(0, 6);
+  const fallbackHeroGames = games.slice(0, 6);
+  const displayHeroGames = heroGames.length > 0 ? heroGames : fallbackHeroGames;
   const trendingGames = games.filter((game) => game.trending).slice(0, 5);
   const latestGames = [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 12);
   const gameOfTheDay = games.filter((game) => game.gameOfTheDay).slice(0, 5);
 
-  const categoryColorMap: Record<string, { color: string; icon: string }> = {
-    "Action": { color: "bg-blue-500 hover:bg-blue-600", icon: "⚔️" },
-    "Adventure": { color: "bg-orange-500 hover:bg-orange-600", icon: "🗺️" },
-    "RPG": { color: "bg-purple-500 hover:bg-purple-600", icon: "🎮" },
-    "Racing": { color: "bg-green-500 hover:bg-green-600", icon: "🏎️" },
-    "Survival": { color: "bg-red-500 hover:bg-red-600", icon: "🔥" },
-    "Shooter": { color: "bg-cyan-500 hover:bg-cyan-600", icon: "🎯" },
-    "Sports": { color: "bg-yellow-500 hover:bg-yellow-600", icon: "⚽" },
-    "Strategy": { color: "bg-pink-500 hover:bg-pink-600", icon: "♟️" },
-  };
-
-  const categoryColors = categories.map(cat => ({
-    name: cat,
-    color: categoryColorMap[cat]?.color || "bg-gray-500 hover:bg-gray-600",
-    icon: categoryColorMap[cat]?.icon || "🎯",
-  }));
+  const categoryColors = categories.map((cat) => {
+    const style = getCategoryStyle(cat);
+    return { name: cat, color: style.color, icon: style.icon };
+  });
 
   const nextSlide = () => {
-    if (heroGames.length === 0) return;
-    setCurrentSlide((prev) => (prev + 1) % heroGames.length);
+    if (displayHeroGames.length === 0) return;
+    setCurrentSlide((prev) => (prev + 1) % displayHeroGames.length);
   };
 
   const prevSlide = () => {
-    if (heroGames.length === 0) return;
-    setCurrentSlide((prev) => (prev - 1 + heroGames.length) % heroGames.length);
+    if (displayHeroGames.length === 0) return;
+    setCurrentSlide((prev) => (prev - 1 + displayHeroGames.length) % displayHeroGames.length);
   };
 
   const scroll = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
@@ -93,23 +85,24 @@ export default function HomePage() {
   useEffect(() => {
     const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
-  }, [heroGames.length]);
+  }, [displayHeroGames.length]);
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
       <section className="relative h-[500px] overflow-hidden">
-        {heroGames.map((game, index) => (
+        {displayHeroGames.map((game, index) => (
           <div
             key={game.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${
               index === currentSlide ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none"
             }`}
           >
-            <img
-              src={game.backgroundImage || game.cover}
+            <LazyImage
+              src={game.heroMedia || game.backgroundImage || game.cover}
               alt={game.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover animate-ken-burns"
+              wrapperClassName="h-full w-full"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
             <div className="absolute inset-0 flex items-center">
@@ -156,7 +149,7 @@ export default function HomePage() {
 
             {/* Navigation Dots */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-              {heroGames.map((_, idx) => (
+              {displayHeroGames.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
@@ -192,8 +185,8 @@ export default function HomePage() {
             {[...categoryColors, ...categoryColors].map((cat, idx) => (
               <Link
                 key={`${cat.name}-${idx}`}
-                to={`/category/${cat.name.toLowerCase()}`}
-                onClick={(e) => {
+                to={getCategoryPath(cat.name)}
+                onClick={() => {
                   setActiveCategory(cat.name);
                 }}
                 className={`flex items-center gap-2 px-6 py-3 ${cat.color} text-white font-bold rounded-full whitespace-nowrap transition-all hover:scale-105 hover:shadow-lg ${
