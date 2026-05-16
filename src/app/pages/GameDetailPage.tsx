@@ -26,18 +26,36 @@ export default function GameDetailPage() {
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState("");
   const [showMinimum, setShowMinimum] = useState(true);
+  const [relatedGames, setRelatedGames] = useState<Game[]>([]);
 
   useEffect(() => {
     if (!id) return;
-    const currentGame = getGameById(id);
-    if (!currentGame) {
-      setGame(null);
-      return;
-    }
-    const updatedGame = incrementGameView(id);
-    setGame(updatedGame || currentGame);
-    incrementSiteViews();
+
+    (async () => {
+      try {
+        const currentGame = await getGameById(id);
+        if (!currentGame) {
+          setGame(null);
+          return;
+        }
+        const updatedGame = await incrementGameView(id);
+        setGame(updatedGame || currentGame);
+        await incrementSiteViews();
+      } catch (error) {
+        console.error("Failed to load game:", error);
+        setGame(null);
+      }
+    })();
   }, [id]);
+
+  useEffect(() => {
+    if (!game) return;
+    loadGames()
+      .then((all) =>
+        setRelatedGames(all.filter((g) => g.category === game.category && g.id !== game.id).slice(0, 4))
+      )
+      .catch((error) => console.error("Failed to load related games:", error));
+  }, [game?.id, game?.category]);
 
   const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
@@ -105,10 +123,6 @@ export default function GameDetailPage() {
     );
   }
 
-  const relatedGames = loadGames()
-    .filter((g) => g.category === game.category && g.id !== game.id)
-    .slice(0, 4);
-
   const nextScreenshot = () => {
     if (game.screenshots.length === 0) return;
     setCurrentScreenshot((prev) => (prev + 1) % game.screenshots.length);
@@ -119,9 +133,9 @@ export default function GameDetailPage() {
     setCurrentScreenshot((prev) => (prev - 1 + game.screenshots.length) % game.screenshots.length);
   };
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) return;
+    if (!comment.trim() || !game) return;
 
     const newComment = {
       id: Date.now().toString(),
@@ -136,18 +150,27 @@ export default function GameDetailPage() {
       comments: [...game.comments, newComment],
     };
 
-    const updatedGames = loadGames().map((g) => (g.id === game.id ? updatedGame : g));
-    saveGames(updatedGames);
-    setGame(updatedGame);
-    setComment("");
-    setUserRating(0);
+    try {
+      const allGames = await loadGames();
+      const updatedGames = allGames.map((g) => (g.id === game.id ? updatedGame : g));
+      await saveGames(updatedGames);
+      setGame(updatedGame);
+      setComment("");
+      setUserRating(0);
+    } catch (error) {
+      console.error("Failed to save comment:", error);
+    }
   };
 
-  const handleDownloadClick = () => {
+  const handleDownloadClick = async () => {
     if (!game?.downloadLink) return;
-    const updatedGame = incrementGameDownload(game.id);
-    if (updatedGame) {
-      setGame(updatedGame);
+    try {
+      const updatedGame = await incrementGameDownload(game.id);
+      if (updatedGame) {
+        setGame(updatedGame);
+      }
+    } catch (error) {
+      console.error("Failed to update download count:", error);
     }
     window.open(game.downloadLink, "_blank");
   };

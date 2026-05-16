@@ -6,8 +6,11 @@ import { loadSiteSettings } from "../lib/gameStore";
 
 export default function App() {
   useEffect(() => {
-    const settings = loadSiteSettings();
-    document.documentElement.classList.toggle("dark", settings.theme === "dark");
+    loadSiteSettings()
+      .then((settings) => {
+        document.documentElement.classList.toggle("dark", settings.theme === "dark");
+      })
+      .catch((error) => console.error("Failed to load site settings:", error));
   }, []);
 
   return (

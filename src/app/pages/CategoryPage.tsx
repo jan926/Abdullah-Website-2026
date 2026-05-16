@@ -11,7 +11,9 @@ export default function CategoryPage() {
   const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
-    setGames(loadGames());
+    loadGames()
+      .then(setGames)
+      .catch((error) => console.error("Failed to load games:", error));
   }, []);
 
   const categoryGames = games.filter(

@@ -8,12 +8,33 @@ import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
 import { Game, categories as initialCategories } from "../data/games";
-import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
+import {
+  loadGames,
+  saveGames,
+  loadSiteSettings,
+  saveSiteSettings,
+  SiteSettings,
+  loadCategories,
+  saveCategories,
+  loadSiteAnalytics,
+  SiteAnalytics,
+  subscribeToDataChanges,
+} from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
+
+const defaultAdminSettings: SiteSettings = {
+  siteName: "Download Your Games",
+  logoUrl: "",
+  showLatestGames: true,
+  showMostViewed: true,
+  showGameOfTheDay: true,
+  showTrendingGames: true,
+  theme: "dark",
+};
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -25,7 +46,11 @@ export default function AdminPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dailyGameId, setDailyGameId] = useState<string>("");
-  const [analytics, setAnalytics] = useState<SiteAnalytics>(loadSiteAnalytics());
+  const [analytics, setAnalytics] = useState<SiteAnalytics>({
+    totalPageViews: 0,
+    lastUpdated: new Date().toISOString(),
+  });
+  const [isLoading, setIsLoading] = useState(true);
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -51,26 +76,48 @@ export default function AdminPage() {
   });
 
   // Settings State
-  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+  const [settings, setSettings] = useState<SiteSettings>(defaultAdminSettings);
+
+  const refreshData = async () => {
+    const [storedGames, loadedSettings, loadedCategories, loadedAnalytics] = await Promise.all([
+      loadGames(),
+      loadSiteSettings(),
+      loadCategories(),
+      loadSiteAnalytics(),
+    ]);
+    setGames(storedGames);
+    setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
+    setSettings(loadedSettings);
+    setCategories(loadedCategories);
+    setAnalytics(loadedAnalytics);
+  };
 
   useEffect(() => {
     const authenticated = localStorage.getItem("adminAuthenticated");
     const username = localStorage.getItem("adminUsername");
-    
-    if (authenticated === "true" && username) {
-      setIsAuthenticated(true);
-      setAdminUsername(username);
-    } else {
+
+    if (authenticated !== "true" || !username) {
       navigate("/admin/login");
       return;
     }
 
-    const storedGames = loadGames();
-    setGames(storedGames);
-    setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
-    setSettings(loadSiteSettings());
-    setCategories(loadCategories());
-    setAnalytics(loadSiteAnalytics());
+    setIsAuthenticated(true);
+    setAdminUsername(username);
+
+    const load = async () => {
+      try {
+        await refreshData();
+      } catch {
+        toast.error("Failed to load data from Supabase. Check .env and run supabase/schema.sql");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
+    return subscribeToDataChanges(() => {
+      refreshData().catch(() => toast.error("Failed to sync latest data"));
+    });
   }, [navigate]);
 
   const handleLogout = () => {
@@ -80,53 +127,57 @@ export default function AdminPage() {
     navigate("/admin/login");
   };
 
-  const handleGameSubmit = (e: React.FormEvent) => {
+  const handleGameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isEditing) {
-      const updatedGames = games.map((g) => {
-        if (g.id !== currentEditId) {
-          return formData.gameOfTheDay ? { ...g, gameOfTheDay: false } : g;
-        }
-        return { ...g, ...formData } as Game;
-      });
-      setGames(updatedGames);
-      saveGames(updatedGames);
-      toast.success("Game updated successfully!");
-    } else {
-      const newGame: Game = {
-        id: Math.random().toString(36).substr(2, 9),
-        title: formData.title,
-        category: formData.category,
-        description: formData.description,
-        cover: formData.cover,
-        size: formData.size,
-        developer: formData.developer,
-        downloadLink: formData.downloadLink,
-        trailer: formData.trailer,
-        backgroundImage: formData.backgroundImage,
-        screenshots: formData.screenshots.filter(Boolean),
-        featured: formData.featured,
-        trending: formData.trending,
-        gameOfTheDay: formData.gameOfTheDay,
-        rating: 0,
-        downloads: 0,
-        releaseDate: new Date().toISOString().split("T")[0],
-        systemRequirements: formData.systemRequirements,
-        comments: []
-      };
+    try {
+      if (isEditing) {
+        const updatedGames = games.map((g) => {
+          if (g.id !== currentEditId) {
+            return formData.gameOfTheDay ? { ...g, gameOfTheDay: false } : g;
+          }
+          return { ...g, ...formData } as Game;
+        });
+        await saveGames(updatedGames);
+        setGames(updatedGames);
+        toast.success("Game updated successfully!");
+      } else {
+        const newGame: Game = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          cover: formData.cover,
+          size: formData.size,
+          developer: formData.developer,
+          downloadLink: formData.downloadLink,
+          trailer: formData.trailer,
+          backgroundImage: formData.backgroundImage,
+          screenshots: formData.screenshots.filter(Boolean),
+          featured: formData.featured,
+          trending: formData.trending,
+          gameOfTheDay: formData.gameOfTheDay,
+          rating: 0,
+          downloads: 0,
+          releaseDate: new Date().toISOString().split("T")[0],
+          systemRequirements: formData.systemRequirements,
+          comments: [],
+        };
 
-      const updatedGames = formData.gameOfTheDay
-        ? [newGame, ...games.map((g) => ({ ...g, gameOfTheDay: false }))]
-        : [newGame, ...games];
+        const updatedGames = formData.gameOfTheDay
+          ? [newGame, ...games.map((g) => ({ ...g, gameOfTheDay: false }))]
+          : [newGame, ...games];
 
-      setGames(updatedGames);
-      saveGames(updatedGames);
-      toast.success("Game uploaded successfully!");
+        await saveGames(updatedGames);
+        setGames(updatedGames);
+        toast.success("Game uploaded successfully!");
+      }
+
+      resetForm();
+      setActiveTab("games");
+    } catch {
+      toast.error("Failed to save game to database");
     }
-
-    resetForm();
-    setActiveTab("games");
   };
 
   const editGame = (game: Game) => {
@@ -154,12 +205,16 @@ export default function AdminPage() {
     setActiveTab("upload");
   };
 
-  const deleteGame = (id: string) => {
-    if (confirm("Are you sure you want to delete this game?")) {
-      const updatedGames = games.filter(g => g.id !== id);
+  const deleteGame = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this game?")) return;
+
+    try {
+      const updatedGames = games.filter((g) => g.id !== id);
+      await saveGames(updatedGames);
       setGames(updatedGames);
-      saveGames(updatedGames);
       toast.success("Game deleted");
+    } catch {
+      toast.error("Failed to delete game from database");
     }
   };
 
@@ -629,14 +684,18 @@ export default function AdminPage() {
             <Card className="p-6 border-[var(--border)] shadow-sm">
               <div className="flex gap-2 mb-6">
                 <Input placeholder="New Category Name..." className="border-[var(--border)]" id="new-category" />
-                <Button onClick={() => {
+                <Button onClick={async () => {
                   const val = (document.getElementById('new-category') as HTMLInputElement).value;
                   if (val && !categories.includes(val)) {
                     const newCategories = [...categories, val];
-                    setCategories(newCategories);
-                    saveCategories(newCategories);
-                    toast.success("Category added");
-                    (document.getElementById('new-category') as HTMLInputElement).value = '';
+                    try {
+                      await saveCategories(newCategories);
+                      setCategories(newCategories);
+                      toast.success("Category added");
+                      (document.getElementById('new-category') as HTMLInputElement).value = '';
+                    } catch {
+                      toast.error("Failed to save category");
+                    }
                   }
                 }} className="bg-sky-500 text-white hover:bg-sky-600"><Plus className="h-4 w-4 mr-2"/> Add</Button>
               </div>
@@ -646,11 +705,15 @@ export default function AdminPage() {
                   <div key={cat} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg bg-[var(--card)] hover:bg-[var(--muted)]">
                     <span className="font-medium text-[var(--foreground)]">{cat}</span>
                     {cat !== "All" && (
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => {
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={async () => {
                         const newCategories = categories.filter(c => c !== cat);
-                        setCategories(newCategories);
-                        saveCategories(newCategories);
-                        toast.success("Category removed");
+                        try {
+                          await saveCategories(newCategories);
+                          setCategories(newCategories);
+                          toast.success("Category removed");
+                        } catch {
+                          toast.error("Failed to remove category");
+                        }
                       }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -695,10 +758,14 @@ export default function AdminPage() {
               </div>
 
               <div className="pt-4 flex justify-end">
-                <Button onClick={() => {
-                  saveSiteSettings(settings);
-                  document.documentElement.classList.toggle("dark", settings.theme === "dark");
-                  toast.success("Settings saved successfully!");
+                <Button onClick={async () => {
+                  try {
+                    await saveSiteSettings(settings);
+                    document.documentElement.classList.toggle("dark", settings.theme === "dark");
+                    toast.success("Settings saved successfully!");
+                  } catch {
+                    toast.error("Failed to save settings");
+                  }
                 }} className="bg-sky-500 hover:bg-sky-600 text-white">
                   <Save className="h-4 w-4 mr-2" /> Save Global Settings
                 </Button>
@@ -733,14 +800,18 @@ export default function AdminPage() {
                 <Button variant="outline" onClick={() => setDailyGameId("")} className="border-[var(--border)]">
                   Clear
                 </Button>
-                <Button onClick={() => {
+                <Button onClick={async () => {
                   const updatedGames = games.map(g => ({
                     ...g,
                     gameOfTheDay: g.id === dailyGameId
                   }));
-                  setGames(updatedGames);
-                  saveGames(updatedGames);
-                  toast.success("Game of the Day updated!");
+                  try {
+                    await saveGames(updatedGames);
+                    setGames(updatedGames);
+                    toast.success("Game of the Day updated!");
+                  } catch {
+                    toast.error("Failed to update Game of the Day");
+                  }
                 }} className="bg-sky-500 hover:bg-sky-600 text-white">
                   <Save className="h-4 w-4 mr-2" /> Set as Game of the Day
                 </Button>

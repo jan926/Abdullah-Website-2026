@@ -16,9 +16,12 @@ export function Navbar() {
   useEffect(() => {
     const authenticated = localStorage.getItem("adminAuthenticated");
     setIsAdminAuthenticated(authenticated === "true");
-    const settings = loadSiteSettings();
-    setSiteName(settings.siteName || "Download Your Game");
-    setLogoUrl(settings.logoUrl || null);
+    loadSiteSettings()
+      .then((settings) => {
+        setSiteName(settings.siteName || "Download Your Game");
+        setLogoUrl(settings.logoUrl || null);
+      })
+      .catch((error) => console.error("Failed to load site settings:", error));
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {

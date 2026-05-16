@@ -4,7 +4,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
 import { Link } from "react-router";
 import { Game } from "../data/games";
-import { loadGames, loadSiteSettings, SiteSettings, loadCategories } from "../../lib/gameStore";
+import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges } from "../../lib/gameStore";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
@@ -12,7 +12,15 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
+  const [settings, setSettings] = useState<SiteSettings>({
+    siteName: "Download Your Games",
+    logoUrl: "",
+    showLatestGames: true,
+    showMostViewed: true,
+    showGameOfTheDay: true,
+    showTrendingGames: true,
+    theme: "dark",
+  });
   const trendingScrollRef = useRef<HTMLDivElement>(null);
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
@@ -62,12 +70,24 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const loadedGames = loadGames();
-    const loadedSettings = loadSiteSettings();
-    setGames(loadedGames);
-    setSettings(loadedSettings);
-    setCategories(loadCategories());
-    document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
+    const refresh = async () => {
+      try {
+        const [loadedGames, loadedSettings, loadedCategories] = await Promise.all([
+          loadGames(),
+          loadSiteSettings(),
+          loadCategories(),
+        ]);
+        setGames(loadedGames);
+        setSettings(loadedSettings);
+        setCategories(loadedCategories);
+        document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
+      } catch (error) {
+        console.error("Failed to load homepage data:", error);
+      }
+    };
+
+    refresh();
+    return subscribeToDataChanges(refresh);
   }, []);
 
   useEffect(() => {

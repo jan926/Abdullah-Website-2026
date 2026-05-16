@@ -12,22 +12,25 @@ export default function SearchPage() {
   const [results, setResults] = useState<Game[]>([]);
 
   useEffect(() => {
-    const games = loadGames();
     const query = searchParams.get("q") || "";
     setSearchQuery(query);
 
-    if (query.trim()) {
-      const filtered = games.filter(
-        (game) =>
-          game.title.toLowerCase().includes(query.toLowerCase()) ||
-          game.description.toLowerCase().includes(query.toLowerCase()) ||
-          game.category.toLowerCase().includes(query.toLowerCase()) ||
-          game.developer.toLowerCase().includes(query.toLowerCase())
-      );
-      setResults(filtered);
-    } else {
-      setResults(games);
-    }
+    loadGames()
+      .then((games) => {
+        if (query.trim()) {
+          const filtered = games.filter(
+            (game) =>
+              game.title.toLowerCase().includes(query.toLowerCase()) ||
+              game.description.toLowerCase().includes(query.toLowerCase()) ||
+              game.category.toLowerCase().includes(query.toLowerCase()) ||
+              game.developer.toLowerCase().includes(query.toLowerCase())
+          );
+          setResults(filtered);
+        } else {
+          setResults(games);
+        }
+      })
+      .catch((error) => console.error("Failed to load games for search:", error));
   }, [searchParams]);
 
   const handleSearch = (value: string) => {

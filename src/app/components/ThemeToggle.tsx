@@ -21,10 +21,10 @@ export function ThemeToggle() {
   const handleThemeChange = () => {
     const newTheme = isDark ? "light" : "dark";
     setTheme(newTheme);
-    
-    // Save to site settings
-    const settings = loadSiteSettings();
-    saveSiteSettings({ ...settings, theme: newTheme as "light" | "dark" });
+
+    loadSiteSettings()
+      .then((settings) => saveSiteSettings({ ...settings, theme: newTheme as "light" | "dark" }))
+      .catch((error) => console.error("Failed to save theme:", error));
   };
   
   return (
