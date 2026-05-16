@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
-import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
+import { getGameById, saveGame, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
