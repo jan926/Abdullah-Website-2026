@@ -19,10 +19,11 @@ import {
   loadSiteAnalytics,
   SiteAnalytics,
   subscribeToDataChanges,
+  getDatabaseStatus,
 } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +52,7 @@ export default function AdminPage() {
     lastUpdated: new Date().toISOString(),
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [dbNeedsSetup, setDbNeedsSetup] = useState(false);
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -90,6 +92,19 @@ export default function AdminPage() {
     setSettings(loadedSettings);
     setCategories(loadedCategories);
     setAnalytics(loadedAnalytics);
+    setDbNeedsSetup(getDatabaseStatus() === "missing_tables");
+  };
+
+  const tablesMissingMessage =
+    "Supabase tables are not created yet. Open Supabase → SQL Editor, paste supabase/schema.sql, and click Run. Then refresh this page.";
+
+  const handleSaveError = (error: unknown) => {
+    if (error instanceof Error && error.message === "TABLES_MISSING") {
+      setDbNeedsSetup(true);
+      toast.error(tablesMissingMessage);
+      return;
+    }
+    toast.error("Failed to save to database");
   };
 
   useEffect(() => {
@@ -107,8 +122,11 @@ export default function AdminPage() {
     const load = async () => {
       try {
         await refreshData();
+        if (getDatabaseStatus() === "missing_tables") {
+          toast.warning(tablesMissingMessage, { duration: 12000 });
+        }
       } catch {
-        toast.error("Failed to load data from Supabase. Check .env and run supabase/schema.sql");
+        toast.error("Could not connect to Supabase. Check your .env file and internet connection.");
       } finally {
         setIsLoading(false);
       }
@@ -116,7 +134,7 @@ export default function AdminPage() {
 
     load();
     return subscribeToDataChanges(() => {
-      refreshData().catch(() => toast.error("Failed to sync latest data"));
+      refreshData().catch(() => undefined);
     });
   }, [navigate]);
 
@@ -175,8 +193,8 @@ export default function AdminPage() {
 
       resetForm();
       setActiveTab("games");
-    } catch {
-      toast.error("Failed to save game to database");
+    } catch (error) {
+      handleSaveError(error);
     }
   };
 
@@ -213,8 +231,8 @@ export default function AdminPage() {
       await saveGames(updatedGames);
       setGames(updatedGames);
       toast.success("Game deleted");
-    } catch {
-      toast.error("Failed to delete game from database");
+    } catch (error) {
+      handleSaveError(error);
     }
   };
 
@@ -320,7 +338,35 @@ export default function AdminPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto bg-[var(--background)] p-8">
-        
+        {dbNeedsSetup && (
+          <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-950 dark:text-amber-100">
+            <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
+            <div className="space-y-2 text-sm">
+              <p className="font-semibold">Database setup required (one time)</p>
+              <p>{tablesMissingMessage}</p>
+              <p>
+                <a
+                  href="https://supabase.com/dashboard/project/suyawzhvjfdlbukcyunj/sql/new"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-sky-600 underline"
+                >
+                  Open Supabase SQL Editor
+                </a>
+                {" "}→ copy all code from <code className="rounded bg-black/10 px-1">supabase/schema.sql</code> → Run.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-amber-600/50"
+                onClick={() => refreshData().then(() => toast.success("Refreshed"))}
+              >
+                I ran the SQL — Refresh
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && (
           <div className="space-y-6 max-w-5xl mx-auto">
@@ -688,13 +734,13 @@ export default function AdminPage() {
                   const val = (document.getElementById('new-category') as HTMLInputElement).value;
                   if (val && !categories.includes(val)) {
                     const newCategories = [...categories, val];
+                    setCategories(newCategories);
                     try {
                       await saveCategories(newCategories);
-                      setCategories(newCategories);
                       toast.success("Category added");
                       (document.getElementById('new-category') as HTMLInputElement).value = '';
-                    } catch {
-                      toast.error("Failed to save category");
+                    } catch (error) {
+                      handleSaveError(error);
                     }
                   }
                 }} className="bg-sky-500 text-white hover:bg-sky-600"><Plus className="h-4 w-4 mr-2"/> Add</Button>
@@ -707,12 +753,12 @@ export default function AdminPage() {
                     {cat !== "All" && (
                       <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50 hover:text-red-600" onClick={async () => {
                         const newCategories = categories.filter(c => c !== cat);
+                        setCategories(newCategories);
                         try {
                           await saveCategories(newCategories);
-                          setCategories(newCategories);
                           toast.success("Category removed");
-                        } catch {
-                          toast.error("Failed to remove category");
+                        } catch (error) {
+                          handleSaveError(error);
                         }
                       }}>
                         <Trash2 className="h-4 w-4" />
@@ -763,8 +809,8 @@ export default function AdminPage() {
                     await saveSiteSettings(settings);
                     document.documentElement.classList.toggle("dark", settings.theme === "dark");
                     toast.success("Settings saved successfully!");
-                  } catch {
-                    toast.error("Failed to save settings");
+                  } catch (error) {
+                    handleSaveError(error);
                   }
                 }} className="bg-sky-500 hover:bg-sky-600 text-white">
                   <Save className="h-4 w-4 mr-2" /> Save Global Settings
@@ -805,12 +851,12 @@ export default function AdminPage() {
                     ...g,
                     gameOfTheDay: g.id === dailyGameId
                   }));
+                  setGames(updatedGames);
                   try {
                     await saveGames(updatedGames);
-                    setGames(updatedGames);
                     toast.success("Game of the Day updated!");
-                  } catch {
-                    toast.error("Failed to update Game of the Day");
+                  } catch (error) {
+                    handleSaveError(error);
                   }
                 }} className="bg-sky-500 hover:bg-sky-600 text-white">
                   <Save className="h-4 w-4 mr-2" /> Set as Game of the Day

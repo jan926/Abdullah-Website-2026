@@ -1,6 +1,31 @@
 import { gamesData, Game, categories as defaultCategories } from "../app/data/games";
 import { requireSupabase, isSupabaseConfigured } from "./supabaseClient";
 
+export type DatabaseStatus = "ready" | "missing_tables" | "not_configured" | "error";
+
+let databaseStatus: DatabaseStatus = isSupabaseConfigured ? "ready" : "not_configured";
+
+export const getDatabaseStatus = () => databaseStatus;
+
+const isTableMissingError = (error: unknown): boolean => {
+  const err = error as { code?: string; message?: string };
+  return (
+    err?.code === "PGRST205" ||
+    err?.message?.includes("Could not find the table") ||
+    err?.message?.includes("relation") ||
+    false
+  );
+};
+
+const handleSupabaseError = (error: unknown): never | void => {
+  if (isTableMissingError(error)) {
+    databaseStatus = "missing_tables";
+    return;
+  }
+  databaseStatus = "error";
+  throw error;
+};
+
 const GAMES_KEY = "dyg-games-v1";
 const SETTINGS_KEY = "dyg-site-settings-v1";
 const CATEGORIES_KEY = "dyg-categories-v1";
@@ -119,14 +144,20 @@ type ConfigRow = { id: string; payload: unknown };
 
 const rowToGame = (row: GameRow): Game => row.payload;
 
-const seedDatabaseIfEmpty = async () => {
+const seedDatabaseIfEmpty = async (): Promise<boolean> => {
   const client = requireSupabase();
   const { count, error: countError } = await client
     .from("games")
     .select("*", { count: "exact", head: true });
 
-  if (countError) throw countError;
-  if (count && count > 0) return;
+  if (countError) {
+    handleSupabaseError(countError);
+    return false;
+  }
+
+  databaseStatus = "ready";
+
+  if (count && count > 0) return true;
 
   const rows = gamesData.map((game) => ({
     id: game.id,
@@ -135,13 +166,23 @@ const seedDatabaseIfEmpty = async () => {
   }));
 
   const { error } = await client.from("games").insert(rows);
-  if (error) throw error;
+  if (error) {
+    handleSupabaseError(error);
+    return false;
+  }
 
-  await client.from("site_config").upsert([
+  const { error: configError } = await client.from("site_config").upsert([
     { id: "settings", payload: defaultSettings, updated_at: new Date().toISOString() },
     { id: "categories", payload: defaultCategories, updated_at: new Date().toISOString() },
     { id: "analytics", payload: defaultAnalytics(), updated_at: new Date().toISOString() },
   ]);
+
+  if (configError) {
+    handleSupabaseError(configError);
+    return false;
+  }
+
+  return true;
 };
 
 const getConfigPayload = async <T>(key: string, fallback: T): Promise<T> => {
@@ -152,7 +193,10 @@ const getConfigPayload = async <T>(key: string, fallback: T): Promise<T> => {
     .eq("id", key)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    handleSupabaseError(error);
+    return fallback;
+  }
   if (!data?.payload) return fallback;
   return data.payload as T;
 };
@@ -164,59 +208,91 @@ const setConfigPayload = async <T>(key: string, payload: T) => {
     payload,
     updated_at: new Date().toISOString(),
   });
-  if (error) throw error;
+  if (error) {
+    handleSupabaseError(error);
+    throw new Error("TABLES_MISSING");
+  }
 };
 
 // --- Public API ---
 
 export const loadGames = async (): Promise<Game[]> => {
-  if (!isSupabaseConfigured) return loadGamesLocal();
+  if (!isSupabaseConfigured) {
+    databaseStatus = "not_configured";
+    return loadGamesLocal();
+  }
 
-  const client = requireSupabase();
-  await seedDatabaseIfEmpty();
+  try {
+    const seeded = await seedDatabaseIfEmpty();
+    if (!seeded) return loadGamesLocal();
 
-  const { data, error } = await client
-    .from("games")
-    .select("id, payload")
-    .order("updated_at", { ascending: false });
+    const client = requireSupabase();
+    const { data, error } = await client
+      .from("games")
+      .select("id, payload")
+      .order("updated_at", { ascending: false });
 
-  if (error) throw error;
-  const games = (data as GameRow[]).map(rowToGame);
-  saveGamesLocal(games);
-  return games;
+    if (error) {
+      handleSupabaseError(error);
+      return loadGamesLocal();
+    }
+
+    databaseStatus = "ready";
+    const games = (data as GameRow[]).map(rowToGame);
+    saveGamesLocal(games);
+    return games;
+  } catch (error) {
+    if (isTableMissingError(error)) return loadGamesLocal();
+    throw error;
+  }
 };
 
 export const saveGames = async (games: Game[]) => {
-  if (!isSupabaseConfigured) {
-    saveGamesLocal(games);
-    return;
-  }
-
-  const client = requireSupabase();
-  const now = new Date().toISOString();
-  const rows = games.map((game) => ({
-    id: game.id,
-    payload: game,
-    updated_at: now,
-  }));
-
-  const { data: existing, error: fetchError } = await client.from("games").select("id");
-  if (fetchError) throw fetchError;
-
-  const newIds = new Set(games.map((g) => g.id));
-  const toDelete = (existing ?? []).map((r) => r.id).filter((id) => !newIds.has(id));
-
-  if (toDelete.length > 0) {
-    const { error: deleteError } = await client.from("games").delete().in("id", toDelete);
-    if (deleteError) throw deleteError;
-  }
-
-  if (rows.length > 0) {
-    const { error: upsertError } = await client.from("games").upsert(rows);
-    if (upsertError) throw upsertError;
-  }
-
   saveGamesLocal(games);
+
+  if (!isSupabaseConfigured) return;
+
+  try {
+    const seeded = await seedDatabaseIfEmpty();
+    if (!seeded) {
+      throw new Error("TABLES_MISSING");
+    }
+
+    const client = requireSupabase();
+    const now = new Date().toISOString();
+    const rows = games.map((game) => ({
+      id: game.id,
+      payload: game,
+      updated_at: now,
+    }));
+
+    const { data: existing, error: fetchError } = await client.from("games").select("id");
+    if (fetchError) {
+      handleSupabaseError(fetchError);
+      throw new Error("TABLES_MISSING");
+    }
+
+    const newIds = new Set(games.map((g) => g.id));
+    const toDelete = (existing ?? []).map((r) => r.id).filter((id) => !newIds.has(id));
+
+    if (toDelete.length > 0) {
+      const { error: deleteError } = await client.from("games").delete().in("id", toDelete);
+      if (deleteError) throw deleteError;
+    }
+
+    if (rows.length > 0) {
+      const { error: upsertError } = await client.from("games").upsert(rows);
+      if (upsertError) throw upsertError;
+    }
+
+    databaseStatus = "ready";
+  } catch (error) {
+    if (isTableMissingError(error) || (error as Error).message === "TABLES_MISSING") {
+      databaseStatus = "missing_tables";
+      throw new Error("TABLES_MISSING");
+    }
+    throw error;
+  }
 };
 
 export const getGameById = async (id: string): Promise<Game | undefined> => {
@@ -227,55 +303,73 @@ export const getGameById = async (id: string): Promise<Game | undefined> => {
 export const loadSiteSettings = async (): Promise<SiteSettings> => {
   if (!isSupabaseConfigured) return loadSiteSettingsLocal();
 
-  await seedDatabaseIfEmpty();
-  const settings = await getConfigPayload("settings", defaultSettings);
-  saveSiteSettingsLocal(settings);
-  return { ...defaultSettings, ...settings };
+  try {
+    const seeded = await seedDatabaseIfEmpty();
+    if (!seeded) return loadSiteSettingsLocal();
+    const settings = await getConfigPayload("settings", defaultSettings);
+    saveSiteSettingsLocal(settings);
+    return { ...defaultSettings, ...settings };
+  } catch (error) {
+    if (isTableMissingError(error)) return loadSiteSettingsLocal();
+    throw error;
+  }
 };
 
 export const saveSiteSettings = async (settings: SiteSettings) => {
-  if (!isSupabaseConfigured) {
-    saveSiteSettingsLocal(settings);
-    return;
-  }
-  await setConfigPayload("settings", settings);
   saveSiteSettingsLocal(settings);
+  if (!isSupabaseConfigured) return;
+
+  const seeded = await seedDatabaseIfEmpty();
+  if (!seeded) throw new Error("TABLES_MISSING");
+  await setConfigPayload("settings", settings);
 };
 
 export const loadSiteAnalytics = async (): Promise<SiteAnalytics> => {
   if (!isSupabaseConfigured) return loadSiteAnalyticsLocal();
 
-  await seedDatabaseIfEmpty();
-  const analytics = await getConfigPayload("analytics", defaultAnalytics());
-  saveSiteAnalyticsLocal(analytics);
-  return analytics;
+  try {
+    const seeded = await seedDatabaseIfEmpty();
+    if (!seeded) return loadSiteAnalyticsLocal();
+    const analytics = await getConfigPayload("analytics", defaultAnalytics());
+    saveSiteAnalyticsLocal(analytics);
+    return analytics;
+  } catch (error) {
+    if (isTableMissingError(error)) return loadSiteAnalyticsLocal();
+    throw error;
+  }
 };
 
 export const saveSiteAnalytics = async (analytics: SiteAnalytics) => {
-  if (!isSupabaseConfigured) {
-    saveSiteAnalyticsLocal(analytics);
-    return;
-  }
-  await setConfigPayload("analytics", analytics);
   saveSiteAnalyticsLocal(analytics);
+  if (!isSupabaseConfigured) return;
+
+  const seeded = await seedDatabaseIfEmpty();
+  if (!seeded) throw new Error("TABLES_MISSING");
+  await setConfigPayload("analytics", analytics);
 };
 
 export const loadCategories = async (): Promise<string[]> => {
   if (!isSupabaseConfigured) return loadCategoriesLocal();
 
-  await seedDatabaseIfEmpty();
-  const categories = await getConfigPayload("categories", defaultCategories);
-  saveCategoriesLocal(categories);
-  return categories;
+  try {
+    const seeded = await seedDatabaseIfEmpty();
+    if (!seeded) return loadCategoriesLocal();
+    const categories = await getConfigPayload("categories", defaultCategories);
+    saveCategoriesLocal(categories);
+    return categories;
+  } catch (error) {
+    if (isTableMissingError(error)) return loadCategoriesLocal();
+    throw error;
+  }
 };
 
 export const saveCategories = async (cats: string[]) => {
-  if (!isSupabaseConfigured) {
-    saveCategoriesLocal(cats);
-    return;
-  }
-  await setConfigPayload("categories", cats);
   saveCategoriesLocal(cats);
+  if (!isSupabaseConfigured) return;
+
+  const seeded = await seedDatabaseIfEmpty();
+  if (!seeded) throw new Error("TABLES_MISSING");
+  await setConfigPayload("categories", cats);
 };
 
 export const incrementGameView = async (id: string): Promise<Game | undefined> => {
@@ -324,7 +418,7 @@ export const resetGameStorage = async () => {
 
 /** Subscribe to live DB changes (optional, for open tabs) */
 export const subscribeToDataChanges = (onChange: () => void) => {
-  if (!isSupabaseConfigured) return () => {};
+  if (!isSupabaseConfigured || databaseStatus === "missing_tables") return () => {};
 
   const client = requireSupabase();
   const channel = client
