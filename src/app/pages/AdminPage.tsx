@@ -7,12 +7,11 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
-import { Game, categories as initialCategories, DownloadPart } from "../data/games";
+import { Game, categories as initialCategories } from "../data/games";
 import { loadGames, saveGames, loadSiteSettings, saveSiteSettings, SiteSettings, loadCategories, saveCategories, loadSiteAnalytics, SiteAnalytics } from "../../lib/gameStore";
-import { generateGameDescription, generateDeveloperName, generateSystemRequirements, isAiAvailable } from "../../lib/huggingFaceHelper";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, Zap, Loader
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,8 +25,7 @@ export default function AdminPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [dailyGameId, setDailyGameId] = useState<string>("");
-  const [analytics, setAnalytics] = useState<SiteAnalytics>({ totalPageViews: 0, lastUpdated: new Date().toISOString() });
-
+  const [analytics, setAnalytics] = useState<SiteAnalytics>(loadSiteAnalytics());
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -37,13 +35,10 @@ export default function AdminPage() {
     category: "",
     description: "",
     cover: "",
-    heroMedia: "",
     backgroundImage: "",
     size: "",
     developer: "",
     downloadLink: "",
-    filePassword: "",
-    downloadParts: [{id: "1", name: "", link: "", size: ""}],
     trailer: "",
     screenshots: [""],
     systemRequirements: {
@@ -56,84 +51,9 @@ export default function AdminPage() {
   });
 
   // Settings State
-  const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "Download Your Game",
-    logoUrl: "",
-    showLatestGames: true,
-    showMostViewed: true,
-    showGameOfTheDay: true,
-    showTrendingGames: true,
-    theme: "dark",
-    heroSliderGameIds: [],
-  });
-
-  const [heroSelectId, setHeroSelectId] = useState<string>("");
-
-  // AI Generation State
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiAvailable, setAiAvailable] = useState(false);
-
-  const handleGenerateDescription = async () => {
-    if (!formData.title.trim()) {
-      toast.error("Please enter a game title first");
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const description = await generateGameDescription(formData.title);
-      setFormData({ ...formData, description });
-      toast.success("Description generated!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate description");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleGenerateDeveloper = async () => {
-    if (!formData.title.trim()) {
-      toast.error("Please enter a game title first");
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const developer = await generateDeveloperName(formData.title);
-      setFormData({ ...formData, developer });
-      toast.success("Developer name generated!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate developer name");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleGenerateSystemRequirements = async () => {
-    if (!formData.title.trim()) {
-      toast.error("Please enter a game title first");
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const requirements = await generateSystemRequirements(formData.title);
-      setFormData({
-        ...formData,
-        systemRequirements: requirements,
-      });
-      toast.success("System requirements generated!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate system requirements");
-    } finally {
-      setAiLoading(false);
-    }
-  };
+  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
 
   useEffect(() => {
-    // Check if AI service is available
-    isAiAvailable().then(setAiAvailable);
-    
     const authenticated = localStorage.getItem("adminAuthenticated");
     const username = localStorage.getItem("adminUsername");
     
@@ -145,21 +65,12 @@ export default function AdminPage() {
       return;
     }
 
-    (async () => {
-      const [storedGames, loadedSettings, loadedCategories, loadedAnalytics] = await Promise.all([
-        loadGames(),
-        loadSiteSettings(),
-        loadCategories(),
-        loadSiteAnalytics(),
-      ]);
-
-      setGames(storedGames);
-      setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
-      setSettings(loadedSettings);
-      setCategories(loadedCategories);
-      setAnalytics(loadedAnalytics);
-    })();
-
+    const storedGames = loadGames();
+    setGames(storedGames);
+    setDailyGameId(storedGames.find((game) => game.gameOfTheDay)?.id ?? "");
+    setSettings(loadSiteSettings());
+    setCategories(loadCategories());
+    setAnalytics(loadSiteAnalytics());
   }, [navigate]);
 
   const handleLogout = () => {
@@ -189,12 +100,9 @@ export default function AdminPage() {
         category: formData.category,
         description: formData.description,
         cover: formData.cover,
-        heroMedia: formData.heroMedia,
         size: formData.size,
         developer: formData.developer,
         downloadLink: formData.downloadLink,
-        filePassword: formData.filePassword,
-        downloadParts: formData.downloadParts?.filter(p => p.link),
         trailer: formData.trailer,
         backgroundImage: formData.backgroundImage,
         screenshots: formData.screenshots.filter(Boolean),
@@ -227,13 +135,10 @@ export default function AdminPage() {
       category: game.category,
       description: game.description,
       cover: game.cover,
-      heroMedia: game.heroMedia || "",
       backgroundImage: game.backgroundImage || "",
       size: game.size,
       developer: game.developer,
       downloadLink: game.downloadLink,
-      filePassword: game.filePassword || "",
-      downloadParts: game.downloadParts || [{id: "1", name: "", link: "", size: ""}],
       trailer: game.trailer || "",
       screenshots: [...game.screenshots],
       systemRequirements: game.systemRequirements || {
@@ -264,13 +169,10 @@ export default function AdminPage() {
       category: "",
       description: "",
       cover: "",
-      heroMedia: "",
       backgroundImage: "",
       size: "",
       developer: "",
       downloadLink: "",
-      filePassword: "",
-      downloadParts: [{id: "1", name: "", link: "", size: ""}],
       trailer: "",
       screenshots: [""],
       systemRequirements: {
@@ -336,7 +238,6 @@ export default function AdminPage() {
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
           <SidebarItem icon={Upload} label={isEditing ? "Edit Game" : "Upload Game"} value="upload" />
           <SidebarItem icon={Tags} label="Categories" value="categories" />
-          <SidebarItem icon={Home} label="Homepage Hero" value="homepagehero" />
           <SidebarItem icon={Save} label="Game of the Day" value="gameofday" />
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
         </div>
@@ -551,11 +452,6 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">1</span> 
                   Basic Information
-                  {aiAvailable && (
-                    <span className="ml-auto text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full flex items-center gap-1">
-                      <Zap className="h-3 w-3" /> AI Ready
-                    </span>
-                  )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -574,31 +470,7 @@ export default function AdminPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
-                      {aiAvailable && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleGenerateDeveloper}
-                          disabled={aiLoading || !formData.title.trim()}
-                          className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
-                        >
-                          {aiLoading ? (
-                            <>
-                              <Loader className="h-3 w-3 mr-1 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="h-3 w-3 mr-1" />
-                              Generate
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
+                    <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
                     <Input value={formData.developer} onChange={e => setFormData({...formData, developer: e.target.value})} className="border-[var(--border)]" />
                   </div>
                   <div className="space-y-2">
@@ -606,31 +478,7 @@ export default function AdminPage() {
                     <Input value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} placeholder="e.g. 45 GB" className="border-[var(--border)]" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[var(--foreground)]">Description</Label>
-                      {aiAvailable && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleGenerateDescription}
-                          disabled={aiLoading || !formData.title.trim()}
-                          className="text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
-                        >
-                          {aiLoading ? (
-                            <>
-                              <Loader className="h-3 w-3 mr-1 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Zap className="h-3 w-3 mr-1" />
-                              Generate
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
+                    <Label className="text-[var(--foreground)]">Description</Label>
                     <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="h-32 border-[var(--border)]" required />
                   </div>
                 </div>
@@ -648,62 +496,13 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">Use a direct image URL that ends with .jpg, .png, or .webp. Google Drive share links usually do not work.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Homepage Hero Image URL</Label>
-                    <Input type="url" value={formData.heroMedia} onChange={e => setFormData({...formData, heroMedia: e.target.value})} className="border-[var(--border)]" placeholder="https://..." />
-                    <p className="text-xs text-slate-500">Optional hero image used on the homepage animation slider. If set, it overrides the first screenshot or background media.</p>
-                  </div>
-                  <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Background Media URL</Label>
                     <Input type="url" value={formData.backgroundImage} onChange={e => setFormData({...formData, backgroundImage: e.target.value})} className="border-[var(--border)]" placeholder="YouTube / video / image URL" />
                     <p className="text-xs text-slate-500">Optional background media for the game hero/banner. Supports YouTube, MP4/WebM, direct image URLs, Google Drive, and Dropbox links.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Main Download Link</Label>
+                    <Label className="text-[var(--foreground)]">Download Link</Label>
                     <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
-                    <p className="text-xs text-slate-500">Primary download link. Optional if using download parts.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">File Password</Label>
-                    <Input value={formData.filePassword} onChange={e => setFormData({...formData, filePassword: e.target.value})} className="border-[var(--border)]" placeholder="Password for the download file" />
-                    <p className="text-xs text-slate-500">Optional password that will be displayed beneath the download button on the game page.</p>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[var(--foreground)]">Download Parts (Multi-Part)</Label>
-                      <Button type="button" size="sm" variant="outline" onClick={() => {
-                        const newId = Math.random().toString(36).substr(2, 9);
-                        setFormData({...formData, downloadParts: [...(formData.downloadParts || []), {id: newId, name: "", link: "", size: ""}]});
-                      }}>
-                        <Plus className="h-3 w-3 mr-1" /> Add Part
-                      </Button>
-                    </div>
-                    <p className="text-xs text-slate-500">For multi-part games (e.g., Part 1, Part 2). Leave empty if using a single main download link.</p>
-                    {formData.downloadParts?.map((part, i) => (
-                      <div key={part.id} className="space-y-2 p-3 border border-[var(--border)] rounded-lg bg-[rgba(255,255,255,0.02)]">
-                        <div className="flex gap-2">
-                          <Input value={part.name} onChange={e => {
-                            const newParts = [...(formData.downloadParts || [])];
-                            newParts[i].name = e.target.value;
-                            setFormData({...formData, downloadParts: newParts});
-                          }} className="border-[var(--border)] flex-1" placeholder="e.g. Part 1, Part 2" />
-                          {(formData.downloadParts?.length || 0) > 1 && (
-                            <Button type="button" variant="outline" onClick={() => setFormData({...formData, downloadParts: formData.downloadParts?.filter((_, idx) => idx !== i)})} className="text-red-500 px-3">
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <Input type="url" value={part.link} onChange={e => {
-                          const newParts = [...(formData.downloadParts || [])];
-                          newParts[i].link = e.target.value;
-                          setFormData({...formData, downloadParts: newParts});
-                        }} className="border-[var(--border)]" placeholder="Download link for this part" />
-                        <Input value={part.size || ""} onChange={e => {
-                          const newParts = [...(formData.downloadParts || [])];
-                          newParts[i].size = e.target.value;
-                          setFormData({...formData, downloadParts: newParts});
-                        }} className="border-[var(--border)]" placeholder="Size (optional, e.g. 5 GB)" />
-                      </div>
-                    ))}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Trailer Video URL</Label>
@@ -717,7 +516,6 @@ export default function AdminPage() {
                         <Plus className="h-3 w-3 mr-1" /> Add Image
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">Use a direct image URL (.jpg/.png/.webp) or short video URL (.mp4/.webm/.ogg). The first screenshot is also used as the homepage hero fallback when no background media is set.</p>
                     {formData.screenshots.map((s, i) => (
                       <div key={i} className="flex gap-2">
                         <Input value={s} onChange={e => {
@@ -769,28 +567,6 @@ export default function AdminPage() {
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
-                  {aiAvailable && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={handleGenerateSystemRequirements}
-                      disabled={aiLoading || !formData.title.trim()}
-                      className="ml-auto text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
-                    >
-                      {aiLoading ? (
-                        <>
-                          <Loader className="h-3 w-3 mr-1 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="h-3 w-3 mr-1" />
-                          Generate All
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -881,127 +657,6 @@ export default function AdminPage() {
                     )}
                   </div>
                 ))}
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* Homepage Hero Tab */}
-        {activeTab === "homepagehero" && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-2xl font-bold text-[var(--foreground)]">Homepage Hero Slider</h1>
-            <Card className="p-6 border-[var(--border)] shadow-sm space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[var(--foreground)]">Choose Hero Slider Games</Label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <Select value={heroSelectId} onValueChange={setHeroSelectId}>
-                    <SelectTrigger className="border-[var(--border)]">
-                      <SelectValue placeholder="Select a game to add" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {games.map(game => (
-                        <SelectItem key={game.id} value={game.id}>{game.title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    onClick={() => {
-                      if (!heroSelectId) return;
-                      if (settings.heroSliderGameIds.includes(heroSelectId)) {
-                        toast.error("Game is already in the hero slider");
-                        return;
-                      }
-                      if (settings.heroSliderGameIds.length >= 6) {
-                        toast.error("Hero slider can contain up to 6 games");
-                        return;
-                      }
-                      setSettings({
-                        ...settings,
-                        heroSliderGameIds: [...settings.heroSliderGameIds, heroSelectId],
-                      });
-                      setHeroSelectId("");
-                    }}
-                    className="bg-sky-500 hover:bg-sky-600 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add to Slider
-                  </Button>
-                </div>
-                <p className="text-xs text-slate-500">Select up to 6 games that should appear in the homepage hero animation.</p>
-              </div>
-
-              <div className="space-y-4">
-                {settings.heroSliderGameIds.length === 0 ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">No hero games selected yet.</p>
-                ) : (
-                  settings.heroSliderGameIds.map((id, index) => {
-                    const game = games.find((g) => g.id === id);
-                    if (!game) return null;
-
-                    return (
-                      <div key={id} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 rounded-2xl border border-[var(--border)] bg-[var(--card)]">
-                        <div className="flex items-center gap-3 flex-1">
-                          <img src={game.cover} alt={game.title} className="w-20 h-20 rounded-lg object-cover" />
-                          <div>
-                            <p className="font-semibold text-[var(--foreground)]">{game.title}</p>
-                            <p className="text-sm text-[var(--muted-foreground)]">{game.category}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={index === 0}
-                            onClick={() => {
-                              const newOrder = [...settings.heroSliderGameIds];
-                              [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-                              setSettings({ ...settings, heroSliderGameIds: newOrder });
-                            }}
-                          >
-                            Up
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={index === settings.heroSliderGameIds.length - 1}
-                            onClick={() => {
-                              const newOrder = [...settings.heroSliderGameIds];
-                              [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-                              setSettings({ ...settings, heroSliderGameIds: newOrder });
-                            }}
-                          >
-                            Down
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500"
-                            onClick={() => setSettings({
-                              ...settings,
-                              heroSliderGameIds: settings.heroSliderGameIds.filter((gameId) => gameId !== id),
-                            })}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  onClick={() => {
-                    saveSiteSettings(settings);
-                    toast.success("Homepage hero games saved successfully!");
-                  }}
-                  className="bg-sky-500 hover:bg-sky-600 text-white"
-                >
-                  <Save className="h-4 w-4 mr-2" /> Save Hero Slider
-                </Button>
               </div>
             </Card>
           </div>

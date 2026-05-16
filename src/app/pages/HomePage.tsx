@@ -5,54 +5,20 @@ import { Button } from "../components/ui/button";
 import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories } from "../../lib/gameStore";
-
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>([]);
-  const [fallbackTrendingGames, setFallbackTrendingGames] = useState<Game[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "Download Your Games",
-    logoUrl: "",
-    showLatestGames: true,
-    showMostViewed: true,
-    showGameOfTheDay: true,
-    showTrendingGames: true,
-    theme: "dark",
-    heroSliderGameIds: [],
-  });
-
+  const [settings, setSettings] = useState<SiteSettings>(loadSiteSettings());
   const trendingScrollRef = useRef<HTMLDivElement>(null);
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
 
-  const heroGames = (() => {
-    const selectedIds = settings.heroSliderGameIds || [];
-    const selectedGames = selectedIds
-      .map((id) => games.find((game) => game.id === id))
-      .filter((game): game is Game => Boolean(game));
-
-    if (selectedGames.length > 0) {
-      const remainingGames = games.filter((game) => !selectedIds.includes(game.id)).slice(0, 5 - selectedGames.length);
-      return [...selectedGames, ...remainingGames];
-    }
-
-    return games.slice(0, 5);
-  })();
-  const trendingGames = (() => {
-    const trending = games.filter((game) => game.trending).slice(0, 5);
-    if (trending.length > 0) {
-      return trending;
-    }
-
-    return fallbackTrendingGames.length > 0
-      ? fallbackTrendingGames
-      : games.slice(0, Math.min(3, games.length));
-  })();
-
+  const heroGames = games.slice(0, 5);
+  const trendingGames = games.filter((game) => game.trending).slice(0, 5);
   const latestGames = [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 12);
@@ -69,98 +35,11 @@ export default function HomePage() {
     "Strategy": { color: "bg-pink-500 hover:bg-pink-600", icon: "♟️" },
   };
 
-  const getColorForCategory = (cat: string): { color: string; icon: string } => {
-    if (categoryColorMap[cat]) {
-      return categoryColorMap[cat];
-    }
-
-    // Generate consistent color for new categories based on name hash
-    const colors = [
-      { color: "bg-indigo-500 hover:bg-indigo-600", icon: "🎪" },
-      { color: "bg-teal-500 hover:bg-teal-600", icon: "🌊" },
-      { color: "bg-rose-500 hover:bg-rose-600", icon: "💎" },
-      { color: "bg-amber-500 hover:bg-amber-600", icon: "⭐" },
-      { color: "bg-emerald-500 hover:bg-emerald-600", icon: "🌳" },
-      { color: "bg-fuchsia-500 hover:bg-fuchsia-600", icon: "🎭" },
-      { color: "bg-lime-500 hover:bg-lime-600", icon: "🚀" },
-      { color: "bg-sky-500 hover:bg-sky-600", icon: "☁️" },
-    ];
-
-    let hash = 0;
-    for (let i = 0; i < cat.length; i++) {
-      hash = ((hash << 5) - hash) + cat.charCodeAt(i);
-      hash = hash & hash;
-    }
-
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
-  };
-
   const categoryColors = categories.map(cat => ({
     name: cat,
-    ...getColorForCategory(cat),
+    color: categoryColorMap[cat]?.color || "bg-gray-500 hover:bg-gray-600",
+    icon: categoryColorMap[cat]?.icon || "🎯",
   }));
-
-  const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
-  const getYouTubeId = (url: string) => {
-    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
-  };
-
-  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
-  const isImageUrl = (url: string) => /\.(jpe?g|png|webp|gif|avif|svg)(\?.*)?$/i.test(url);
-
-  const normalizeMediaUrl = (url: string) => {
-    if (url.includes("drive.google.com")) {
-      const idMatch = url.match(/(?:file\/d\/|id=)([A-Za-z0-9_-]+)/);
-      if (idMatch) {
-        return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
-      }
-    }
-    if (url.includes("dropbox.com")) {
-      return url.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace("?dl=0", "?raw=1");
-    }
-
-    return url;
-  };
-
-  const renderHeroMedia = (src: string, alt: string) => {
-    const mediaUrl = normalizeMediaUrl(src);
-
-    if (isYouTubeUrl(mediaUrl)) {
-      const id = getYouTubeId(mediaUrl) || "";
-      return (
-        <iframe
-          title={alt}
-          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
-          className="w-full h-full object-cover object-center"
-          allow="autoplay; encrypted-media"
-        />
-      );
-    }
-
-    if (isVideoUrl(mediaUrl)) {
-      return (
-        <video
-          src={mediaUrl}
-          className="w-full h-full object-cover object-center"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        />
-      );
-    }
-
-    return (
-      <ImageWithFallback
-        src={mediaUrl}
-        alt={alt}
-        className="w-full h-full object-cover object-center"
-      />
-    );
-  };
 
   const nextSlide = () => {
     if (heroGames.length === 0) return;
@@ -183,35 +62,13 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const [loadedGames, loadedSettings, loadedCategories] = await Promise.all([
-        loadGames(),
-        loadSiteSettings(),
-        loadCategories(),
-      ]);
-      if (!mounted) return;
-
-      setGames(loadedGames);
-
-      const trending = loadedGames.filter((game) => game.trending);
-      if (trending.length === 0 && loadedGames.length > 0) {
-        const shuffled = [...loadedGames].sort(() => Math.random() - 0.5);
-        setFallbackTrendingGames(shuffled.slice(0, Math.min(3, loadedGames.length)));
-      } else {
-        setFallbackTrendingGames([]);
-      }
-
-      setSettings(loadedSettings);
-      setCategories(loadedCategories);
-      document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
-    })();
-
-    return () => {
-      mounted = false;
-    };
+    const loadedGames = loadGames();
+    const loadedSettings = loadSiteSettings();
+    setGames(loadedGames);
+    setSettings(loadedSettings);
+    setCategories(loadCategories());
+    document.documentElement.classList.toggle("dark", loadedSettings.theme === "dark");
   }, []);
-
 
   useEffect(() => {
     const interval = setInterval(nextSlide, 5000);
@@ -221,7 +78,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[540px] md:h-[580px] overflow-hidden">
+      <section className="relative h-[500px] overflow-hidden">
         {heroGames.map((game, index) => (
           <div
             key={game.id}
@@ -229,7 +86,11 @@ export default function HomePage() {
               index === currentSlide ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none"
             }`}
           >
-            {renderHeroMedia(game.heroMedia || game.backgroundImage || game.screenshots?.[0] || game.cover, game.title)}
+            <img
+              src={game.backgroundImage || game.cover}
+              alt={game.title}
+              className="w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
             <div className="absolute inset-0 flex items-center">
               <div className="container mx-auto px-6">

@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
-import { getGameById, saveGame, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
+import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
 import { GameCard } from "../components/GameCard";
-import { DownloadPartsModal } from "../components/DownloadPartsModal";
-import { getRecommendedGames } from "../../lib/aiHelpers";
 import {
   Download,
   Star,
@@ -28,7 +26,6 @@ export default function GameDetailPage() {
   const [userRating, setUserRating] = useState(0);
   const [comment, setComment] = useState("");
   const [showMinimum, setShowMinimum] = useState(true);
-  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -41,76 +38,6 @@ export default function GameDetailPage() {
     setGame(updatedGame || currentGame);
     incrementSiteViews();
   }, [id]);
-
-  // Refs for background media control
-  const bgVideoRef = useRef<HTMLVideoElement | null>(null);
-  const ytPlayerRef = useRef<any>(null);
-
-  // Ensure background video and YouTube volumes are set to ~40%
-  useEffect(() => {
-    if (!game) return;
-
-    // Local video element
-    if (bgVideoRef.current) {
-      try {
-        bgVideoRef.current.volume = 0.2;
-        // Unmute so volume takes effect
-        bgVideoRef.current.muted = false;
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    // YouTube iframe: use Player API to set volume
-    const mediaUrl = game.backgroundImage || "";
-    if (isYouTubeUrl(mediaUrl)) {
-      const vid = getYouTubeId(mediaUrl) || "";
-      const iframeId = `yt-bg-${vid}`;
-
-      const initYT = () => {
-        try {
-          // @ts-ignore
-          if (window.YT && window.YT.Player) {
-            // @ts-ignore
-            ytPlayerRef.current = new window.YT.Player(iframeId, {
-              events: {
-                onReady: (event: any) => {
-                  try {
-                    event.target.unMute && event.target.unMute();
-                    event.target.setVolume && event.target.setVolume(20);
-                  } catch (err) {}
-                }
-              }
-            });
-          }
-        } catch (err) {
-          // ignore
-        }
-      };
-
-      // Load YT API if needed
-      if (typeof window !== 'undefined') {
-        // @ts-ignore
-        if (!window.YT) {
-          const tag = document.createElement('script');
-          tag.src = "https://www.youtube.com/iframe_api";
-          document.body.appendChild(tag);
-          // YouTube API will call onYouTubeIframeAPIReady
-          // Attach ready handler
-          // @ts-ignore
-          window.onYouTubeIframeAPIReady = initYT;
-        } else {
-          initYT();
-        }
-      }
-    }
-
-    return () => {
-      try {
-        if (ytPlayerRef.current && ytPlayerRef.current.destroy) ytPlayerRef.current.destroy();
-      } catch (e) {}
-    };
-  }, [game]);
 
   const isYouTubeUrl = (url: string) => /youtube\.com|youtu\.be/.test(url);
   const getYouTubeId = (url: string) => {
@@ -132,51 +59,6 @@ export default function GameDetailPage() {
     return url;
   };
 
-  const renderMediaElement = (src: string, alt: string, className: string, isThumbnail = false) => {
-    const mediaUrl = normalizeMediaUrl(src);
-
-    if (isYouTubeUrl(mediaUrl)) {
-      if (isThumbnail) {
-        return (
-          <div className={`relative overflow-hidden ${className}`}>
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs uppercase tracking-[0.14em] text-white">YouTube</div>
-          </div>
-        );
-      }
-
-      const id = getYouTubeId(mediaUrl) || "";
-      // enable JS API so we can set volume programmatically
-      const iframeId = `yt-bg-${id}`;
-      const srcWithApi = `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=1&loop=1&playlist=${id}&enablejsapi=1`;
-      return (
-        <iframe
-          id={iframeId}
-          title={alt}
-          src={srcWithApi}
-          className={className}
-          allow="autoplay; encrypted-media; fullscreen"
-        />
-      );
-    }
-
-    if (isVideoUrl(mediaUrl)) {
-      return (
-        <video
-          ref={isThumbnail ? undefined : bgVideoRef}
-          src={mediaUrl}
-          className={className}
-          autoPlay
-          loop
-          playsInline
-          controls={isThumbnail}
-          preload={isThumbnail ? "metadata" : "auto"}
-        />
-      );
-    }
-
-    return <ImageWithFallback src={mediaUrl} alt={alt} className={className} />;
-  };
-
   const renderBackgroundMedia = () => {
     if (!game.backgroundImage) {
       return <div className="h-[420px] w-full bg-gradient-to-br from-slate-800 to-slate-900" />;
@@ -189,7 +71,7 @@ export default function GameDetailPage() {
       return (
         <iframe
           title="Game background video"
-          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=0&controls=1&loop=1&playlist=${id}`}
+          src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
           className="h-[420px] w-full object-cover"
           allow="autoplay; encrypted-media"
         />
@@ -202,9 +84,9 @@ export default function GameDetailPage() {
           src={mediaUrl}
           className="h-[420px] w-full object-cover"
           autoPlay
+          muted
           loop
           playsInline
-          controls
         />
       );
     }
@@ -223,8 +105,9 @@ export default function GameDetailPage() {
     );
   }
 
-  const allGames = loadGames();
-  const relatedGames = getRecommendedGames(game, allGames, 4);
+  const relatedGames = loadGames()
+    .filter((g) => g.category === game.category && g.id !== game.id)
+    .slice(0, 4);
 
   const nextScreenshot = () => {
     if (game.screenshots.length === 0) return;
@@ -261,21 +144,12 @@ export default function GameDetailPage() {
   };
 
   const handleDownloadClick = () => {
+    if (!game?.downloadLink) return;
     const updatedGame = incrementGameDownload(game.id);
     if (updatedGame) {
       setGame(updatedGame);
     }
-
-    // Show modal if there are download parts
-    if (game?.downloadParts && game.downloadParts.length > 0) {
-      setShowDownloadModal(true);
-      return;
-    }
-
-    // Direct download if only main link
-    if (game?.downloadLink) {
-      window.open(game.downloadLink, "_blank");
-    }
+    window.open(game.downloadLink, "_blank");
   };
 
   return (
@@ -303,12 +177,6 @@ export default function GameDetailPage() {
                   <Button onClick={handleDownloadClick} className="bg-cyan-500 hover:bg-cyan-600 text-white">
                     <Download className="mr-2 h-4 w-4" /> Download Now
                   </Button>
-                  {game.filePassword && (
-                    <div className="mt-4 rounded-3xl border border-cyan-500/40 bg-cyan-500/10 p-4 text-white">
-                      <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">Password</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{game.filePassword}</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -348,13 +216,13 @@ export default function GameDetailPage() {
               </div>
               <div className="relative overflow-hidden rounded-3xl bg-black/30">
                 {game.screenshots.length > 0 ? (
-                  renderMediaElement(
-                    game.screenshots[currentScreenshot],
-                    `Screenshot ${currentScreenshot + 1}`,
-                    "h-[420px] w-full object-cover"
-                  )
+                  <ImageWithFallback
+                    src={game.screenshots[currentScreenshot]}
+                    alt={`Screenshot ${currentScreenshot + 1}`}
+                    className="h-[280px] w-full object-cover"
+                  />
                 ) : (
-                  <div className="flex h-[420px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
+                  <div className="flex h-[280px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
                 )}
                 {game.screenshots.length > 1 && (
                   <>
@@ -382,7 +250,7 @@ export default function GameDetailPage() {
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
-                    {renderMediaElement(screenshot, `Thumbnail ${index + 1}`, "h-20 w-full object-cover", true)}
+                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-20 w-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -514,15 +382,6 @@ export default function GameDetailPage() {
           </section>
         )}
       </div>
-
-      <DownloadPartsModal
-        open={showDownloadModal}
-        onOpenChange={setShowDownloadModal}
-        gameTitle={game?.title || "Game"}
-        downloadParts={game?.downloadParts || []}
-        mainLink={game?.downloadLink}
-        filePassword={game?.filePassword}
-      />
     </div>
   );
 }

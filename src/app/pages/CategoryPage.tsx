@@ -7,20 +7,16 @@ import { ChevronLeft } from "lucide-react";
 
 export default function CategoryPage() {
   const { category } = useParams();
-  const categoryName = category
-    ? category.charAt(0).toUpperCase() + category.slice(1)
-    : "All";
+  const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : "";
   const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
     setGames(loadGames());
   }, []);
 
-  const categoryGames = category?.toLowerCase() === "all"
-    ? games
-    : games.filter(
-        (game) => game.category.toLowerCase() === category?.toLowerCase()
-      );
+  const categoryGames = games.filter(
+    (game) => game.category.toLowerCase() === category?.toLowerCase()
+  );
 
   const categoryColors: Record<string, string> = {
     action: "from-blue-500 to-blue-700",
