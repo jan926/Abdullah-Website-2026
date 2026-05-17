@@ -104,6 +104,32 @@ export const injectJsonLd = (id: string, data: object) => {
   document.head.appendChild(script);
 };
 
+/** Meta keywords string from game tags (not shown on page). */
+export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
+  const parts = new Set<string>();
+  const add = (v?: string) => {
+    if (!v) return;
+    v.split(",").forEach((x) => {
+      const t = x.trim();
+      if (t) parts.add(t);
+    });
+  };
+  add(game.title);
+  add(`${game.title} download`);
+  add(`${game.title} free download pc`);
+  add(game.developer);
+  game.tags?.forEach(add);
+  getGameCategories(game).forEach((c) => {
+    add(c);
+    add(`${c} games download`);
+  });
+  if (siteName) {
+    add(siteName);
+    add(`${game.title} ${siteName}`);
+  }
+  return Array.from(parts).join(", ");
+};
+
 export const buildGameJsonLd = (game: Game, siteName = "Download Your Games") => ({
   "@context": "https://schema.org",
   "@type": "VideoGame",

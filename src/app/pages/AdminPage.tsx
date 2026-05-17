@@ -165,11 +165,14 @@ export default function AdminPage() {
         tags: result.tags,
         systemRequirements: result.systemRequirements,
       }));
-      toast.success(
-        result.source === "wikipedia"
-          ? "Filled from Wikipedia — review and edit if needed"
-          : "Auto-filled with smart templates — review and edit"
-      );
+      const sourceMsg: Record<string, string> = {
+        rawg: "RAWG game database",
+        wikidata: "Wikidata (developer, genre, year)",
+        wikipedia: "Wikipedia",
+        database: "built-in game database",
+        template: "smart templates",
+      };
+      toast.success(`Auto-filled from ${sourceMsg[result.source] || "sources"} — please review before saving`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Auto-fill failed");
     } finally {
@@ -697,7 +700,7 @@ export default function AdminPage() {
                         {isAutoFilling ? "Generating…" : "AI Auto-fill"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">Free AI fills description, developer, tags, and system requirements.</p>
+                    <p className="text-xs text-slate-500">Wikipedia + Wikidata + 80+ games DB. Tags hidden (SEO only). Optional: add VITE_RAWG_API_KEY in .env</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
@@ -881,8 +884,9 @@ export default function AdminPage() {
                     <p className="text-xs text-slate-500">Shown on the game detail page header (not the homepage carousel).</p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">SEO Tags (comma separated)</Label>
-                    <Input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="border-[var(--border)]" placeholder="cyberpunk, open world, fps, free download" />
+                    <Label className="text-[var(--foreground)]">SEO Tags — hidden, Google only (comma separated)</Label>
+                    <Input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="border-[var(--border)]" placeholder="game name download, free pc, repack, full version..." />
+                    <p className="text-xs text-slate-500">Visitors will NOT see these. They go in page meta for search engines only.</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Trailer Video URL</Label>

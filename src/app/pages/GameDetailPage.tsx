@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
-import { buildGameJsonLd, injectJsonLd, setDocumentMeta } from "../../lib/seo";
+import { buildGameJsonLd, buildGameMetaKeywords, injectJsonLd, setDocumentMeta } from "../../lib/seo";
+import { loadSiteSettings } from "../../lib/gameStore";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { Button } from "../components/ui/button";
@@ -60,22 +61,20 @@ export default function GameDetailPage() {
 
         setGame(currentGame);
 
+        const siteSettings = await loadSiteSettings().catch(() => ({
+          siteName: "Download Your Games",
+        }));
+        const siteName = siteSettings.siteName || "Download Your Games";
+
         setDocumentMeta({
-          title: `${currentGame.title} Download PC | Free Game`,
-          description: `Download ${currentGame.title} for PC free. ${currentGame.description.slice(0, 140)}... Size: ${currentGame.size}.`,
-          keywords: [
-            currentGame.title,
-            `${currentGame.title} download`,
-            `${currentGame.title} free download`,
-            ...getGameCategories(currentGame),
-            currentGame.developer,
-            ...(currentGame.tags || []),
-          ].join(", "),
+          title: `${currentGame.title} Download PC Free | ${siteName}`,
+          description: `Download ${currentGame.title} for PC free on ${siteName}. ${currentGame.description.slice(0, 120)}... Size: ${currentGame.size}. Developer: ${currentGame.developer}.`,
+          keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
           url: `https://steamfree.games/game/${currentGame.id}`,
           type: "article",
         });
-        injectJsonLd("game-jsonld", buildGameJsonLd(currentGame));
+        injectJsonLd("game-jsonld", buildGameJsonLd(currentGame, siteName));
 
         incrementGameView(id).then((updated) => {
           if (active && updated) setGame(updated);
@@ -314,15 +313,6 @@ export default function GameDetailPage() {
                 <span className="rounded-full bg-[rgba(255,255,255,0.04)] px-3 py-1 text-sm text-[var(--muted-foreground)]">Released {new Date(game.releaseDate).toLocaleDateString()}</span>
               </div>
               <p className="text-base leading-relaxed text-[var(--foreground)]">{game.description}</p>
-              {game.tags && game.tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {game.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.18)]">
