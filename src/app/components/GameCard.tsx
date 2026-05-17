@@ -78,7 +78,10 @@ export function GameCard({ game }: GameCardProps) {
         </div>
 
         <DownloadButton asChild className="w-full">
-          <Link to={`/game/${game.id}`}>Download</Link>
+          <Link to={`/game/${game.id}`}>
+            <Download className="mr-2 h-4 w-4 btn-download-icon" />
+            Download
+          </Link>
         </DownloadButton>
       </div>
     </Card>

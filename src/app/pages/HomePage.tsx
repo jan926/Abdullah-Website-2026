@@ -128,7 +128,10 @@ export default function HomePage() {
                       asChild
                       className="px-6 py-5 text-base rounded-lg neon-glow-cyan"
                     >
-                      <Link to={`/game/${game.id}`}>Download</Link>
+                      <Link to={`/game/${game.id}`}>
+                        <Download className="mr-2 h-5 w-5 btn-download-icon" />
+                        Download
+                      </Link>
                     </DownloadButton>
                     <Button
                       asChild
