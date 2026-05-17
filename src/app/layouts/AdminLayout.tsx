@@ -3,7 +3,7 @@ import { Toaster } from "../components/ui/sonner";
 
 export function AdminLayout() {
   return (
-    <div className="admin-theme min-h-screen font-sans">
+    <div className="admin-theme h-screen overflow-hidden font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         .admin-theme {
           --background: #f8fafc;

@@ -23,8 +23,9 @@ import {
 } from "../../lib/gameStore";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
-  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles
+  Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
 } from "lucide-react";
+import { autoFillGameDetails } from "../../lib/gameAutoFill";
 import { toast } from "sonner";
 
 const defaultAdminSettings: SiteSettings = {
@@ -57,9 +58,11 @@ export default function AdminPage() {
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
   const [currentEditId, setCurrentEditId] = useState("");
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
+    selectedCategories: [] as string[],
     description: "",
     cover: "",
     backgroundImage: "",
@@ -103,10 +106,18 @@ export default function AdminPage() {
     setDbNeedsSetup(getDatabaseStatus() === "missing_tables");
   };
 
-  const buildGameFromForm = (id: string, existing?: Game): Game => ({
+  const buildGameFromForm = (id: string, existing?: Game): Game => {
+    const cats = formData.selectedCategories.length
+      ? formData.selectedCategories
+      : formData.category
+        ? [formData.category]
+        : [];
+    const primary = cats[0] || formData.category || "Action";
+    return {
     id,
     title: formData.title,
-    category: formData.category,
+    category: primary,
+    categories: cats.length > 0 ? cats : undefined,
     description: formData.description,
     cover: formData.cover,
     backgroundImage: formData.backgroundImage,
@@ -131,7 +142,54 @@ export default function AdminPage() {
     systemRequirements: formData.systemRequirements,
     comments: existing?.comments ?? [],
     views: existing?.views,
-  });
+  };
+  };
+
+  const handleAutoFill = async () => {
+    if (!formData.title.trim()) {
+      toast.error("Enter a game title first");
+      return;
+    }
+    setIsAutoFilling(true);
+    try {
+      const cats = formData.selectedCategories.length
+        ? formData.selectedCategories
+        : formData.category
+          ? [formData.category]
+          : [];
+      const result = await autoFillGameDetails(formData.title, cats);
+      setFormData((prev) => ({
+        ...prev,
+        description: result.description,
+        developer: result.developer,
+        tags: result.tags,
+        systemRequirements: result.systemRequirements,
+      }));
+      toast.success(
+        result.source === "wikipedia"
+          ? "Filled from Wikipedia — review and edit if needed"
+          : "Auto-filled with smart templates — review and edit"
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Auto-fill failed");
+    } finally {
+      setIsAutoFilling(false);
+    }
+  };
+
+  const toggleFormCategory = (cat: string) => {
+    setFormData((prev) => {
+      const has = prev.selectedCategories.includes(cat);
+      const selectedCategories = has
+        ? prev.selectedCategories.filter((c) => c !== cat)
+        : [...prev.selectedCategories, cat];
+      return {
+        ...prev,
+        selectedCategories,
+        category: selectedCategories[0] || "",
+      };
+    });
+  };
 
   const enforceHeroLimit = (gamesList: Game[], selectedIds: string[]) => {
     const heroes = selectedIds.slice(0, 6);
@@ -191,6 +249,11 @@ export default function AdminPage() {
   const handleGameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.selectedCategories.length && !formData.category) {
+      toast.error("Select at least one category");
+      return;
+    }
+
     try {
       if (isEditing) {
         const existing = games.find((g) => g.id === currentEditId);
@@ -238,9 +301,11 @@ export default function AdminPage() {
     const parts = game.downloadParts?.length
       ? game.downloadParts
       : [{ id: "part-1", name: "Part 1", link: "", size: "" }];
+    const gameCats = game.categories?.length ? game.categories : game.category ? [game.category] : [];
     setFormData({
       title: game.title,
-      category: game.category,
+      category: gameCats[0] || game.category,
+      selectedCategories: gameCats,
       description: game.description,
       cover: game.cover,
       backgroundImage: game.backgroundImage || "",
@@ -285,6 +350,7 @@ export default function AdminPage() {
     setFormData({
       title: "",
       category: "",
+      selectedCategories: [],
       description: "",
       cover: "",
       backgroundImage: "",
@@ -329,9 +395,9 @@ export default function AdminPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex h-screen bg-[var(--background)] overflow-hidden">
+    <div className="flex h-full min-h-0 overflow-hidden bg-[var(--background)]">
       {/* Sidebar */}
-      <div className="w-64 bg-[var(--card)] border-r border-[var(--border)] flex flex-col">
+      <div className="flex h-full min-h-0 w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)]">
         {/* Back to Home Button */}
         <div className="p-4 border-b border-[var(--border)]">
           <Button 
@@ -356,7 +422,7 @@ export default function AdminPage() {
           </div>
         </div>
         
-        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
           <SidebarItem icon={LayoutDashboard} label="Dashboard" value="dashboard" />
           <SidebarItem icon={BarChart3} label="Analytics" value="analytics" />
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
@@ -388,8 +454,8 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto bg-[var(--background)] p-8">
+      {/* Main Content — single scroll area */}
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--background)] p-8">
         {dbNeedsSetup && (
           <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-950 dark:text-amber-100">
             <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
@@ -590,7 +656,7 @@ export default function AdminPage() {
 
         {/* Upload/Edit Form Tab */}
         {activeTab === "upload" && (
-          <div className="max-w-4xl mx-auto space-y-6 pb-20">
+          <div className="mx-auto max-w-4xl space-y-6 pb-12">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-[var(--foreground)]">{isEditing ? "Edit Game" : "Upload New Game"}</h1>
               {isEditing && (
@@ -609,18 +675,48 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Game Title</Label>
-                    <Input value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required className="border-[var(--border)]" />
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        required
+                        className="border-[var(--border)]"
+                        placeholder="e.g. Need for Speed Heat"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleAutoFill}
+                        disabled={isAutoFilling}
+                        className="shrink-0 border-violet-300 text-violet-700 hover:bg-violet-50"
+                      >
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        {isAutoFilling ? "Generating…" : "AI Auto-fill"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-500">Free AI fills description, developer, tags, and system requirements.</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Category</Label>
-                    <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
-                      <SelectTrigger className="border-[var(--border)]">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.filter(c => c !== "All").map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.filter((c) => c !== "All").map((c) => {
+                        const selected = formData.selectedCategories.includes(c);
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => toggleFormCategory(c)}
+                            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                              selected
+                                ? "border-sky-500 bg-sky-500 text-white"
+                                : "border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:border-sky-300"
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Developer / Publisher</Label>
@@ -640,7 +736,130 @@ export default function AdminPage() {
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">2</span>
-                  Media & Links
+                  Download Details
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4">
+                    <div>
+                      <Label className="text-[var(--foreground)]">Multi-part download</Label>
+                      <p className="text-xs text-slate-500">Add part name, link, and size for each file</p>
+                    </div>
+                    <Switch checked={formData.useMultiPart} onCheckedChange={(c) => setFormData({ ...formData, useMultiPart: c })} />
+                  </div>
+                  {formData.useMultiPart ? (
+                    <div className="space-y-3 rounded-lg border border-[var(--border)] p-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[var(--foreground)]">Download Parts</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              downloadParts: [
+                                ...formData.downloadParts,
+                                {
+                                  id: `part-${Date.now()}`,
+                                  name: `Part ${formData.downloadParts.length + 1}`,
+                                  link: "",
+                                  size: "",
+                                },
+                              ],
+                            })
+                          }
+                        >
+                          <Plus className="mr-1 h-3 w-3" /> Add Part
+                        </Button>
+                      </div>
+                      {formData.downloadParts.map((part, i) => (
+                        <div key={part.id} className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-3 md:grid-cols-[1fr_1fr_100px_auto]">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-slate-500">Part name</Label>
+                            <Input
+                              value={part.name}
+                              onChange={(e) => {
+                                const downloadParts = [...formData.downloadParts];
+                                downloadParts[i] = { ...part, name: e.target.value };
+                                setFormData({ ...formData, downloadParts });
+                              }}
+                              placeholder="Part 1"
+                              className="border-[var(--border)]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-slate-500">Download link</Label>
+                            <Input
+                              value={part.link}
+                              onChange={(e) => {
+                                const downloadParts = [...formData.downloadParts];
+                                downloadParts[i] = { ...part, link: e.target.value };
+                                setFormData({ ...formData, downloadParts });
+                              }}
+                              placeholder="https://..."
+                              className="border-[var(--border)]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-slate-500">Size</Label>
+                            <Input
+                              value={part.size || ""}
+                              onChange={(e) => {
+                                const downloadParts = [...formData.downloadParts];
+                                downloadParts[i] = { ...part, size: e.target.value };
+                                setFormData({ ...formData, downloadParts });
+                              }}
+                              placeholder="5 GB"
+                              className="border-[var(--border)]"
+                            />
+                          </div>
+                          {formData.downloadParts.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="self-end"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  downloadParts: formData.downloadParts.filter((_, idx) => idx !== i),
+                                })
+                              }
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-[var(--foreground)]">Single Download Link</Label>
+                      <Input
+                        type="url"
+                        value={formData.downloadLink}
+                        onChange={(e) => setFormData({ ...formData, downloadLink: e.target.value })}
+                        required={!formData.useMultiPart}
+                        className="border-[var(--border)]"
+                        placeholder="magnet:?xt=... or https://..."
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-[var(--foreground)]">File Password (optional)</Label>
+                    <Input
+                      value={formData.filePassword}
+                      onChange={(e) => setFormData({ ...formData, filePassword: e.target.value })}
+                      className="border-[var(--border)]"
+                      placeholder="e.g. www.example.com"
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6 border-[var(--border)] shadow-sm">
+                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">3</span>
+                  Media & Screenshots
                 </h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -662,59 +881,6 @@ export default function AdminPage() {
                     <Label className="text-[var(--foreground)]">SEO Tags (comma separated)</Label>
                     <Input value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className="border-[var(--border)]" placeholder="cyberpunk, open world, fps, free download" />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">File Password (optional)</Label>
-                    <Input value={formData.filePassword} onChange={e => setFormData({...formData, filePassword: e.target.value})} className="border-[var(--border)]" placeholder="e.g. www.example.com" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4">
-                    <div>
-                      <Label className="text-[var(--foreground)]">Multi-part download</Label>
-                      <p className="text-xs text-slate-500">Enable if the game has multiple download parts</p>
-                    </div>
-                    <Switch checked={formData.useMultiPart} onCheckedChange={c => setFormData({...formData, useMultiPart: c})} />
-                  </div>
-                  {formData.useMultiPart ? (
-                    <div className="space-y-3 rounded-lg border border-[var(--border)] p-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[var(--foreground)]">Download Parts</Label>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setFormData({
-                          ...formData,
-                          downloadParts: [...formData.downloadParts, { id: `part-${Date.now()}`, name: `Part ${formData.downloadParts.length + 1}`, link: "", size: "" }],
-                        })}>
-                          <Plus className="h-3 w-3 mr-1" /> Add Part
-                        </Button>
-                      </div>
-                      {formData.downloadParts.map((part, i) => (
-                        <div key={part.id} className="grid gap-2 md:grid-cols-[1fr_1fr_120px_auto]">
-                          <Input value={part.name} onChange={e => {
-                            const downloadParts = [...formData.downloadParts];
-                            downloadParts[i] = { ...part, name: e.target.value };
-                            setFormData({ ...formData, downloadParts });
-                          }} placeholder="Part name" className="border-[var(--border)]" />
-                          <Input value={part.link} onChange={e => {
-                            const downloadParts = [...formData.downloadParts];
-                            downloadParts[i] = { ...part, link: e.target.value };
-                            setFormData({ ...formData, downloadParts });
-                          }} placeholder="Download URL" className="border-[var(--border)]" />
-                          <Input value={part.size || ""} onChange={e => {
-                            const downloadParts = [...formData.downloadParts];
-                            downloadParts[i] = { ...part, size: e.target.value };
-                            setFormData({ ...formData, downloadParts });
-                          }} placeholder="Size" className="border-[var(--border)]" />
-                          {formData.downloadParts.length > 1 && (
-                            <Button type="button" variant="outline" onClick={() => setFormData({ ...formData, downloadParts: formData.downloadParts.filter((_, idx) => idx !== i) })}>
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-[var(--foreground)]">Download Link</Label>
-                      <Input type="url" value={formData.downloadLink} onChange={e => setFormData({...formData, downloadLink: e.target.value})} required={!formData.useMultiPart} className="border-[var(--border)]" placeholder="magnet:?xt=... or https://..." />
-                    </div>
-                  )}
                   <div className="space-y-2">
                     <Label className="text-[var(--foreground)]">Trailer Video URL</Label>
                     <Input type="url" value={formData.trailer} onChange={e => setFormData({...formData, trailer: e.target.value})} className="border-[var(--border)]" placeholder="https://... .mp4" />
@@ -747,7 +913,7 @@ export default function AdminPage() {
 
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">3</span> 
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span> 
                   Visibility Settings
                 </h3>
                 <div className="space-y-6">
@@ -783,7 +949,7 @@ export default function AdminPage() {
               </Card>
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">5</span>
                   System Requirements
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

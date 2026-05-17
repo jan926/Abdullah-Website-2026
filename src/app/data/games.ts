@@ -4,6 +4,8 @@ export interface Game {
   cover: string;
   description: string;
   category: string;
+  /** Additional categories (primary category is also kept in `category`). */
+  categories?: string[];
   rating: number;
   downloads: number;
   size: string;

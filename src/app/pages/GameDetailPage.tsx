@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
-import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews } from "../../lib/gameStore";
+import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
 import { buildGameJsonLd, injectJsonLd, setDocumentMeta } from "../../lib/seo";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { Button } from "../components/ui/button";
+import { DownloadButton } from "../components/DownloadButton";
+import { formatCategoryList, getGameCategories } from "../../lib/gameCategories";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Textarea } from "../components/ui/textarea";
@@ -37,8 +39,14 @@ export default function GameDetailPage() {
     if (!id) return;
 
     let active = true;
-    setLoading(true);
-    setGame(null);
+    const cached = getGamesSync().find((g) => g.id === id);
+    if (cached) {
+      setGame(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      setGame(null);
+    }
 
     (async () => {
       try {
@@ -59,7 +67,7 @@ export default function GameDetailPage() {
             currentGame.title,
             `${currentGame.title} download`,
             `${currentGame.title} free download`,
-            currentGame.category,
+            ...getGameCategories(currentGame),
             currentGame.developer,
             ...(currentGame.tags || []),
           ].join(", "),
@@ -90,7 +98,15 @@ export default function GameDetailPage() {
     if (!game) return;
     loadGames()
       .then((all) =>
-        setRelatedGames(all.filter((g) => g.category === game.category && g.id !== game.id).slice(0, 4))
+        setRelatedGames(
+          all
+            .filter(
+              (g) =>
+                g.id !== game.id &&
+                getGameCategories(g).some((c) => getGameCategories(game).includes(c))
+            )
+            .slice(0, 4)
+        )
       )
       .catch((error) => console.error("Failed to load related games:", error));
   }, [game?.id, game?.category]);
@@ -218,7 +234,7 @@ export default function GameDetailPage() {
     }
   };
 
-  const handleDownloadClick = async () => {
+  const handleDownloadClick = () => {
     if (!game) return;
 
     if (hasDownloadParts) {
@@ -228,13 +244,12 @@ export default function GameDetailPage() {
 
     if (!game.downloadLink) return;
 
-    try {
-      const updatedGame = await incrementGameDownload(game.id);
-      if (updatedGame) setGame(updatedGame);
-    } catch (error) {
-      console.error("Failed to update download count:", error);
-    }
-    window.open(game.downloadLink, "_blank");
+    window.open(game.downloadLink, "_blank", "noopener,noreferrer");
+    incrementGameDownload(game.id)
+      .then((updated) => {
+        if (updated) setGame(updated);
+      })
+      .catch((error) => console.error("Failed to update download count:", error));
   };
 
   return (
@@ -251,17 +266,17 @@ export default function GameDetailPage() {
               <ImageWithFallback src={game.cover} alt={game.title} className="h-96 w-full object-cover" />
               <div className="p-6">
                 <h1 className="text-3xl font-bold text-white">{game.title}</h1>
-                <p className="mt-3 text-sm text-[var(--muted-foreground)]">{game.category} • {game.developer}</p>
+                <p className="mt-3 text-sm text-[var(--muted-foreground)]">{formatCategoryList(game)} • {game.developer}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge className="bg-cyan-500/15 text-cyan-200 border-cyan-500/20">{game.category}</Badge>
+                  {getGameCategories(game).map((cat) => (
+                    <Badge key={cat} className="bg-cyan-500/15 text-cyan-200 border-cyan-500/20">{cat}</Badge>
+                  ))}
                   {game.featured && <Badge className="bg-yellow-500/10 text-yellow-300 border-yellow-500/20">Featured</Badge>}
                   {game.trending && <Badge className="bg-pink-500/10 text-pink-300 border-pink-500/20">Popular</Badge>}
                   {game.gameOfTheDay && <Badge className="bg-orange-500/10 text-orange-300 border-orange-500/20">Game of the Day</Badge>}
                 </div>
                 <div className="mt-6 space-y-4">
-                  <Button onClick={handleDownloadClick} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white neon-glow-cyan">
-                    <Download className="mr-2 h-4 w-4" /> Download Now
-                  </Button>
+                  <DownloadButton onClick={handleDownloadClick} className="w-full neon-glow-cyan" label="Download Now" />
                   {game.filePassword && (
                     <div className="rounded-2xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/10 p-4 text-center shadow-lg shadow-amber-500/10">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-200">Download Password</p>
@@ -299,6 +314,15 @@ export default function GameDetailPage() {
                 <span className="rounded-full bg-[rgba(255,255,255,0.04)] px-3 py-1 text-sm text-[var(--muted-foreground)]">Released {new Date(game.releaseDate).toLocaleDateString()}</span>
               </div>
               <p className="text-base leading-relaxed text-[var(--foreground)]">{game.description}</p>
+              {game.tags && game.tags.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {game.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.18)]">
@@ -306,15 +330,15 @@ export default function GameDetailPage() {
                 <h2 className="text-xl font-semibold text-[var(--foreground)]">Screenshots</h2>
                 <span className="text-sm text-[var(--muted-foreground)]">Swipe through the gallery or use arrows.</span>
               </div>
-              <div className="relative overflow-hidden rounded-3xl bg-black/30">
+              <div className="relative overflow-hidden rounded-3xl bg-black/50">
                 {game.screenshots.length > 0 ? (
                   <ImageWithFallback
                     src={game.screenshots[currentScreenshot]}
                     alt={`Screenshot ${currentScreenshot + 1}`}
-                    className="h-[280px] w-full object-cover"
+                    className="mx-auto min-h-[320px] max-h-[420px] w-full object-contain"
                   />
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
+                  <div className="flex min-h-[320px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
                 )}
                 {game.screenshots.length > 1 && (
                   <>
@@ -342,7 +366,7 @@ export default function GameDetailPage() {
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-20 w-full object-cover" />
+                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-24 w-full object-contain bg-black/40" />
                   </button>
                 ))}
               </div>

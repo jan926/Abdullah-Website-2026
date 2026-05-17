@@ -23,6 +23,8 @@ export default function SearchPage() {
               game.title.toLowerCase().includes(query.toLowerCase()) ||
               game.description.toLowerCase().includes(query.toLowerCase()) ||
               game.category.toLowerCase().includes(query.toLowerCase()) ||
+              game.categories?.some((c) => c.toLowerCase().includes(query.toLowerCase())) ||
+              game.tags?.some((t) => t.toLowerCase().includes(query.toLowerCase())) ||
               game.developer.toLowerCase().includes(query.toLowerCase())
           );
           setResults(filtered);

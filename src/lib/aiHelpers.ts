@@ -1,4 +1,5 @@
 import { Game } from "../data/games";
+import { gameHasCategory, getGameCategories } from "./gameCategories";
 
 // AI-powered search suggestions using pattern matching
 export const getSearchSuggestions = (query: string, games: Game[]): string[] => {
@@ -46,7 +47,7 @@ export const getRecommendedGames = (
     let score = 0;
 
     // Same category (highest priority)
-    if (game.category === currentGame.category) score += 100;
+    if (getGameCategories(game).some((c) => getGameCategories(currentGame).includes(c))) score += 100;
 
     // Similar rating (±0.5)
     if (Math.abs(game.rating - currentGame.rating) <= 0.5) score += 50;

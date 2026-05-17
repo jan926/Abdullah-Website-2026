@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
-import { loadGames } from "../../lib/gameStore";
+import { loadGames, getGamesSync } from "../../lib/gameStore";
+import { gameHasCategory } from "../../lib/gameCategories";
 import { getCategoryStyle } from "../../lib/categoryStyles";
 import { GameCard } from "../components/GameCard";
 import { ChevronLeft } from "lucide-react";
@@ -16,11 +17,11 @@ export default function CategoryPage() {
     : category
       ? decodeURIComponent(category).charAt(0).toUpperCase() + decodeURIComponent(category).slice(1)
       : "";
-  const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [games, setGames] = useState<Game[]>(() => getGamesSync());
+  const [loading, setLoading] = useState(() => getGamesSync().length === 0);
 
   useEffect(() => {
-    setLoading(true);
+    if (games.length === 0) setLoading(true);
     loadGames()
       .then(setGames)
       .catch((error) => console.error("Failed to load games:", error))
@@ -29,7 +30,7 @@ export default function CategoryPage() {
 
   const categoryGames = isAll
     ? games
-    : games.filter((game) => game.category.toLowerCase() === raw);
+    : games.filter((game) => gameHasCategory(game, categoryName));
 
   const gradientClass = isAll ? "from-indigo-500 to-purple-700" : getCategoryStyle(categoryName).gradient;
 

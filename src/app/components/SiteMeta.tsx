@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 import { loadGames, loadSiteSettings, loadCategories } from "../../lib/gameStore";
-import { buildSiteKeywords, injectJsonLd, setDocumentMeta } from "../../lib/seo";
+import { buildSiteJsonLd, buildSiteKeywords, injectJsonLd, setDocumentMeta } from "../../lib/seo";
 
 export function SiteMeta() {
   const location = useLocation();
@@ -18,24 +18,15 @@ export function SiteMeta() {
         const keywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const siteName = settings.siteName || "Download Your Games";
 
+        const siteUrl = "https://steamfree.games";
         setDocumentMeta({
-          title: `${siteName} | PC Game Downloads`,
-          description: `Download the latest PC games on ${siteName}. Browse ${games.length}+ titles across ${categories.length} categories with fast links and updates.`,
-          keywords,
-          url: `https://steamfree.games${location.pathname}`,
+          title: `${siteName} — Download PC Games Free | ${siteName}`,
+          description: `${siteName} — download the latest PC games free. Browse ${games.length}+ full-version titles, repacks, and updates on ${siteName}.`,
+          keywords: [siteName, `${siteName} download`, `${siteName} games`, keywords].join(", "),
+          url: `${siteUrl}${location.pathname}`,
         });
 
-        injectJsonLd("site-jsonld", {
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: siteName,
-          url: "https://steamfree.games/",
-          potentialAction: {
-            "@type": "SearchAction",
-            target: "https://steamfree.games/search?q={search_term_string}",
-            "query-input": "required name=search_term_string",
-          },
-        });
+        injectJsonLd("site-jsonld", buildSiteJsonLd(siteName, `${siteUrl}/`));
 
         if (settings.logoUrl) {
           let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;

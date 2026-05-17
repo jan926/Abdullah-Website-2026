@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { GameCard } from "../components/GameCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
+import { DownloadButton } from "../components/DownloadButton";
 import { Link } from "react-router";
 import { Game } from "../data/games";
-import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges } from "../../lib/gameStore";
+import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges, getGamesSync } from "../../lib/gameStore";
 import { getCategoryStyle, getCategoryPath } from "../../lib/categoryStyles";
 import { LazyImage } from "../../components/LazyImage";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
@@ -12,7 +13,7 @@ import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<Game[]>(() => getGamesSync());
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
     siteName: "Download Your Games",
@@ -90,7 +91,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[500px] overflow-hidden">
+      <section className="relative h-[min(58vh,620px)] min-h-[480px] overflow-hidden">
         {displayHeroGames.map((game, index) => (
           <div
             key={game.id}
@@ -101,7 +102,7 @@ export default function HomePage() {
             <LazyImage
               src={game.heroMedia || game.backgroundImage || game.cover}
               alt={game.title}
-              className="w-full h-full object-cover animate-ken-burns"
+              className="h-full w-full object-cover object-center animate-ken-burns"
               wrapperClassName="h-full w-full"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
@@ -123,15 +124,12 @@ export default function HomePage() {
                     {game.description}
                   </p>
                   <div className="flex items-center gap-3 pt-4">
-                    <Button
+                    <DownloadButton
                       asChild
-                      className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-5 text-base font-semibold rounded-lg neon-glow-cyan"
+                      className="px-6 py-5 text-base rounded-lg neon-glow-cyan"
                     >
-                      <Link to={`/game/${game.id}`}>
-                        <Download className="mr-2 h-5 w-5" />
-                        Download
-                      </Link>
-                    </Button>
+                      <Link to={`/game/${game.id}`}>Download</Link>
+                    </DownloadButton>
                     <Button
                       asChild
                       variant="outline"

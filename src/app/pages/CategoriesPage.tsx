@@ -1,43 +1,45 @@
 import { useState, useEffect } from "react";
-import { categories } from "../data/games";
 import { Game } from "../data/games";
-import { loadGames } from "../../lib/gameStore";
+import { loadGames, loadCategories, getGamesSync } from "../../lib/gameStore";
+import { gameHasCategory } from "../../lib/gameCategories";
 import { GameCard } from "../components/GameCard";
 import { Card } from "../components/ui/card";
+import { getCategoryStyle } from "../../lib/categoryStyles";
 
 export default function CategoriesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<Game[]>(() => getGamesSync());
+  const [categoryList, setCategoryList] = useState<string[]>([]);
 
   useEffect(() => {
-    loadGames()
-      .then(setGames)
-      .catch((error) => console.error("Failed to load games:", error));
+    Promise.all([loadGames(), loadCategories()])
+      .then(([loadedGames, loadedCategories]) => {
+        setGames(loadedGames);
+        setCategoryList(loadedCategories.filter((c) => c !== "All"));
+      })
+      .catch((error) => console.error("Failed to load categories:", error));
   }, []);
 
-  const categoryStats = categories.slice(1).map((category) => {
-    const gamesInCategory = games.filter((game) => game.category === category);
+  const categoryStats = categoryList.map((category) => {
+    const gamesInCategory = games.filter((game) => gameHasCategory(game, category));
     return {
       name: category,
       count: gamesInCategory.length,
       totalDownloads: gamesInCategory.reduce((sum, game) => sum + game.downloads, 0),
+      style: getCategoryStyle(category),
     };
   });
 
   const displayGames = selectedCategory
-    ? games.filter((game) => game.category === selectedCategory)
+    ? games.filter((game) => gameHasCategory(game, selectedCategory))
     : [];
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <div className="container mx-auto px-6 py-12">
         <div className="mb-12">
-          <h1 className="mb-4 text-4xl font-bold text-white">
-            Browse by Category
-          </h1>
-          <p className="text-gray-200">
-            Explore our collection of games organized by genre
-          </p>
+          <h1 className="mb-4 text-4xl font-bold text-white">Browse by Category</h1>
+          <p className="text-gray-200">Explore our collection of games organized by genre</p>
         </div>
 
         {!selectedCategory ? (
@@ -49,22 +51,19 @@ export default function CategoriesPage() {
                 onClick={() => setSelectedCategory(category.name)}
               >
                 <div className="relative h-48 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 transition-transform group-hover:scale-110" />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${category.style.gradient} opacity-80 transition-transform group-hover:scale-110`} />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <h2 className="mb-2 text-3xl font-bold text-white">
-                        {category.name}
-                      </h2>
-                      <p className="text-lg text-gray-300">
-                        {category.count} Games
-                      </p>
+                      <span className="mb-2 block text-4xl">{category.style.icon}</span>
+                      <h2 className="mb-2 text-3xl font-bold text-white">{category.name}</h2>
+                      <p className="text-lg text-gray-300">{category.count} Games</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between text-sm text-gray-400">
                     <span>{(category.totalDownloads / 1000).toFixed(1)}K Total Downloads</span>
-                    <span className="text-cyan-400 font-semibold">View All →</span>
+                    <span className="font-semibold text-cyan-400">View All →</span>
                   </div>
                 </div>
               </Card>
@@ -78,7 +77,7 @@ export default function CategoriesPage() {
               </h2>
               <button
                 onClick={() => setSelectedCategory(null)}
-                className="text-cyan-400 hover:text-cyan-300 font-semibold"
+                className="font-semibold text-cyan-400 hover:text-cyan-300"
               >
                 ← Back to Categories
               </button>

@@ -1,4 +1,5 @@
 import type { Game } from "../app/data/games";
+import { getGameCategories } from "./gameCategories";
 
 const SITE_URL = "https://steamfree.games";
 
@@ -45,13 +46,15 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
 
   games.forEach((game) => {
     add(game.title);
-    add(game.category);
     add(game.developer);
+    getGameCategories(game).forEach((c) => {
+      add(c);
+      add(`${c} games`);
+    });
     add(`${game.title} download`);
     add(`${game.title} free download`);
     add(`${game.title} pc download`);
     add(`${game.title} full version`);
-    add(`${game.category} games`);
     game.tags?.forEach((tag) => add(tag));
   });
 
@@ -101,14 +104,16 @@ export const injectJsonLd = (id: string, data: object) => {
   document.head.appendChild(script);
 };
 
-export const buildGameJsonLd = (game: Game) => ({
+export const buildGameJsonLd = (game: Game, siteName = "Download Your Games") => ({
   "@context": "https://schema.org",
   "@type": "VideoGame",
   name: game.title,
   description: game.description,
-  genre: game.category,
-  image: game.cover,
+  genre: getGameCategories(game),
+  keywords: game.tags?.join(", "),
+  image: [game.cover, ...(game.screenshots || [])].filter(Boolean),
   author: { "@type": "Organization", name: game.developer },
+  publisher: { "@type": "Organization", name: siteName },
   aggregateRating: {
     "@type": "AggregateRating",
     ratingValue: game.rating,
@@ -119,5 +124,19 @@ export const buildGameJsonLd = (game: Game) => ({
     price: "0",
     priceCurrency: "USD",
     availability: "https://schema.org/InStock",
+    url: `https://steamfree.games/game/${game.id}`,
+  },
+});
+
+export const buildSiteJsonLd = (siteName: string, siteUrl: string) => ({
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: siteName,
+  alternateName: [siteName, `${siteName} download`, `${siteName} games`],
+  url: siteUrl,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/search?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
   },
 });

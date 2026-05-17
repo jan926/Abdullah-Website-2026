@@ -230,6 +230,39 @@ button, input, textarea, select {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+@keyframes download-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes download-shine {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+
+.btn-download {
+  animation: download-bounce 2.2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
+}
+
+.btn-download::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: download-shine 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn-download:hover {
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.55);
+}
+
+.btn-download-icon {
+  animation: download-bounce 2.2s ease-in-out infinite;
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }

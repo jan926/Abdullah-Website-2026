@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Download, Star } from "lucide-react";
-import { Button } from "./ui/button";
+import { DownloadButton } from "./DownloadButton";
+import { getPrimaryCategory } from "../../lib/gameCategories";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import type { Game } from "../data/games";
@@ -57,7 +58,7 @@ export function GameCard({ game }: GameCardProps) {
                 <span className="text-sm font-medium">{game.rating}</span>
               </div>
               <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur">
-                {game.category}
+                {getPrimaryCategory(game)}
               </Badge>
             </div>
           </div>
@@ -76,15 +77,9 @@ export function GameCard({ game }: GameCardProps) {
           <span>{game.size}</span>
         </div>
 
-        <Button
-          asChild
-          className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold transition-all hover:shadow-lg hover:shadow-cyan-500/50 animate-pulse-glow"
-        >
-          <Link to={`/game/${game.id}`}>
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Link>
-        </Button>
+        <DownloadButton asChild className="w-full">
+          <Link to={`/game/${game.id}`}>Download</Link>
+        </DownloadButton>
       </div>
     </Card>
   );
