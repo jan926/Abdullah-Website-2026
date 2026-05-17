@@ -3,7 +3,7 @@ import { Toaster } from "../components/ui/sonner";
 
 export function AdminLayout() {
   return (
-    <div className="admin-theme h-screen overflow-hidden font-sans">
+    <div className="admin-theme flex h-screen flex-col overflow-hidden font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         .admin-theme {
           --background: #f8fafc;
@@ -31,8 +31,25 @@ export function AdminLayout() {
           background-color: var(--background);
           color: var(--foreground);
         }
+        .admin-main-scroll {
+          -webkit-overflow-scrolling: touch;
+          scrollbar-gutter: stable;
+        }
+        .admin-main-scroll::-webkit-scrollbar {
+          width: 10px;
+        }
+        .admin-main-scroll::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .admin-main-scroll::-webkit-scrollbar-thumb {
+          background: #94a3b8;
+          border-radius: 5px;
+        }
+        .admin-main-scroll::-webkit-scrollbar-thumb:hover {
+          background: #64748b;
+        }
       `}} />
-      <main>
+      <main className="min-h-0 flex-1">
         <Outlet />
       </main>
       <Toaster />

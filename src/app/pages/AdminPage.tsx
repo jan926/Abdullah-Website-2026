@@ -396,8 +396,8 @@ export default function AdminPage() {
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden bg-[var(--background)]">
-      {/* Sidebar */}
-      <div className="flex h-full min-h-0 w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)]">
+      {/* Sidebar — fixed height, menu scrolls only on small screens */}
+      <aside className="flex h-full w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)]">
         {/* Back to Home Button */}
         <div className="p-4 border-b border-[var(--border)]">
           <Button 
@@ -422,7 +422,7 @@ export default function AdminPage() {
           </div>
         </div>
         
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
+        <nav className="flex-1 space-y-2 p-4">
           <SidebarItem icon={LayoutDashboard} label="Dashboard" value="dashboard" />
           <SidebarItem icon={BarChart3} label="Analytics" value="analytics" />
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
@@ -431,9 +431,9 @@ export default function AdminPage() {
           <SidebarItem icon={Save} label="Game of the Day" value="gameofday" />
           <SidebarItem icon={Sparkles} label="Hero Banner" value="hero" />
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
-        </div>
+        </nav>
         
-        <div className="p-4 border-t border-slate-200">
+        <div className="shrink-0 border-t border-slate-200 p-4">
           <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-[var(--card)]">
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-indigo-100 font-bold">
               {adminUsername.charAt(0).toUpperCase()}
@@ -452,10 +452,13 @@ export default function AdminPage() {
             Sign Out
           </Button>
         </div>
-      </div>
+      </aside>
 
-      {/* Main Content — single scroll area */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--background)] p-8">
+      {/* Har section (Upload, Categories, Settings, …) — sirf yahan ek scroll */}
+      <section
+        className="admin-main-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--background)] p-6 md:p-8"
+        aria-label="Admin content"
+      >
         {dbNeedsSetup && (
           <div className="mb-6 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-950 dark:text-amber-100">
             <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" />
@@ -1220,7 +1223,7 @@ export default function AdminPage() {
           </div>
         )}
 
-      </div>
+      </section>
     </div>
   );
 }
