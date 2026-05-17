@@ -6,7 +6,7 @@ export interface GameAutoFillResult {
   description: string;
   developer: string;
   tags: string;
-  screenshots: string[];
+  screenshots?: string[];
   systemRequirements: {
     minimum: { os: string; processor: string; memory: string; graphics: string; storage: string };
     recommended: { os: string; processor: string; memory: string; graphics: string; storage: string };
@@ -52,13 +52,12 @@ async function fetchOpenAIGameDetails(
   if (!OPENAI_KEY?.trim()) return null;
 
   const categoryList = categories.length ? categories.join(", ") : "General";
-  const prompt = `You are an expert PC game metadata writer. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, screenshots, systemRequirements.
-- description: a long, compelling PC game description suitable for a game details page.
+  const prompt = `You are an expert PC game metadata writer with deep knowledge of modern video games. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, systemRequirements.
+- description: a long, compelling PC game description suitable for a game details page, 5-7 lines.
 - developer: the game's developer name.
-- tags: a comma-separated string of SEO tags.
-- screenshots: an array of 3 image URLs suitable for screenshots.
+- tags: a comma-separated string of relevant SEO tags.
 - systemRequirements: an object with minimum and recommended specs, each containing os, processor, memory, graphics, and storage.
-Use Windows PC language and do not return any extra text or markdown. The values should be realistic for the game title.
+Do not include screenshot URLs or cover image data. Use realistic, game-specific details based on the title and genre.
 Title: ${title}
 Categories: ${categoryList}`;
 
@@ -105,10 +104,7 @@ Categories: ${categoryList}`;
       description: parsed.description.trim(),
       developer: parsed.developer.trim() || "Unknown Developer",
       tags: parsed.tags?.trim() || buildTags(title, categories.length ? categories : ["Action"], []),
-      screenshots:
-        Array.isArray(parsed.screenshots) && parsed.screenshots.length
-          ? parsed.screenshots
-          : buildScreenshotUrls(title, categories[0] || "Action", 3),
+      screenshots: Array.isArray(parsed.screenshots) && parsed.screenshots.length ? parsed.screenshots : undefined,
       systemRequirements: parsed.systemRequirements,
       source: "openai",
     };
@@ -494,7 +490,6 @@ export async function autoFillGameDetails(
     info?.requirements || buildVariedRequirements(trimmed, year, genre, sizeHint);
 
   const tags = buildTags(trimmed, categories.length ? categories : [genre], info?.genres || []);
-  const screenshots = buildScreenshotUrls(trimmed, genre, 3);
 
   let source: GameAutoFillResult["source"] = "template";
   if (rawg) source = "rawg";
@@ -503,5 +498,5 @@ export async function autoFillGameDetails(
   else if (catalogGame) source = "catalog";
   else if (known) source = "database";
 
-  return { description, developer, tags, screenshots, systemRequirements, source };
+  return { description, developer, tags, systemRequirements, source };
 }

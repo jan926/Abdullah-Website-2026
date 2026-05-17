@@ -173,8 +173,8 @@ export default function AdminPage() {
         developer: result.developer,
         tags: result.tags,
         systemRequirements: result.systemRequirements,
-        screenshots: result.screenshots,
-        cover: prev.cover || result.screenshots[0] || prev.cover,
+        screenshots: result.screenshots ? result.screenshots : prev.screenshots,
+        cover: prev.cover || (result.screenshots?.[0] ?? prev.cover),
       }));
       const sourceMsg: Record<string, string> = {
         rawg: "RAWG (full specs + long description)",
@@ -713,7 +713,7 @@ export default function AdminPage() {
                         {isAutoFilling ? "Generating…" : "AI Auto-fill"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. If you set VITE_OPENAI_API_KEY, the auto-fill will use OpenAI GPT for richer metadata. Tags are SEO-only and screenshots are auto-generated from a free image source.</p>
+                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. If you set VITE_OPENAI_API_KEY, the auto-fill will use OpenAI GPT for richer metadata. This now focuses on description, developer, tags, and system requirements; screenshots are optional.</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
