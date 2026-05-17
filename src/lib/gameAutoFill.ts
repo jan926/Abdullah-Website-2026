@@ -1,5 +1,6 @@
-/** Free auto-fill: Wikipedia + Wikidata + game database + optional RAWG API. */
+/** Advanced auto-fill: RAWG + Wikidata + Wikipedia + 400+ game catalog + local DB. */
 import { lookupKnownGame } from "./gameDatabase";
+import { searchGameCatalog } from "./gameCatalog";
 
 export interface GameAutoFillResult {
   description: string;
@@ -9,16 +10,17 @@ export interface GameAutoFillResult {
     minimum: { os: string; processor: string; memory: string; graphics: string; storage: string };
     recommended: { os: string; processor: string; memory: string; graphics: string; storage: string };
   };
-  source: "wikidata" | "wikipedia" | "rawg" | "database" | "template";
+  source: "rawg" | "wikidata" | "wikipedia" | "catalog" | "database" | "template";
 }
 
-type WikiGameInfo = {
-  pageTitle: string;
+type GameInfo = {
   description: string;
   developer?: string;
   publisher?: string;
   genres: string[];
   year?: number;
+  sizeHint?: string;
+  requirements?: GameAutoFillResult["systemRequirements"];
 };
 
 const RAWG_KEY = import.meta.env.VITE_RAWG_API_KEY as string | undefined;
@@ -33,6 +35,61 @@ async function fetchJson<T>(url: string): Promise<T | null> {
   }
 }
 
+function hashSeed(text: string): number {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = (h << 5) - h + text.charCodeAt(i);
+  return Math.abs(h);
+}
+
+function pick<T>(arr: T[], seed: number, offset = 0): T {
+  return arr[(seed + offset) % arr.length];
+}
+
+function parseReqLine(text: string, field: string): string | undefined {
+  const re = new RegExp(`${field}\\s*:\\s*([^\\n]+)`, "i");
+  return text.match(re)?.[1]?.trim();
+}
+
+function parseRawgRequirements(
+  minimum?: string,
+  recommended?: string,
+  sizeHint = "50 GB"
+): GameAutoFillResult["systemRequirements"] | null {
+  if (!minimum && !recommended) return null;
+
+  const parseBlock = (block: string) => ({
+    os: parseReqLine(block, "OS") || parseReqLine(block, "Operating System") || "Windows 10 64-bit",
+    processor:
+      parseReqLine(block, "Processor") || parseReqLine(block, "CPU") || "Intel Core i5-8400 / AMD Ryzen 5 2600",
+    memory: parseReqLine(block, "Memory") || parseReqLine(block, "RAM") || "8 GB RAM",
+    graphics:
+      parseReqLine(block, "Graphics") || parseReqLine(block, "GPU") || "NVIDIA GTX 1060 6GB / AMD RX 580",
+    storage: parseReqLine(block, "Storage") || parseReqLine(block, "Hard Drive") || `${sizeHint} available space`,
+  });
+
+  return {
+    minimum: minimum ? parseBlock(minimum) : parseBlock(recommended || ""),
+    recommended: recommended ? parseBlock(recommended) : parseBlock(minimum || ""),
+  };
+}
+
+async function fetchWikipediaText(title: string, long = true): Promise<string | null> {
+  type SearchData = [string, string[]];
+  const search = await fetchJson<SearchData>(
+    `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(title)}&limit=1&format=json&origin=*`
+  );
+  const pageTitle = search?.[1]?.[0];
+  if (!pageTitle) return null;
+
+  const intro = long ? "" : "&exintro=1";
+  type ExtractData = { query?: { pages?: Record<string, { extract?: string }> } };
+  const data = await fetchJson<ExtractData>(
+    `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1${intro}&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`
+  );
+  const extract = Object.values(data?.query?.pages ?? {})[0]?.extract?.trim();
+  return extract && extract.length >= 80 ? extract : null;
+}
+
 function labelFromEntity(
   entities: Record<string, { labels?: { en?: { value: string } } }> | undefined,
   id: string | undefined
@@ -45,16 +102,13 @@ function claimEntityId(claim: { mainsnak?: { datavalue?: { value?: { id?: string
   return claim?.mainsnak?.datavalue?.value?.id;
 }
 
-async function fetchWikidataGame(title: string): Promise<WikiGameInfo | null> {
-  type SearchResult = {
-    search?: { id: string; label: string; description?: string }[];
-  };
+async function fetchWikidataGame(title: string): Promise<GameInfo | null> {
+  type SearchResult = { search?: { id: string; label: string; description?: string }[] };
   const search = await fetchJson<SearchResult>(
     `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(title)}&language=en&format=json&origin=*&type=item&limit=5`
   );
   const hit =
-    search?.search?.find((s) => /video game|game|series/i.test(s.description || "")) ||
-    search?.search?.[0];
+    search?.search?.find((s) => /video game|game/i.test(s.description || "")) || search?.search?.[0];
   if (!hit) return null;
 
   type EntityResult = {
@@ -76,37 +130,32 @@ async function fetchWikidataGame(title: string): Promise<WikiGameInfo | null> {
   const devIds = entity.claims?.P178?.map((c) => claimEntityId(c)).filter(Boolean) as string[];
   const pubIds = entity.claims?.P123?.map((c) => claimEntityId(c)).filter(Boolean) as string[];
   const genreIds = entity.claims?.P136?.map((c) => claimEntityId(c)).filter(Boolean) as string[];
-  const yearClaim = entity.claims?.P577?.[0]?.mainsnak?.datavalue?.value as
-    | { time?: string }
-    | undefined;
+  const yearClaim = entity.claims?.P577?.[0]?.mainsnak?.datavalue?.value as { time?: string } | undefined;
   const year = yearClaim?.time ? parseInt(yearClaim.time.slice(1, 5), 10) : undefined;
 
   const extraIds = [...new Set([...(devIds || []), ...(pubIds || []), ...(genreIds || [])])];
   let extraEntities: EntityResult["entities"] = {};
-  if (extraIds.length > 0) {
+  if (extraIds.length) {
     const extra = await fetchJson<EntityResult>(
       `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${extraIds.join("|")}&props=labels&languages=en&format=json&origin=*`
     );
     extraEntities = extra?.entities ?? {};
   }
-
   const allEntities = { ...extraEntities, [hit.id]: entity };
+
   const developer = devIds?.map((id) => labelFromEntity(allEntities, id)).find(Boolean);
   const publisher = pubIds?.map((id) => labelFromEntity(allEntities, id)).find(Boolean);
   const genres =
     genreIds?.map((id) => labelFromEntity(allEntities, id)).filter((g): g is string => Boolean(g)) || [];
 
-  let description = entity.descriptions?.en?.value || hit.description || "";
-  if (description.length < 60) {
-    const wiki = await fetchWikipediaExtract(hit.label);
-    if (wiki) description = wiki;
-  }
+  let description = entity.descriptions?.en?.value || "";
+  const wiki = await fetchWikipediaText(hit.label, true);
+  if (wiki) description = wiki;
 
-  if (!description || description.length < 30) return null;
+  if (!description || description.length < 60) return null;
 
   return {
-    pageTitle: hit.label,
-    description: description.slice(0, 950),
+    description,
     developer: developer || publisher,
     publisher,
     genres,
@@ -114,43 +163,17 @@ async function fetchWikidataGame(title: string): Promise<WikiGameInfo | null> {
   };
 }
 
-async function fetchWikipediaExtract(title: string): Promise<string | null> {
-  type SearchData = [string, string[]];
-  const search = await fetchJson<SearchData>(
-    `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(title)}&limit=1&namespace=0&format=json&origin=*`
-  );
-  const pageTitle = search?.[1]?.[0];
-  if (!pageTitle) return null;
-
-  type ExtractData = {
-    query?: { pages?: Record<string, { extract?: string }> };
-  };
-  const extractData = await fetchJson<ExtractData>(
-    `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(pageTitle)}&format=json&origin=*`
-  );
-  const extract = Object.values(extractData?.query?.pages ?? {})[0]?.extract?.trim();
-  return extract && extract.length >= 40 ? extract.slice(0, 950) : null;
-}
-
-function parseStudioFromText(text: string): { developer?: string; publisher?: string } {
-  const dev =
-    text.match(/(?:developed|created|designed)\s+by\s+([^.,;\n]+)/i)?.[1]?.trim() ||
-    text.match(/developer[s]?:\s*([^.,;\n]+)/i)?.[1]?.trim();
-  const pub =
-    text.match(/published\s+by\s+([^.,;\n]+)/i)?.[1]?.trim() ||
-    text.match(/publisher[s]?:\s*([^.,;\n]+)/i)?.[1]?.trim();
-  return { developer: dev, publisher: pub };
-}
-
-async function fetchRawgGame(title: string): Promise<WikiGameInfo | null> {
+async function fetchRawgGame(title: string): Promise<GameInfo | null> {
   if (!RAWG_KEY?.trim()) return null;
 
   type RawgSearch = { results?: { id: number; name: string }[] };
   const search = await fetchJson<RawgSearch>(
-    `https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(title)}&page_size=3`
+    `https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(title)}&page_size=5`
   );
-  const gameId = search?.results?.[0]?.id;
-  if (!gameId) return null;
+  const match =
+    search?.results?.find((r) => r.name.toLowerCase().includes(title.toLowerCase().slice(0, 6))) ||
+    search?.results?.[0];
+  if (!match) return null;
 
   type RawgGame = {
     name?: string;
@@ -160,107 +183,128 @@ async function fetchRawgGame(title: string): Promise<WikiGameInfo | null> {
     tags?: { name: string }[];
     genres?: { name: string }[];
     released?: string;
+    requirements?: { minimum?: string; recommended?: string };
   };
-  const detail = await fetchJson<RawgGame>(`https://api.rawg.io/api/games/${gameId}?key=${RAWG_KEY}`);
-  if (!detail?.description_raw && !detail?.name) return null;
+  const detail = await fetchJson<RawgGame>(`https://api.rawg.io/api/games/${match.id}?key=${RAWG_KEY}`);
+  if (!detail) return null;
 
   const plain = (detail.description_raw || "")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
+  const year = detail.released ? parseInt(detail.released.slice(0, 4), 10) : undefined;
+  const sizeHint = year && year >= 2022 ? "70 GB" : "45 GB";
+
   return {
-    pageTitle: detail.name || title,
-    description: plain.slice(0, 950) || `${detail.name} PC game.`,
+    description: plain,
     developer: detail.developers?.[0]?.name,
     publisher: detail.publishers?.[0]?.name,
-    genres: [
-      ...(detail.genres?.map((g) => g.name) || []),
-      ...(detail.tags?.slice(0, 5).map((t) => t.name) || []),
-    ],
-    year: detail.released ? parseInt(detail.released.slice(0, 4), 10) : undefined,
+    genres: [...(detail.genres?.map((g) => g.name) || []), ...(detail.tags?.slice(0, 4).map((t) => t.name) || [])],
+    year,
+    sizeHint,
+    requirements: parseRawgRequirements(
+      detail.requirements?.minimum,
+      detail.requirements?.recommended,
+      sizeHint
+    ) || undefined,
   };
 }
 
-function buildSystemRequirements(year?: number, genre?: string, sizeHint = "50 GB") {
+function buildVariedRequirements(
+  title: string,
+  year?: number,
+  genre?: string,
+  sizeHint = "50 GB"
+): GameAutoFillResult["systemRequirements"] {
+  const seed = hashSeed(title + (genre || ""));
   const y = year ?? 2020;
-  const g = (genre || "").toLowerCase();
-  const isHeavy = /open world|racing|simulation|flight|sports|action|rpg|shooter/.test(g);
-  const isLight = /indie|puzzle|2d|platform|casual|retro/.test(g);
+  const g = (genre || "action").toLowerCase();
 
-  if (y >= 2023 || (y >= 2020 && isHeavy)) {
-    return {
-      minimum: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i5-10400 / AMD Ryzen 5 3600",
-        memory: "16 GB RAM",
-        graphics: "NVIDIA GTX 1660 Super / AMD RX 5600 XT",
-        storage: `${sizeHint} available space (SSD recommended)`,
-      },
-      recommended: {
-        os: "Windows 11 64-bit",
-        processor: "Intel Core i7-12700K / AMD Ryzen 7 5800X",
-        memory: "32 GB RAM",
-        graphics: "NVIDIA RTX 3070 / AMD RX 6800 XT",
-        storage: `${sizeHint} SSD space`,
-      },
-    };
+  const cpusMin = [
+    "Intel Core i5-8400 / AMD Ryzen 5 2600",
+    "Intel Core i5-9400F / AMD Ryzen 5 3500",
+    "Intel Core i5-10400 / AMD Ryzen 5 3600",
+    "Intel Core i3-10100 / AMD Ryzen 3 3100",
+    "Intel Core i5-11400 / AMD Ryzen 5 5600",
+  ];
+  const cpusRec = [
+    "Intel Core i7-9700K / AMD Ryzen 7 3700X",
+    "Intel Core i7-10700K / AMD Ryzen 7 5800X",
+    "Intel Core i7-12700K / AMD Ryzen 7 5800X3D",
+    "Intel Core i9-12900K / AMD Ryzen 9 5900X",
+    "Intel Core i7-13700 / AMD Ryzen 7 7700X",
+  ];
+  const gpusMin = [
+    "NVIDIA GTX 1060 6GB / AMD RX 580",
+    "NVIDIA GTX 1650 Super / AMD RX 5500 XT",
+    "NVIDIA GTX 1660 Super / AMD RX 5600 XT",
+    "NVIDIA RTX 2060 / AMD RX 5700",
+    "NVIDIA RTX 3050 / AMD RX 6600",
+  ];
+  const gpusRec = [
+    "NVIDIA RTX 3060 Ti / AMD RX 6700 XT",
+    "NVIDIA RTX 3070 / AMD RX 6800",
+    "NVIDIA RTX 3080 / AMD RX 6800 XT",
+    "NVIDIA RTX 4070 / AMD RX 7800 XT",
+    "NVIDIA RTX 4080 / AMD RX 7900 XTX",
+  ];
+
+  let memMin = "8 GB RAM";
+  let memRec = "16 GB RAM";
+  if (y >= 2023 || /open world|rpg|simulation/.test(g)) {
+    memMin = "16 GB RAM";
+    memRec = "32 GB RAM";
+  } else if (/indie|2d|puzzle|platform/.test(g)) {
+    memMin = "4 GB RAM";
+    memRec = "8 GB RAM";
   }
 
-  if (y >= 2018 || isHeavy) {
-    return {
-      minimum: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i5-8400 / AMD Ryzen 5 2600",
-        memory: "8 GB RAM",
-        graphics: "NVIDIA GTX 1060 6GB / AMD RX 580",
-        storage: `${sizeHint} available space`,
-      },
-      recommended: {
-        os: "Windows 10/11 64-bit",
-        processor: "Intel Core i7-9700K / AMD Ryzen 7 3700X",
-        memory: "16 GB RAM",
-        graphics: "NVIDIA RTX 2060 / AMD RX 5700 XT",
-        storage: `${sizeHint} SSD space`,
-      },
-    };
-  }
-
-  if (isLight || y < 2015) {
-    return {
-      minimum: {
-        os: "Windows 7/10 64-bit",
-        processor: "Intel Core i3-4130 / AMD FX-6300",
-        memory: "4 GB RAM",
-        graphics: "NVIDIA GTX 750 Ti / AMD R7 260X",
-        storage: `${sizeHint} available space`,
-      },
-      recommended: {
-        os: "Windows 10 64-bit",
-        processor: "Intel Core i5-4460 / AMD FX-8350",
-        memory: "8 GB RAM",
-        graphics: "NVIDIA GTX 960 / AMD R9 380",
-        storage: `${sizeHint} available space`,
-      },
-    };
-  }
+  const osMin = y >= 2022 ? "Windows 10 64-bit (Windows 11 supported)" : "Windows 10 64-bit";
+  const osRec = y >= 2023 ? "Windows 11 64-bit" : "Windows 10/11 64-bit";
 
   return {
     minimum: {
-      os: "Windows 10 64-bit",
-      processor: "Intel Core i5-4590 / AMD FX-8350",
-      memory: "8 GB RAM",
-      graphics: "NVIDIA GTX 950 / AMD R7 370",
-      storage: `${sizeHint} available space`,
+      os: osMin,
+      processor: pick(cpusMin, seed, 0),
+      memory: memMin,
+      graphics: pick(gpusMin, seed, 1),
+      storage: `${sizeHint} available space (HDD or SSD)`,
     },
     recommended: {
-      os: "Windows 10/11 64-bit",
-      processor: "Intel Core i7-4770 / AMD Ryzen 5 1600",
-      memory: "16 GB RAM",
-      graphics: "NVIDIA GTX 1060 / AMD RX 580",
-      storage: `${sizeHint} SSD space`,
+      os: osRec,
+      processor: pick(cpusRec, seed, 2),
+      memory: memRec,
+      graphics: pick(gpusRec, seed, 3),
+      storage: `${sizeHint} SSD space (NVMe recommended)`,
     },
   };
+}
+
+function expandDescription(
+  base: string,
+  title: string,
+  developer: string,
+  genre: string,
+  year?: number,
+  publisher?: string
+): string {
+  const intro = base.trim().slice(0, 1200);
+  const yearText = year ? ` Originally released in ${year},` : "";
+  const pub = publisher && publisher !== developer ? ` Published by ${publisher},` : "";
+
+  const paragraphs = [
+    intro.length > 120
+      ? intro
+      : `${title} is a widely played ${genre.toLowerCase()} title for Windows PC.${yearText}${pub} it was developed by ${developer} and remains popular with players worldwide.`,
+    `${title} blends strong ${genre.toLowerCase()} gameplay with polished presentation, rewarding exploration, and hours of single-player and multiplayer content depending on the edition you install.`,
+    `Players searching for ${title} download, ${title} free download for PC, ${title} repack, or ${title} full version setup will find this page updated with direct links, installation notes, and verified file information.`,
+    `Before you install ${title}, review the minimum and recommended system requirements listed below. Meeting recommended specs delivers smoother frame rates, faster loading, and better stability on modern Windows builds.`,
+    `This ${title} PC build is packaged for easy setup: extract the archive, run the installer or setup executable, follow on-screen prompts, and launch the game from the desktop shortcut. If a password is required, it is shown on this page near the download button.`,
+    `Whether you are returning to ${title} or playing for the first time, keep your GPU drivers updated and install latest DirectX / Visual C++ runtimes for the best experience.`,
+  ];
+
+  return paragraphs.join("\n\n").slice(0, 2800);
 }
 
 function buildTags(title: string, categories: string[], extra: string[] = []): string {
@@ -276,28 +320,31 @@ function buildTags(title: string, categories: string[], extra: string[] = []): s
     `${title} free download`,
     `${title} pc download`,
     `${title} full version`,
-    `${title} highly compressed`,
     `${title} repack`,
-    `${title} windows`,
+    `${title} highly compressed`,
+    `${title} windows 10`,
+    `${title} windows 11`,
+    "steamfree games",
     "pc game download",
     "free pc games",
-    "full version pc game",
     ...words,
-    ...categories.map((c) => `${c} game download`),
     ...categories,
+    ...categories.map((c) => `${c} games download`),
     ...extra,
   ]);
 
-  return Array.from(tags)
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .slice(0, 20)
-    .join(", ");
+  return Array.from(tags).slice(0, 24).join(", ");
 }
 
-function templateDescription(title: string, categories: string[], developer: string): string {
-  const genre = categories[0] || "action";
-  return `${title} is a ${genre.toLowerCase()} PC game developed by ${developer}. Download ${title} for Windows with full version setup, installation guide, system requirements, and fast links. Updated for PC players looking for ${title} free download and repack builds.`;
+function parseStudioFromText(text: string): { developer?: string; publisher?: string } {
+  return {
+    developer:
+      text.match(/(?:developed|created)\s+by\s+([^.,;\n]+)/i)?.[1]?.trim() ||
+      text.match(/developer[s]?:\s*([^.,;\n]+)/i)?.[1]?.trim(),
+    publisher:
+      text.match(/published\s+by\s+([^.,;\n]+)/i)?.[1]?.trim() ||
+      text.match(/publisher[s]?:\s*([^.,;\n]+)/i)?.[1]?.trim(),
+  };
 }
 
 export async function autoFillGameDetails(
@@ -309,50 +356,61 @@ export async function autoFillGameDetails(
 
   const known = lookupKnownGame(trimmed);
 
-  const [wikidata, rawg, wikiText] = await Promise.all([
-    fetchWikidataGame(trimmed),
+  const [rawg, wikidata, wikiLong, catalogGame] = await Promise.all([
     fetchRawgGame(trimmed),
-    fetchWikipediaExtract(trimmed),
+    fetchWikidataGame(trimmed),
+    fetchWikipediaText(trimmed, true),
+    searchGameCatalog(trimmed),
   ]);
 
-  const parsed = wikiText ? parseStudioFromText(wikiText) : {};
-  const info = rawg || wikidata;
+  const catalogInfo: GameInfo | null = catalogGame
+    ? {
+        description: catalogGame.short_description,
+        developer: catalogGame.developer,
+        publisher: catalogGame.publisher,
+        genres: [catalogGame.genre],
+        year: catalogGame.release_date ? parseInt(catalogGame.release_date, 10) : undefined,
+        sizeHint: "30 GB",
+      }
+    : null;
+
+  const parsed = wikiLong ? parseStudioFromText(wikiLong) : {};
+  const info = rawg || wikidata || catalogInfo;
 
   const developer =
     info?.developer ||
     parsed.developer ||
     known?.developer ||
+    catalogGame?.developer ||
     info?.publisher ||
     parsed.publisher ||
     known?.publisher ||
     "Unknown Developer";
 
-  const description =
-    info?.description ||
-    wikiText ||
-    (known
-      ? templateDescription(trimmed, categories.length ? categories : [known.genre || "Action"], developer)
-      : templateDescription(trimmed, categories, developer));
-
-  const genre = info?.genres?.[0] || known?.genre || categories[0] || "Action";
+  const publisher = info?.publisher || catalogGame?.publisher || known?.publisher;
+  const genre = info?.genres?.[0] || known?.genre || categories[0] || catalogGame?.genre || "Action";
   const year = info?.year || known?.year;
-  const sizeHint = known?.sizeHint || (year && year >= 2022 ? "60 GB" : "40 GB");
+  const sizeHint = info?.sizeHint || known?.sizeHint || (year && year >= 2022 ? "65 GB" : "40 GB");
+
+  const baseDesc =
+    info?.description ||
+    wikiLong ||
+    catalogGame?.short_description ||
+    `${trimmed} is a ${genre} game for PC.`;
+
+  const description = expandDescription(baseDesc, trimmed, developer, genre, year, publisher);
+
+  const systemRequirements =
+    info?.requirements || buildVariedRequirements(trimmed, year, genre, sizeHint);
 
   const tags = buildTags(trimmed, categories.length ? categories : [genre], info?.genres || []);
-
-  const systemRequirements = buildSystemRequirements(year, genre, sizeHint);
 
   let source: GameAutoFillResult["source"] = "template";
   if (rawg) source = "rawg";
   else if (wikidata) source = "wikidata";
-  else if (wikiText) source = "wikipedia";
+  else if (wikiLong) source = "wikipedia";
+  else if (catalogGame) source = "catalog";
   else if (known) source = "database";
 
-  return {
-    description,
-    developer,
-    tags,
-    systemRequirements,
-    source,
-  };
+  return { description, developer, tags, systemRequirements, source };
 }

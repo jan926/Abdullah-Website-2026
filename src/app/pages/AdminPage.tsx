@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router";
 import { Card } from "../components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
@@ -26,6 +34,7 @@ import {
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
 } from "lucide-react";
 import { autoFillGameDetails } from "../../lib/gameAutoFill";
+import { DownloadPartsEditor } from "../components/admin/DownloadPartsEditor";
 import { toast } from "sonner";
 
 const defaultAdminSettings: SiteSettings = {
@@ -166,9 +175,10 @@ export default function AdminPage() {
         systemRequirements: result.systemRequirements,
       }));
       const sourceMsg: Record<string, string> = {
-        rawg: "RAWG game database",
-        wikidata: "Wikidata (developer, genre, year)",
-        wikipedia: "Wikipedia",
+        rawg: "RAWG (full specs + long description)",
+        wikidata: "Wikidata + Wikipedia",
+        wikipedia: "Wikipedia full article",
+        catalog: "FreeToGame catalog (400+ games)",
         database: "built-in game database",
         template: "smart templates",
       };
@@ -700,7 +710,7 @@ export default function AdminPage() {
                         {isAutoFilling ? "Generating…" : "AI Auto-fill"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">Wikipedia + Wikidata + 80+ games DB. Tags hidden (SEO only). Optional: add VITE_RAWG_API_KEY in .env</p>
+                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. Min 5-line description. Tags = SEO only (hidden).</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
@@ -734,7 +744,7 @@ export default function AdminPage() {
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Description</Label>
-                    <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="h-32 border-[var(--border)]" required />
+                    <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="min-h-[200px] border-[var(--border)]" required />
                   </div>
                 </div>
               </Card>
@@ -744,122 +754,13 @@ export default function AdminPage() {
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">2</span>
                   Download Details
                 </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border border-[var(--border)] p-4">
-                    <div>
-                      <Label className="text-[var(--foreground)]">Multi-part download</Label>
-                      <p className="text-xs text-slate-500">Add part name, link, and size for each file</p>
-                    </div>
-                    <Switch checked={formData.useMultiPart} onCheckedChange={(c) => setFormData({ ...formData, useMultiPart: c })} />
-                  </div>
-                  {formData.useMultiPart ? (
-                    <div className="space-y-3 rounded-lg border border-[var(--border)] p-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[var(--foreground)]">Download Parts</Label>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              downloadParts: [
-                                ...formData.downloadParts,
-                                {
-                                  id: `part-${Date.now()}`,
-                                  name: `Part ${formData.downloadParts.length + 1}`,
-                                  link: "",
-                                  size: "",
-                                },
-                              ],
-                            })
-                          }
-                        >
-                          <Plus className="mr-1 h-3 w-3" /> Add Part
-                        </Button>
-                      </div>
-                      {formData.downloadParts.map((part, i) => (
-                        <div key={part.id} className="grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-3 md:grid-cols-[1fr_1fr_100px_auto]">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-slate-500">Part name</Label>
-                            <Input
-                              value={part.name}
-                              onChange={(e) => {
-                                const downloadParts = [...formData.downloadParts];
-                                downloadParts[i] = { ...part, name: e.target.value };
-                                setFormData({ ...formData, downloadParts });
-                              }}
-                              placeholder="Part 1"
-                              className="border-[var(--border)]"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-slate-500">Download link</Label>
-                            <Input
-                              value={part.link}
-                              onChange={(e) => {
-                                const downloadParts = [...formData.downloadParts];
-                                downloadParts[i] = { ...part, link: e.target.value };
-                                setFormData({ ...formData, downloadParts });
-                              }}
-                              placeholder="https://..."
-                              className="border-[var(--border)]"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-slate-500">Size</Label>
-                            <Input
-                              value={part.size || ""}
-                              onChange={(e) => {
-                                const downloadParts = [...formData.downloadParts];
-                                downloadParts[i] = { ...part, size: e.target.value };
-                                setFormData({ ...formData, downloadParts });
-                              }}
-                              placeholder="5 GB"
-                              className="border-[var(--border)]"
-                            />
-                          </div>
-                          {formData.downloadParts.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="self-end"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  downloadParts: formData.downloadParts.filter((_, idx) => idx !== i),
-                                })
-                              }
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-[var(--foreground)]">Single Download Link</Label>
-                      <Input
-                        type="url"
-                        value={formData.downloadLink}
-                        onChange={(e) => setFormData({ ...formData, downloadLink: e.target.value })}
-                        required={!formData.useMultiPart}
-                        className="border-[var(--border)]"
-                        placeholder="magnet:?xt=... or https://..."
-                      />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">File Password (optional)</Label>
-                    <Input
-                      value={formData.filePassword}
-                      onChange={(e) => setFormData({ ...formData, filePassword: e.target.value })}
-                      className="border-[var(--border)]"
-                      placeholder="e.g. www.example.com"
-                    />
-                  </div>
-                </div>
+                <DownloadPartsEditor
+                  useMultiPart={formData.useMultiPart}
+                  downloadLink={formData.downloadLink}
+                  downloadParts={formData.downloadParts}
+                  filePassword={formData.filePassword}
+                  onChange={(patch) => setFormData({ ...formData, ...patch })}
+                />
               </Card>
 
               <Card className="p-6 border-[var(--border)] shadow-sm">
@@ -918,45 +819,10 @@ export default function AdminPage() {
                 </div>
               </Card>
 
+              
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span> 
-                  Visibility Settings
-                </h3>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
-                    <div>
-                      <Label className="text-base text-[var(--foreground)] font-semibold">Featured Game</Label>
-                      <p className="text-sm text-[var(--muted-foreground)]">Show this game in the large featured hero banner on the homepage.</p>
-                    </div>
-                    <Switch checked={formData.featured} onCheckedChange={c => setFormData({...formData, featured: c})} />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
-                    <div>
-                      <Label className="text-base text-[var(--foreground)] font-semibold">Trending / Popular</Label>
-                      <p className="text-sm text-[var(--muted-foreground)]">Add a 'Trending' badge and show in Most Viewed sections.</p>
-                    </div>
-                    <Switch checked={formData.trending} onCheckedChange={c => setFormData({...formData, trending: c})} />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
-                    <div>
-                      <Label className="text-base text-[var(--foreground)] font-semibold">Homepage Hero Carousel</Label>
-                      <p className="text-sm text-[var(--muted-foreground)]">Top homepage slider (max 6 — use Hero Banner tab).</p>
-                    </div>
-                    <Switch checked={formData.heroFeatured} onCheckedChange={c => setFormData({...formData, heroFeatured: c})} />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-[var(--border)] rounded-lg">
-                    <div>
-                      <Label className="text-base text-[var(--foreground)] font-semibold">Game of the Day</Label>
-                      <p className="text-sm text-[var(--muted-foreground)]">Promote this game as the daily highlighted release.</p>
-                    </div>
-                    <Switch checked={formData.gameOfTheDay} onCheckedChange={c => setFormData({...formData, gameOfTheDay: c})} />
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-6 border-[var(--border)] shadow-sm">
-                <h3 className="text-lg font-semibold text-[var(--foreground)] mb-6 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">5</span>
+                  <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
