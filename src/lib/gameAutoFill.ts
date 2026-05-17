@@ -11,7 +11,7 @@ export interface GameAutoFillResult {
     minimum: { os: string; processor: string; memory: string; graphics: string; storage: string };
     recommended: { os: string; processor: string; memory: string; graphics: string; storage: string };
   };
-  source: "rawg" | "wikidata" | "wikipedia" | "catalog" | "database" | "template" | "openai";
+  source: "rawg" | "wikidata" | "wikipedia" | "catalog" | "database" | "template" | "openai" | "gemini";
 }
 
 type GameInfo = {
@@ -26,6 +26,7 @@ type GameInfo = {
 
 const RAWG_KEY = import.meta.env.VITE_RAWG_API_KEY as string | undefined;
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
 const OPENAI_MODEL = (() => {
   const raw = (import.meta.env.VITE_OPENAI_MODEL as string | undefined)?.trim().toLowerCase();
   const aliases: Record<string, string> = {
@@ -85,6 +86,59 @@ function normalizeSystemRequirements(
   if (!recommended.os || !recommended.processor || !recommended.memory || !recommended.graphics || !recommended.storage) return null;
 
   return { minimum, recommended };
+}
+
+async function fetchGeminiGameDetails(
+  title: string,
+  categories: string[],
+  knownInfo: KnownGameEntry | null
+): Promise<GameAutoFillResult | null> {
+  if (!GEMINI_KEY?.trim()) return null;
+
+  const categoryList = categories.length ? categories.join(", ") : "General";
+  const knownHint = knownInfo
+    ? `Known game info: developer ${knownInfo.developer}${knownInfo.publisher ? `, publisher ${knownInfo.publisher}` : ``}${knownInfo.genre ? `, genre ${knownInfo.genre}` : ``}${knownInfo.year ? `, year ${knownInfo.year}` : ``}${knownInfo.sizeHint ? `, estimated size ${knownInfo.sizeHint}` : ``}. `
+    : "";
+  const prompt = `You are a PC game metadata expert. Given a game title, return ONLY a valid JSON object with: description, developer, tags, systemRequirements (with minimum and recommended having: os, processor, memory, graphics, storage).\nTitle: ${title}\nCategories: ${categoryList}\n${knownHint}Return only JSON, no markdown or extra text.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 800 },
+        }),
+      }
+    );
+
+    const data = await res.json();
+    const rawText: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) return null;
+
+    const jsonText = extractJsonObject(rawText.trim());
+    const parsed = JSON.parse(jsonText) as {
+      description?: string;
+      developer?: string;
+      tags?: string | string[];
+      systemRequirements?: unknown;
+    };
+
+    const systemRequirements = normalizeSystemRequirements(parsed.systemRequirements);
+    if (!parsed.description || !parsed.developer || !systemRequirements) return null;
+
+    return {
+      description: parsed.description.trim(),
+      developer: parsed.developer.trim() || "Unknown Developer",
+      tags: normalizeTags(parsed.tags) || buildTags(title, categories.length ? categories : ["Action"], []),
+      systemRequirements,
+      source: "gemini",
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function fetchOpenAIGameDetails(
@@ -506,12 +560,16 @@ export async function autoFillGameDetails(
   if (!trimmed) throw new Error("Enter a game title first");
 
   const known = lookupKnownGame(trimmed);
-  const [rawg, wikidata, wikiLong, catalogGame, aiResult] = await Promise.all([
+  
+  // Try Gemini first (free), then OpenAI as fallback
+  const aiResult = (await fetchGeminiGameDetails(trimmed, categories, known)) || 
+                   (await fetchOpenAIGameDetails(trimmed, categories, known));
+  
+  const [rawg, wikidata, wikiLong, catalogGame] = await Promise.all([
     fetchRawgGame(trimmed),
     fetchWikidataGame(trimmed),
     fetchWikipediaText(trimmed, true),
     searchGameCatalog(trimmed),
-    fetchOpenAIGameDetails(trimmed, categories, known),
   ]);
 
   if (aiResult) return aiResult;

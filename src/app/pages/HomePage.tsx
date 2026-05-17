@@ -91,7 +91,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[min(68vh,760px)] min-h-[520px] overflow-hidden">
+      <section className="relative h-[min(78vh,850px)] min-h-[640px] overflow-hidden">
         {displayHeroGames.map((game, index) => (
           <div
             key={game.id}
