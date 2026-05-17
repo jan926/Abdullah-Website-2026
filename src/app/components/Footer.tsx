@@ -111,7 +111,7 @@ export function Footer() {
                   Malik Muhammad Abdullah Jan Zia
                 </p>
                 <p className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-rose-300 to-fuchsia-500">
-                  Awais Qammar
+                  Awais Qammer
                 </p>
               </div>
             </div>

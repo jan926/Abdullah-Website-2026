@@ -347,11 +347,11 @@ button, input, textarea, select {
 
 @keyframes ken-burns {
   0% { transform: scale(1); }
-  100% { transform: scale(1.08); }
+  100% { transform: scale(1.04); }
 }
 
 .animate-ken-burns img {
-  animation: ken-burns 18s ease-in-out infinite alternate;
+  animation: ken-burns 8s ease-in-out infinite alternate;
 }
 
 .glass-panel {

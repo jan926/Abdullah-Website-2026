@@ -31,7 +31,17 @@ export default function HomePage() {
   const heroGames = games.filter((g) => g.heroFeatured).slice(0, 6);
   const fallbackHeroGames = games.slice(0, 6);
   const displayHeroGames = heroGames.length > 0 ? heroGames : fallbackHeroGames;
-  const trendingGames = games.filter((game) => game.trending).slice(0, 5);
+  const [trendingGames, setTrendingGames] = useState<Game[]>(() => {
+    const t = games.filter((game) => game.trending);
+    if (t.length === 0) return games.slice(0, 6);
+    // randomize and pick up to 6
+    return shuffleArray(t).slice(0, 6);
+  });
+  
+  // Pagination for All Games: 5 rows x 6 cols = 30 per page
+  const [gamesPage, setGamesPage] = useState(1);
+  const GAMES_PER_PAGE = 30;
+  const totalGamesPages = Math.max(1, Math.ceil(games.length / GAMES_PER_PAGE));
   const latestGames = [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
     .slice(0, 12);
@@ -46,6 +56,16 @@ export default function HomePage() {
     if (displayHeroGames.length === 0) return;
     setCurrentSlide((prev) => (prev + 1) % displayHeroGames.length);
   };
+
+  // helper: shuffle
+  function shuffleArray<T>(arr: T[]) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
 
   const prevSlide = () => {
     if (displayHeroGames.length === 0) return;
@@ -80,7 +100,8 @@ export default function HomePage() {
     };
 
     refresh();
-    return subscribeToDataChanges(refresh);
+    const unsub = subscribeToDataChanges(refresh);
+    return unsub;
   }, []);
 
   useEffect(() => {
@@ -88,10 +109,22 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [displayHeroGames.length]);
 
+  // when games change, update trending selection
+  useEffect(() => {
+    const t = games.filter((g) => g.trending);
+    if (t.length === 0) {
+      setTrendingGames(shuffleArray(games).slice(0, 6));
+    } else {
+      setTrendingGames(shuffleArray(t).slice(0, 6));
+    }
+    // reset page if games length changed
+    setGamesPage(1);
+  }, [games]);
+
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[min(78vh,850px)] min-h-[640px] overflow-hidden">
+      <section className="relative h-[min(60vh,700px)] min-h-[320px] overflow-hidden">
         {displayHeroGames.map((game, index) => (
           <div
             key={game.id}
@@ -117,10 +150,10 @@ export default function HomePage() {
                       🔥 TRENDING
                     </span>
                   </div>
-                  <h1 className="text-5xl font-bold text-white leading-tight">
+                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
                     {game.title}
                   </h1>
-                  <p className="line-clamp-3 text-gray-300 text-lg leading-relaxed">
+                  <p className="line-clamp-3 text-gray-300 text-base md:text-lg leading-relaxed">
                     {game.description}
                   </p>
                   <div className="flex items-center gap-3 pt-4">
@@ -149,7 +182,7 @@ export default function HomePage() {
             </div>
 
             {/* Navigation Dots */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
               {displayHeroGames.map((_, idx) => (
                 <button
                   key={idx}
@@ -416,11 +449,11 @@ export default function HomePage() {
           </div>
         </section>)}
 
-        {/* All Games Grid */}
+        {/* All Games Grid (paginated: 5 rows x 6 cols = 30 per page) */}
         <section>
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">All Games</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {games.map((game, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {games.slice((gamesPage - 1) * GAMES_PER_PAGE, (gamesPage - 1) * GAMES_PER_PAGE + GAMES_PER_PAGE).map((game, index) => (
               <Link key={game.id} to={`/game/${game.id}`} className="group block stagger-item" style={{ animationDelay: `${(index % 12) * 0.05}s` }}>
                 <div className="relative overflow-hidden rounded-lg mb-2 card-3d reflection">
                   <img
@@ -436,7 +469,6 @@ export default function HomePage() {
                       <span className="text-xs text-gray-300">{game.category}</span>
                     </div>
                   </div>
-                  {/* Neon border on hover */}
                   <div className="absolute inset-0 border-2 border-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </div>
                 <h3 className="text-[var(--foreground)] font-bold text-sm line-clamp-2 group-hover:text-cyan-400 transition">
@@ -444,6 +476,27 @@ export default function HomePage() {
                 </h3>
               </Link>
             ))}
+          </div>
+
+          {/* Pagination controls */}
+          <div className="flex items-center justify-between mt-6">
+            <div className="text-sm text-gray-400">Page {gamesPage} of {totalGamesPages}</div>
+            <div className="flex gap-2">
+              <button
+                disabled={gamesPage <= 1}
+                onClick={() => setGamesPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                disabled={gamesPage >= totalGamesPages}
+                onClick={() => setGamesPage((p) => Math.min(totalGamesPages, p + 1))}
+                className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </section>
       </div>

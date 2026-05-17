@@ -963,6 +963,23 @@ export default function AdminPage() {
                   <Label className="text-[var(--foreground)]">Show Game of the Day</Label>
                   <Switch checked={settings.showGameOfTheDay} onCheckedChange={value => setSettings({...settings, showGameOfTheDay: value})} />
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">Enable AI Features</Label>
+                  <Switch checked={Boolean(settings.aiEnabled)} onCheckedChange={value => setSettings({...settings, aiEnabled: value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[var(--foreground)]">AI Model</Label>
+                  <Select value={settings.aiModel || "none"} onValueChange={(v) => setSettings({...settings, aiModel: v})}>
+                    <SelectTrigger className="border-[var(--border)]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (disabled)</SelectItem>
+                      <SelectItem value="gemini_free">Gemini Free</SelectItem>
+                      <SelectItem value="openai">OpenAI (fallback)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end">

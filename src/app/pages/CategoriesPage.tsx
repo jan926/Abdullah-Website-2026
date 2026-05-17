@@ -33,6 +33,10 @@ export default function CategoriesPage() {
   const displayGames = selectedCategory
     ? games.filter((game) => gameHasCategory(game, selectedCategory))
     : [];
+  // pagination: 30 per page (5 rows x 6 cols)
+  const [catPage, setCatPage] = useState(1);
+  const CAT_PER_PAGE = 30;
+  const totalCatPages = Math.max(1, Math.ceil(displayGames.length / CAT_PER_PAGE));
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -82,10 +86,29 @@ export default function CategoriesPage() {
                 ← Back to Categories
               </button>
             </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {displayGames.map((game) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {displayGames.slice((catPage - 1) * CAT_PER_PAGE, (catPage - 1) * CAT_PER_PAGE + CAT_PER_PAGE).map((game) => (
                 <GameCard key={game.id} game={game} />
               ))}
+            </div>
+            <div className="flex items-center justify-between mt-6">
+              <div className="text-sm text-gray-400">Page {catPage} of {totalCatPages}</div>
+              <div className="flex gap-2">
+                <button
+                  disabled={catPage <= 1}
+                  onClick={() => setCatPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={catPage >= totalCatPages}
+                  onClick={() => setCatPage((p) => Math.min(totalCatPages, p + 1))}
+                  className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         )}
