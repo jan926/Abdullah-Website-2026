@@ -173,6 +173,8 @@ export default function AdminPage() {
         developer: result.developer,
         tags: result.tags,
         systemRequirements: result.systemRequirements,
+        screenshots: result.screenshots,
+        cover: prev.cover || result.screenshots[0] || prev.cover,
       }));
       const sourceMsg: Record<string, string> = {
         rawg: "RAWG (full specs + long description)",
@@ -180,6 +182,7 @@ export default function AdminPage() {
         wikipedia: "Wikipedia full article",
         catalog: "FreeToGame catalog (400+ games)",
         database: "built-in game database",
+        openai: "OpenAI GPT model",
         template: "smart templates",
       };
       toast.success(`Auto-filled from ${sourceMsg[result.source] || "sources"} — please review before saving`);
@@ -710,7 +713,7 @@ export default function AdminPage() {
                         {isAutoFilling ? "Generating…" : "AI Auto-fill"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. Min 5-line description. Tags = SEO only (hidden).</p>
+                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. If you set VITE_OPENAI_API_KEY, the auto-fill will use OpenAI GPT for richer metadata. Tags are SEO-only and screenshots are auto-generated from a free image source.</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>

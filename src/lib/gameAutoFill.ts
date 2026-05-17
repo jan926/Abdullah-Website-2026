@@ -6,11 +6,12 @@ export interface GameAutoFillResult {
   description: string;
   developer: string;
   tags: string;
+  screenshots: string[];
   systemRequirements: {
     minimum: { os: string; processor: string; memory: string; graphics: string; storage: string };
     recommended: { os: string; processor: string; memory: string; graphics: string; storage: string };
   };
-  source: "rawg" | "wikidata" | "wikipedia" | "catalog" | "database" | "template";
+  source: "rawg" | "wikidata" | "wikipedia" | "catalog" | "database" | "template" | "openai";
 }
 
 type GameInfo = {
@@ -24,12 +25,93 @@ type GameInfo = {
 };
 
 const RAWG_KEY = import.meta.env.VITE_RAWG_API_KEY as string | undefined;
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+const OPENAI_MODEL = (import.meta.env.VITE_OPENAI_MODEL as string | undefined) || "gpt-4.1-mini";
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
     return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+function extractJsonObject(text: string): string {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return text;
+  return text.slice(start, end + 1);
+}
+
+async function fetchOpenAIGameDetails(
+  title: string,
+  categories: string[]
+): Promise<GameAutoFillResult | null> {
+  if (!OPENAI_KEY?.trim()) return null;
+
+  const categoryList = categories.length ? categories.join(", ") : "General";
+  const prompt = `You are an expert PC game metadata writer. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, screenshots, systemRequirements.
+- description: a long, compelling PC game description suitable for a game details page.
+- developer: the game's developer name.
+- tags: a comma-separated string of SEO tags.
+- screenshots: an array of 3 image URLs suitable for screenshots.
+- systemRequirements: an object with minimum and recommended specs, each containing os, processor, memory, graphics, and storage.
+Use Windows PC language and do not return any extra text or markdown. The values should be realistic for the game title.
+Title: ${title}
+Categories: ${categoryList}`;
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: "system", content: "You are a helpful assistant that outputs only JSON." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 700,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await res.json();
+    const rawText:
+      | string
+      | undefined =
+      data?.choices?.[0]?.message?.content ||
+      (Array.isArray(data?.choices?.[0]?.message?.content)
+        ? data.choices[0].message.content.map((item: any) => item.text || "").join("")
+        : undefined);
+    if (!rawText) return null;
+
+    const jsonText = extractJsonObject(rawText.trim());
+    const parsed = JSON.parse(jsonText) as {
+      description?: string;
+      developer?: string;
+      tags?: string;
+      screenshots?: string[];
+      systemRequirements?: GameAutoFillResult["systemRequirements"];
+    };
+
+    if (!parsed.description || !parsed.developer || !parsed.systemRequirements) return null;
+
+    return {
+      description: parsed.description.trim(),
+      developer: parsed.developer.trim() || "Unknown Developer",
+      tags: parsed.tags?.trim() || buildTags(title, categories.length ? categories : ["Action"], []),
+      screenshots:
+        Array.isArray(parsed.screenshots) && parsed.screenshots.length
+          ? parsed.screenshots
+          : buildScreenshotUrls(title, categories[0] || "Action", 3),
+      systemRequirements: parsed.systemRequirements,
+      source: "openai",
+    };
   } catch {
     return null;
   }
@@ -347,6 +429,11 @@ function parseStudioFromText(text: string): { developer?: string; publisher?: st
   };
 }
 
+function buildScreenshotUrls(title: string, genre: string, count = 3): string[] {
+  const query = encodeURIComponent(`${title} ${genre} video game`);
+  return Array.from({ length: count }, (_, i) => `https://source.unsplash.com/1600x900/?${query}&sig=${i}`);
+}
+
 export async function autoFillGameDetails(
   title: string,
   categories: string[] = []
@@ -356,12 +443,15 @@ export async function autoFillGameDetails(
 
   const known = lookupKnownGame(trimmed);
 
-  const [rawg, wikidata, wikiLong, catalogGame] = await Promise.all([
+  const [rawg, wikidata, wikiLong, catalogGame, aiResult] = await Promise.all([
     fetchRawgGame(trimmed),
     fetchWikidataGame(trimmed),
     fetchWikipediaText(trimmed, true),
     searchGameCatalog(trimmed),
+    fetchOpenAIGameDetails(trimmed, categories),
   ]);
+
+  if (aiResult) return aiResult;
 
   const catalogInfo: GameInfo | null = catalogGame
     ? {
@@ -404,6 +494,7 @@ export async function autoFillGameDetails(
     info?.requirements || buildVariedRequirements(trimmed, year, genre, sizeHint);
 
   const tags = buildTags(trimmed, categories.length ? categories : [genre], info?.genres || []);
+  const screenshots = buildScreenshotUrls(trimmed, genre, 3);
 
   let source: GameAutoFillResult["source"] = "template";
   if (rawg) source = "rawg";
@@ -412,5 +503,5 @@ export async function autoFillGameDetails(
   else if (catalogGame) source = "catalog";
   else if (known) source = "database";
 
-  return { description, developer, tags, systemRequirements, source };
+  return { description, developer, tags, screenshots, systemRequirements, source };
 }
