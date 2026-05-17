@@ -26,7 +26,15 @@ type GameInfo = {
 
 const RAWG_KEY = import.meta.env.VITE_RAWG_API_KEY as string | undefined;
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
-const OPENAI_MODEL = (import.meta.env.VITE_OPENAI_MODEL as string | undefined) || "gpt-4.1-mini";
+const OPENAI_MODEL = (() => {
+  const raw = (import.meta.env.VITE_OPENAI_MODEL as string | undefined)?.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    free: "gpt-3.5-turbo",
+    "gpt4": "gpt-4.1-mini",
+    "gpt4o": "gpt-4o-mini",
+  };
+  return raw ? aliases[raw] || raw : "gpt-3.5-turbo";
+})();
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
@@ -92,9 +100,10 @@ async function fetchOpenAIGameDetails(
     : "";
   const prompt = `You are a PC game metadata expert. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, systemRequirements. Do not include markdown, code fences, or any extra keys.
 - description: 5-7 sentences, game-specific, PC-focused, and written like a store or landing page blurb.
-- developer: the real or most plausible developer for this title.
+- developer: the exact or most plausible developer for this title.
 - tags: SEO-friendly tags separated by commas.
 - systemRequirements: an object with realistic minimum and recommended Windows PC specs. Use exact fields {os, processor, memory, graphics, storage}.
+If you know the official PC requirements for this game, return those exact values. If not, return the closest accurate estimate for this title.
 Minimum should describe a playable setup. Recommended should describe a modern mid/high-end setup for a smooth 1080p or better experience.
 Use real CPU/GPU combos, Windows 10/11 64-bit, and believable storage requirements. Avoid vague hardware terms such as "modern CPU" or "high-end GPU".
 ${knownHint}Title: ${title}
@@ -113,8 +122,8 @@ Categories: ${categoryList}`;
           { role: "system", content: "You are a helpful assistant that outputs only JSON and nothing else." },
           { role: "user", content: prompt },
         ],
-        max_tokens: 600,
-        temperature: 0.15,
+        max_tokens: 700,
+        temperature: 0,
       }),
     });
 

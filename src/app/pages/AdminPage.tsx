@@ -713,7 +713,7 @@ export default function AdminPage() {
                         {isAutoFilling ? "Generating…" : "AI Auto-fill"}
                       </Button>
                     </div>
-                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. If you set VITE_OPENAI_API_KEY, the auto-fill will use OpenAI GPT for richer metadata. This now focuses on description, developer, tags, and system requirements; screenshots are optional.</p>
+                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. If you set VITE_OPENAI_API_KEY, the auto-fill will use OpenAI GPT for richer metadata. Set VITE_OPENAI_MODEL to gpt-4.1-mini, gpt-4o-mini, or gpt-3.5-turbo (alias: free) for lower-cost fallback. This now focuses on description, developer, tags, and system requirements; screenshots are optional.</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>

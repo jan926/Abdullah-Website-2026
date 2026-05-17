@@ -91,7 +91,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Hero Section */}
-      <section className="relative h-[min(58vh,620px)] min-h-[480px] overflow-hidden">
+      <section className="relative h-[min(68vh,760px)] min-h-[520px] overflow-hidden">
         {displayHeroGames.map((game, index) => (
           <div
             key={game.id}
@@ -242,7 +242,7 @@ export default function HomePage() {
               className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
             >
               {trendingGames.map((game) => (
-                <div key={game.id} className="flex-none w-[200px]">
+                <div key={game.id} className="flex-none w-[240px]">
                   <div className="group block">
                     <Link to={`/game/${game.id}`} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
@@ -304,7 +304,7 @@ export default function HomePage() {
             className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
           >
             {latestGames.map((game, index) => (
-              <div key={game.id} className="flex-none w-[200px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div key={game.id} className="flex-none w-[240px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
                     <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
@@ -426,7 +426,7 @@ export default function HomePage() {
                   <img
                     src={game.cover}
                     alt={game.title}
-                    className="w-full h-[220px] object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-[260px] object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 p-3 w-full">
