@@ -1,5 +1,5 @@
 /** Advanced auto-fill: RAWG + Wikidata + Wikipedia + 400+ game catalog + local DB. */
-import { lookupKnownGame } from "./gameDatabase";
+import { lookupKnownGame, KnownGameEntry } from "./gameDatabase";
 import { searchGameCatalog } from "./gameCatalog";
 
 export interface GameAutoFillResult {
@@ -45,20 +45,59 @@ function extractJsonObject(text: string): string {
   return text.slice(start, end + 1);
 }
 
+function normalizeTags(tags: string | string[] | undefined): string {
+  if (!tags) return "";
+  if (Array.isArray(tags)) return tags.filter(Boolean).join(", ");
+  return String(tags).trim();
+}
+
+function normalizeSystemRequirements(
+  value: unknown
+): GameAutoFillResult["systemRequirements"] | null {
+  if (!value || typeof value !== "object") return null;
+  const data = value as Record<string, unknown>;
+  const normalizeBlock = (block: unknown): GameAutoFillResult["systemRequirements"]["minimum"] | null => {
+    if (!block || typeof block !== "object") return null;
+    const item = block as Record<string, unknown>;
+    const field = (key: string) => String(item[key] ?? item[key.toLowerCase()] ?? item[key.toUpperCase()] ?? "").trim();
+    return {
+      os: field("os") || field("OS") || field("Operating System") || "",
+      processor: field("processor") || field("Processor") || field("CPU") || "",
+      memory: field("memory") || field("Memory") || field("RAM") || "",
+      graphics: field("graphics") || field("Graphics") || field("GPU") || "",
+      storage: field("storage") || field("Storage") || field("Hard Drive") || field("Disk") || "",
+    };
+  };
+
+  const minimum = normalizeBlock(data.minimum ?? data.min ?? data.minimumRequirements);
+  const recommended = normalizeBlock(data.recommended ?? data.rec ?? data.recommendedRequirements);
+  if (!minimum || !recommended) return null;
+
+  if (!minimum.os || !minimum.processor || !minimum.memory || !minimum.graphics || !minimum.storage) return null;
+  if (!recommended.os || !recommended.processor || !recommended.memory || !recommended.graphics || !recommended.storage) return null;
+
+  return { minimum, recommended };
+}
+
 async function fetchOpenAIGameDetails(
   title: string,
-  categories: string[]
+  categories: string[],
+  knownInfo: KnownGameEntry | null
 ): Promise<GameAutoFillResult | null> {
   if (!OPENAI_KEY?.trim()) return null;
 
   const categoryList = categories.length ? categories.join(", ") : "General";
-  const prompt = `You are an expert PC game metadata writer with deep knowledge of modern video games. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, systemRequirements.
-- description: a long, compelling PC game description suitable for a game details page, 5-7 lines.
-- developer: the game's developer name.
-- tags: a comma-separated string of relevant SEO tags.
-- systemRequirements: an object with minimum and recommended specs, each containing os, processor, memory, graphics, and storage.
-Do not include screenshot URLs or cover image data. Use realistic, game-specific details based on the title and genre.
-Title: ${title}
+  const knownHint = knownInfo
+    ? `Known game info: developer ${knownInfo.developer}${knownInfo.publisher ? `, publisher ${knownInfo.publisher}` : ``}${knownInfo.genre ? `, genre ${knownInfo.genre}` : ``}${knownInfo.year ? `, year ${knownInfo.year}` : ``}${knownInfo.sizeHint ? `, estimated size ${knownInfo.sizeHint}` : ``}. `
+    : "";
+  const prompt = `You are a PC game metadata expert. Given a game title and optional categories, return only a VALID JSON object with exactly these keys: description, developer, tags, systemRequirements. Do not include markdown, code fences, or any extra keys.
+- description: 5-7 sentences, game-specific, PC-focused, and written like a store or landing page blurb.
+- developer: the real or most plausible developer for this title.
+- tags: SEO-friendly tags separated by commas.
+- systemRequirements: an object with realistic minimum and recommended Windows PC specs. Use exact fields {os, processor, memory, graphics, storage}.
+Minimum should describe a playable setup. Recommended should describe a modern mid/high-end setup for a smooth 1080p or better experience.
+Use real CPU/GPU combos, Windows 10/11 64-bit, and believable storage requirements. Avoid vague hardware terms such as "modern CPU" or "high-end GPU".
+${knownHint}Title: ${title}
 Categories: ${categoryList}`;
 
   try {
@@ -71,18 +110,16 @@ Categories: ${categoryList}`;
       body: JSON.stringify({
         model: OPENAI_MODEL,
         messages: [
-          { role: "system", content: "You are a helpful assistant that outputs only JSON." },
+          { role: "system", content: "You are a helpful assistant that outputs only JSON and nothing else." },
           { role: "user", content: prompt },
         ],
-        max_tokens: 700,
-        temperature: 0.7,
+        max_tokens: 600,
+        temperature: 0.15,
       }),
     });
 
     const data = await res.json();
-    const rawText:
-      | string
-      | undefined =
+    const rawText: string | undefined =
       data?.choices?.[0]?.message?.content ||
       (Array.isArray(data?.choices?.[0]?.message?.content)
         ? data.choices[0].message.content.map((item: any) => item.text || "").join("")
@@ -93,19 +130,18 @@ Categories: ${categoryList}`;
     const parsed = JSON.parse(jsonText) as {
       description?: string;
       developer?: string;
-      tags?: string;
-      screenshots?: string[];
-      systemRequirements?: GameAutoFillResult["systemRequirements"];
+      tags?: string | string[];
+      systemRequirements?: unknown;
     };
 
-    if (!parsed.description || !parsed.developer || !parsed.systemRequirements) return null;
+    const systemRequirements = normalizeSystemRequirements(parsed.systemRequirements);
+    if (!parsed.description || !parsed.developer || !systemRequirements) return null;
 
     return {
       description: parsed.description.trim(),
       developer: parsed.developer.trim() || "Unknown Developer",
-      tags: parsed.tags?.trim() || buildTags(title, categories.length ? categories : ["Action"], []),
-      screenshots: Array.isArray(parsed.screenshots) && parsed.screenshots.length ? parsed.screenshots : undefined,
-      systemRequirements: parsed.systemRequirements,
+      tags: normalizeTags(parsed.tags) || buildTags(title, categories.length ? categories : ["Action"], []),
+      systemRequirements,
       source: "openai",
     };
   } catch {
@@ -176,7 +212,7 @@ function labelFromEntity(
   return entities[id]?.labels?.en?.value;
 }
 
-function claimEntityId(claim: { mainsnak?: { datavalue?: { value?: { id?: string } } } } | undefined): string | undefined {
+function claimEntityId(claim: any): string | undefined {
   return claim?.mainsnak?.datavalue?.value?.id;
 }
 
@@ -299,62 +335,85 @@ function buildVariedRequirements(
   const y = year ?? 2020;
   const g = (genre || "action").toLowerCase();
 
-  const cpusMin = [
-    "Intel Core i5-8400 / AMD Ryzen 5 2600",
-    "Intel Core i5-9400F / AMD Ryzen 5 3500",
-    "Intel Core i5-10400 / AMD Ryzen 5 3600",
-    "Intel Core i3-10100 / AMD Ryzen 3 3100",
-    "Intel Core i5-11400 / AMD Ryzen 5 5600",
-  ];
-  const cpusRec = [
-    "Intel Core i7-9700K / AMD Ryzen 7 3700X",
-    "Intel Core i7-10700K / AMD Ryzen 7 5800X",
-    "Intel Core i7-12700K / AMD Ryzen 7 5800X3D",
-    "Intel Core i9-12900K / AMD Ryzen 9 5900X",
-    "Intel Core i7-13700 / AMD Ryzen 7 7700X",
-  ];
-  const gpusMin = [
-    "NVIDIA GTX 1060 6GB / AMD RX 580",
-    "NVIDIA GTX 1650 Super / AMD RX 5500 XT",
-    "NVIDIA GTX 1660 Super / AMD RX 5600 XT",
-    "NVIDIA RTX 2060 / AMD RX 5700",
-    "NVIDIA RTX 3050 / AMD RX 6600",
-  ];
-  const gpusRec = [
-    "NVIDIA RTX 3060 Ti / AMD RX 6700 XT",
-    "NVIDIA RTX 3070 / AMD RX 6800",
-    "NVIDIA RTX 3080 / AMD RX 6800 XT",
-    "NVIDIA RTX 4070 / AMD RX 7800 XT",
-    "NVIDIA RTX 4080 / AMD RX 7900 XTX",
-  ];
+  const cpuOptions = {
+    low: [
+      "Intel Core i3-9100 / AMD Ryzen 3 3100",
+      "Intel Core i3-10100 / AMD Ryzen 3 3300X",
+      "Intel Core i3-10105 / AMD Ryzen 3 4100",
+    ],
+    mid: [
+      "Intel Core i5-10400 / AMD Ryzen 5 3600",
+      "Intel Core i5-11400 / AMD Ryzen 5 4500",
+      "Intel Core i5-12400F / AMD Ryzen 5 5600",
+    ],
+    high: [
+      "Intel Core i7-12700F / AMD Ryzen 7 5800X",
+      "Intel Core i7-13700 / AMD Ryzen 7 7700X",
+      "Intel Core i9-12900K / AMD Ryzen 9 5900X",
+    ],
+  };
+
+  const gpuOptions = {
+    low: [
+      "NVIDIA GTX 1650 / AMD RX 6500 XT",
+      "NVIDIA GTX 1650 Super / AMD RX 570",
+      "NVIDIA GTX 1660 / AMD RX 580",
+    ],
+    mid: [
+      "NVIDIA RTX 2060 / AMD RX 6600 XT",
+      "NVIDIA RTX 3060 / AMD RX 6600",
+      "NVIDIA RTX 3060 Ti / AMD RX 6700 XT",
+    ],
+    high: [
+      "NVIDIA RTX 3070 / AMD RX 6800",
+      "NVIDIA RTX 4070 / AMD RX 7800 XT",
+      "NVIDIA RTX 4080 / AMD RX 7900 XTX",
+    ],
+  };
+
+  const isIndie = /indie|2d|puzzle|platform/.test(g);
+  const isSimulation = /simulation|strategy|sports|racing/.test(g);
+  const isModernAAA = y >= 2022 && /action|open world|shooter|rpg|adventure/.test(g);
+
+  const minCpu = pick(cpuOptions.low, seed, 0);
+  const recCpu = pick(cpuOptions.mid, seed, 1);
+  const minGpu = pick(gpuOptions.low, seed, 2);
+  const recGpu = pick(gpuOptions.high, seed, 3);
 
   let memMin = "8 GB RAM";
   let memRec = "16 GB RAM";
-  if (y >= 2023 || /open world|rpg|simulation/.test(g)) {
+  if (isIndie) {
+    memMin = "8 GB RAM";
+    memRec = "16 GB RAM";
+  } else if (isModernAAA || isSimulation) {
     memMin = "16 GB RAM";
     memRec = "32 GB RAM";
-  } else if (/indie|2d|puzzle|platform/.test(g)) {
-    memMin = "4 GB RAM";
-    memRec = "8 GB RAM";
   }
 
-  const osMin = y >= 2022 ? "Windows 10 64-bit (Windows 11 supported)" : "Windows 10 64-bit";
-  const osRec = y >= 2023 ? "Windows 11 64-bit" : "Windows 10/11 64-bit";
+  if (y < 2018 && !isModernAAA) {
+    memMin = "8 GB RAM";
+    memRec = "16 GB RAM";
+  }
+
+  const osMin = y >= 2022 ? "Windows 10 64-bit" : "Windows 10 64-bit";
+  const osRec = "Windows 10/11 64-bit";
+  const storageMin = `${sizeHint} available space`;
+  const storageRec = `${sizeHint} SSD space (NVMe recommended)`;
 
   return {
     minimum: {
       os: osMin,
-      processor: pick(cpusMin, seed, 0),
+      processor: minCpu,
       memory: memMin,
-      graphics: pick(gpusMin, seed, 1),
-      storage: `${sizeHint} available space (HDD or SSD)`,
+      graphics: minGpu,
+      storage: storageMin,
     },
     recommended: {
       os: osRec,
-      processor: pick(cpusRec, seed, 2),
+      processor: recCpu,
       memory: memRec,
-      graphics: pick(gpusRec, seed, 3),
-      storage: `${sizeHint} SSD space (NVMe recommended)`,
+      graphics: recGpu,
+      storage: storageRec,
     },
   };
 }
@@ -438,13 +497,12 @@ export async function autoFillGameDetails(
   if (!trimmed) throw new Error("Enter a game title first");
 
   const known = lookupKnownGame(trimmed);
-
   const [rawg, wikidata, wikiLong, catalogGame, aiResult] = await Promise.all([
     fetchRawgGame(trimmed),
     fetchWikidataGame(trimmed),
     fetchWikipediaText(trimmed, true),
     searchGameCatalog(trimmed),
-    fetchOpenAIGameDetails(trimmed, categories),
+    fetchOpenAIGameDetails(trimmed, categories, known),
   ]);
 
   if (aiResult) return aiResult;
