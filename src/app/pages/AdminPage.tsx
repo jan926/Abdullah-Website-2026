@@ -15,6 +15,7 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
+import { DownloadPartsEditor } from "../components/admin/DownloadPartsEditor";
 import { Game, DownloadPart, categories as initialCategories } from "../data/games";
 import {
   loadGames,
