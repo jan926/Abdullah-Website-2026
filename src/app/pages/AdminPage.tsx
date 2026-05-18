@@ -33,11 +33,7 @@ import {
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
 } from "lucide-react";
-import { autoFillGameDetails } from "../../lib/gameAutoFill";
-import { DownloadPartsEditor } from "../components/admin/DownloadPartsEditor";
-import { toast } from "sonner";
 
-const defaultAdminSettings: SiteSettings = {
   siteName: "Download Your Games",
   logoUrl: "",
   showLatestGames: true,
@@ -67,7 +63,6 @@ export default function AdminPage() {
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
   const [currentEditId, setCurrentEditId] = useState("");
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -152,45 +147,6 @@ export default function AdminPage() {
     comments: existing?.comments ?? [],
     views: existing?.views,
   };
-  };
-
-  const handleAutoFill = async () => {
-    if (!formData.title.trim()) {
-      toast.error("Enter a game title first");
-      return;
-    }
-    setIsAutoFilling(true);
-    try {
-      const cats = formData.selectedCategories.length
-        ? formData.selectedCategories
-        : formData.category
-          ? [formData.category]
-          : [];
-      const result = await autoFillGameDetails(formData.title, cats);
-      setFormData((prev) => ({
-        ...prev,
-        description: result.description,
-        developer: result.developer,
-        tags: result.tags,
-        systemRequirements: result.systemRequirements,
-        screenshots: result.screenshots ? result.screenshots : prev.screenshots,
-        cover: prev.cover || (result.screenshots?.[0] ?? prev.cover),
-      }));
-      const sourceMsg: Record<string, string> = {
-        rawg: "RAWG (full specs + long description)",
-        wikidata: "Wikidata + Wikipedia",
-        wikipedia: "Wikipedia full article",
-        catalog: "FreeToGame catalog (400+ games)",
-        database: "built-in game database",
-        openai: "OpenAI GPT model",
-        template: "smart templates",
-      };
-      toast.success(`Auto-filled from ${sourceMsg[result.source] || "sources"} — please review before saving`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Auto-fill failed");
-    } finally {
-      setIsAutoFilling(false);
-    }
   };
 
   const toggleFormCategory = (cat: string) => {
@@ -702,18 +658,7 @@ export default function AdminPage() {
                         className="border-[var(--border)]"
                         placeholder="e.g. Need for Speed Heat"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleAutoFill}
-                        disabled={isAutoFilling}
-                        className="shrink-0 border-violet-300 text-violet-700 hover:bg-violet-50"
-                      >
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        {isAutoFilling ? "Generating…" : "AI Auto-fill"}
-                      </Button>
                     </div>
-                    <p className="text-xs text-slate-500">RAWG + Wikidata + Wikipedia + 400+ game catalog. For AI autofill: Set VITE_GEMINI_API_KEY (FREE from aistudio.google.com) for game metadata, or use VITE_OPENAI_API_KEY as fallback. Auto-fill returns description, developer, tags, and system requirements.</p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
@@ -962,23 +907,6 @@ export default function AdminPage() {
                 <div className="space-y-2">
                   <Label className="text-[var(--foreground)]">Show Game of the Day</Label>
                   <Switch checked={settings.showGameOfTheDay} onCheckedChange={value => setSettings({...settings, showGameOfTheDay: value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[var(--foreground)]">Enable AI Features</Label>
-                  <Switch checked={Boolean(settings.aiEnabled)} onCheckedChange={value => setSettings({...settings, aiEnabled: value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[var(--foreground)]">AI Model</Label>
-                  <Select value={settings.aiModel || "none"} onValueChange={(v) => setSettings({...settings, aiModel: v})}>
-                    <SelectTrigger className="border-[var(--border)]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None (disabled)</SelectItem>
-                      <SelectItem value="gemini_free">Gemini Free</SelectItem>
-                      <SelectItem value="openai">OpenAI (fallback)</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

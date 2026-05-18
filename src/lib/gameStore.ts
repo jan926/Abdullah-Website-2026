@@ -46,9 +46,6 @@ export interface SiteSettings {
   showGameOfTheDay: boolean;
   showTrendingGames: boolean;
   theme: "light" | "dark";
-  // AI integration settings
-  aiEnabled?: boolean;
-  aiModel?: string; // e.g. 'none' | 'gemini_free' | 'openai'
 }
 
 export interface SiteAnalytics {
@@ -64,8 +61,6 @@ const defaultSettings: SiteSettings = {
   showGameOfTheDay: true,
   showTrendingGames: true,
   theme: "dark",
-  aiEnabled: false,
-  aiModel: "none",
 };
 
 const defaultAnalytics = (): SiteAnalytics => ({

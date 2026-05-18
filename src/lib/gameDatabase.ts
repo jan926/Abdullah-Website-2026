@@ -1,4 +1,4 @@
-/** Known PC games — developer, publisher, year, genre (for AI auto-fill fallback). */
+/** Known PC games — developer, publisher, year, genre. */
 export interface KnownGameEntry {
   developer: string;
   publisher?: string;
