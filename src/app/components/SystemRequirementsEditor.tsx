@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { Cpu, HardDrive, Zap, Database } from "lucide-react";
+import { Button } from "./ui/button";
+import { Cpu, HardDrive, Zap, Database, Search, CheckCircle2 } from "lucide-react";
+import { searchGameRequirements, getGameRequirementsSuggestions } from "../../lib/gameRequirementsDb";
 
 type SystemReq = {
   os: string;
@@ -26,6 +29,12 @@ const FIELDS = [
 ];
 
 export function SystemRequirementsEditor({ minimum, recommended, onChange }: Props) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchSuccess, setSearchSuccess] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const updateField = (type: "minimum" | "recommended", key: string, value: string) => {
     if (type === "minimum") {
       onChange({ minimum: { ...minimum, [key]: value } });
@@ -34,8 +43,111 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
     }
   };
 
+  const handleSearchInput = (query: string) => {
+    setSearchQuery(query);
+    if (query.length > 1) {
+      const sugg = getGameRequirementsSuggestions(query);
+      setSuggestions(sugg);
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleAutoFill = async (gameName?: string) => {
+    const nameToSearch = gameName || searchQuery;
+    if (!nameToSearch.trim()) return;
+
+    setIsSearching(true);
+    setSearchSuccess(false);
+    
+    try {
+      const gameReqs = await searchGameRequirements(nameToSearch);
+      if (gameReqs) {
+        onChange({
+          minimum: gameReqs.minimum,
+          recommended: gameReqs.recommended,
+        });
+        setSearchSuccess(true);
+        setSearchQuery("");
+        setShowSuggestions(false);
+        setSuggestions([]);
+        setTimeout(() => setSearchSuccess(false), 3000);
+      } else {
+        alert("Game not found in database. Please enter manually.");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      alert("Error searching for game requirements");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Auto-fill Search Section */}
+      <Card className="p-4 md:p-6 border-[var(--border)] shadow-sm bg-gradient-to-r from-cyan-500/5 to-blue-500/5">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-cyan-400" />
+            <Label className="text-[var(--foreground)] font-semibold">
+              Auto-fill from Game Database
+            </Label>
+            {searchSuccess && (
+              <div className="flex items-center gap-1 text-emerald-400 text-sm ml-auto">
+                <CheckCircle2 className="w-4 h-4" />
+                Filled!
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  placeholder="Type game name (e.g., Cyberpunk 2077, Elden Ring)..."
+                  className="border-[var(--border)]"
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => handleAutoFill(suggestion)}
+                        className="w-full text-left px-3 py-2 hover:bg-[var(--muted)] border-b border-[var(--border)] last:border-b-0 text-sm text-[var(--foreground)]"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                onClick={() => handleAutoFill()}
+                disabled={isSearching || !searchQuery.trim()}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Search for popular games to auto-fill system requirements. Supports 100+ games from our database.
+          </p>
+        </div>
+      </Card>
+
+      {/* Manual Entry Section */}
+      <div className="space-y-4">
+        <Label className="text-[var(--foreground)] font-semibold">
+          Or enter system requirements manually
+        </Label>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Minimum Requirements */}
         <Card className="p-6 border-[var(--border)] shadow-sm">
@@ -82,6 +194,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
             ))}
           </div>
         </Card>
+      </div>
       </div>
     </div>
   );
