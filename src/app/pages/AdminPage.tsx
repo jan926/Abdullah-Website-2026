@@ -16,6 +16,7 @@ import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "../components/ui/switch";
 import { DownloadPartsEditor } from "../components/admin/DownloadPartsEditor";
+import { SystemRequirementsEditor } from "../components/SystemRequirementsEditor";
 import { Game, DownloadPart, categories as initialCategories } from "../data/games";
 import {
   loadGames,
@@ -775,48 +776,11 @@ export default function AdminPage() {
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Minimum OS</Label>
-                    <Input value={formData.systemRequirements.minimum.os} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, os: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Recommended OS</Label>
-                    <Input value={formData.systemRequirements.recommended.os} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, os: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Minimum Processor</Label>
-                    <Input value={formData.systemRequirements.minimum.processor} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, processor: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Recommended Processor</Label>
-                    <Input value={formData.systemRequirements.recommended.processor} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, processor: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Minimum Memory</Label>
-                    <Input value={formData.systemRequirements.minimum.memory} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, memory: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Recommended Memory</Label>
-                    <Input value={formData.systemRequirements.recommended.memory} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, memory: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Minimum Graphics</Label>
-                    <Input value={formData.systemRequirements.minimum.graphics} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, graphics: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[var(--foreground)]">Recommended Graphics</Label>
-                    <Input value={formData.systemRequirements.recommended.graphics} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, graphics: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-[var(--foreground)]">Minimum Storage</Label>
-                    <Input value={formData.systemRequirements.minimum.storage} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, minimum: {...formData.systemRequirements.minimum, storage: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label className="text-[var(--foreground)]">Recommended Storage</Label>
-                    <Input value={formData.systemRequirements.recommended.storage} onChange={e => setFormData({...formData, systemRequirements: {...formData.systemRequirements, recommended: {...formData.systemRequirements.recommended, storage: e.target.value}}})} className="border-[var(--border)]" />
-                  </div>
-                </div>
+                <SystemRequirementsEditor 
+                  minimum={formData.systemRequirements.minimum}
+                  recommended={formData.systemRequirements.recommended}
+                  onChange={(patch) => setFormData({...formData, systemRequirements: {...formData.systemRequirements, ...patch}})}
+                />
               </Card>
 
               <div className="flex justify-end gap-4">
