@@ -34,6 +34,7 @@ import {
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
 } from "lucide-react";
 
+const defaultAdminSettings: SiteSettings = {
   siteName: "Download Your Games",
   logoUrl: "",
   showLatestGames: true,
