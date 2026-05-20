@@ -43,9 +43,9 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-[var(--card)] border-b border-[var(--border)] shadow-lg">
       <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex items-center gap-3 min-w-0 group">
             {logoUrl ? (
               <img src={logoUrl} alt="Site logo" className="h-10 w-10 rounded-full object-cover" />
             ) : (
@@ -61,7 +61,7 @@ export function Navbar() {
           </Link>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-xl">
+          <div className="w-full min-w-0 md:max-w-xl">
             <form onSubmit={handleSearch}>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -77,7 +77,7 @@ export function Navbar() {
           </div>
 
           {/* Right section */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <ThemeToggle />
             <Link
               to="/categories"
