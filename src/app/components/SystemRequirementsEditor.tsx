@@ -31,6 +31,7 @@ const FIELDS = [
 export function SystemRequirementsEditor({ minimum, recommended, onChange }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isFetchingSteamSuggestions, setIsFetchingSteamSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuccess, setSearchSuccess] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -43,12 +44,31 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
     }
   };
 
-  const handleSearchInput = (query: string) => {
+  const handleSearchInput = async (query: string) => {
     setSearchQuery(query);
     if (query.length > 1) {
-      const sugg = getGameRequirementsSuggestions(query);
-      setSuggestions(sugg);
+      const localResults = getGameRequirementsSuggestions(query);
+      setSuggestions(localResults);
       setShowSuggestions(true);
+
+      if (query.length > 2) {
+        setIsFetchingSteamSuggestions(true);
+        try {
+          const response = await fetch(
+            `/api/steam-search?type=suggest&name=${encodeURIComponent(query)}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            const steamResults = Array.isArray(data?.suggestions) ? data.suggestions : [];
+            const combined = Array.from(new Set([...localResults, ...steamResults])).slice(0, 10);
+            setSuggestions(combined);
+          }
+        } catch (error) {
+          console.error("Steam suggestions error:", error);
+        } finally {
+          setIsFetchingSteamSuggestions(false);
+        }
+      }
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -113,6 +133,11 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
                 />
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {isFetchingSteamSuggestions && (
+                      <div className="px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                        Loading Steam suggestions...
+                      </div>
+                    )}
                     {suggestions.map((suggestion) => (
                       <button
                         key={suggestion}
@@ -138,7 +163,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
             </div>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            Search our local game database or use server-side Steam lookup for games outside the list.
+            Search local matches and live Steam suggestions for all Steam games, small and large.
           </p>
         </div>
       </Card>

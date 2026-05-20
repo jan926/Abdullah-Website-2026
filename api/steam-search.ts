@@ -9,6 +9,10 @@ export default async function handler(req, res) {
   const name =
     req.query?.name ||
     new URL(req.url || "", "http://localhost").searchParams.get("name");
+  const type =
+    req.query?.type ||
+    new URL(req.url || "", "http://localhost").searchParams.get("type");
+
   if (!name || typeof name !== "string" || !name.trim()) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     return res.status(400).json({ error: "Missing required query parameter: name" });
@@ -34,6 +38,19 @@ export default async function handler(req, res) {
     const searchResults = await searchResponse.json();
     if (!Array.isArray(searchResults) || searchResults.length === 0) {
       return res.status(404).json({ error: "Game not found" });
+    }
+
+    if (type === "suggest") {
+      const suggestions = Array.from(
+        new Set(
+          searchResults
+            .slice(0, 12)
+            .map((item) => String(item.name || "").trim())
+            .filter(Boolean)
+        )
+      );
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.status(200).json({ suggestions });
     }
 
     const normalizedName = query.toLowerCase();
