@@ -73,8 +73,20 @@ async function getStoreSuggestions(gameName: string, store: string): Promise<str
     return await fetchArealGamerSuggestions(gameName);
   }
 
-  if (store === "steam" || store === "all") {
+  if (store === "steam") {
     return await fetchSteamSuggestions(gameName);
+  }
+
+  if (store === "all") {
+    const [steam, epic, areal] = await Promise.all([
+      fetchSteamSuggestions(gameName),
+      fetchEpicSuggestions(gameName),
+      fetchArealGamerSuggestions(gameName),
+    ]);
+
+    return Array.from(
+      new Set([...(steam || []), ...(epic || []), ...(areal || [])])
+    ).slice(0, 15);
   }
 
   return [];
