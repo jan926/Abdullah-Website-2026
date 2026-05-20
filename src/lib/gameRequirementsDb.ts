@@ -616,7 +616,8 @@ const GAME_REQUIREMENTS_DB: GameRequirements[] = [
 ];
 
 export async function searchGameRequirements(
-  gameName: string
+  gameName: string,
+  store: "steam" | "epic" | "ea" | "ubisoft" | "all" = "all"
 ): Promise<GameRequirements | null> {
   if (!gameName.trim()) return null;
 
@@ -640,17 +641,18 @@ export async function searchGameRequirements(
   );
   if (reverse) return reverse;
 
-  // Try server-side Steam lookup as fallback for games outside the local DB.
+  // Try server-side lookup fallback for games outside the local DB.
   try {
+    const storeParam = store ? `&store=${encodeURIComponent(store)}` : "";
     const steamResponse = await fetch(
-      `/api/steam-search?name=${encodeURIComponent(gameName)}`
+      `/api/steam-search?name=${encodeURIComponent(gameName)}${storeParam}`
     );
     if (steamResponse.ok) {
       const steamData = (await steamResponse.json()) as GameRequirements;
       if (steamData) return steamData;
     }
   } catch (error) {
-    console.log("Steam lookup failed, using local DB only", error);
+    console.log("Store lookup failed, using local DB only", error);
   }
 
   return null;

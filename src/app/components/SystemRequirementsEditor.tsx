@@ -3,6 +3,7 @@ import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Cpu, HardDrive, Zap, Database, Search, CheckCircle2 } from "lucide-react";
 import { searchGameRequirements, getGameRequirementsSuggestions } from "../../lib/gameRequirementsDb";
 
@@ -30,8 +31,9 @@ const FIELDS = [
 
 export function SystemRequirementsEditor({ minimum, recommended, onChange }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [storeSource, setStoreSource] = useState<"all" | "steam" | "epic" | "ea" | "ubisoft">("all");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isFetchingSteamSuggestions, setIsFetchingSteamSuggestions] = useState(false);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchSuccess, setSearchSuccess] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -52,21 +54,21 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
       setShowSuggestions(true);
 
       if (query.length > 2) {
-        setIsFetchingSteamSuggestions(true);
+        setIsFetchingSuggestions(true);
         try {
           const response = await fetch(
-            `/api/steam-search?type=suggest&name=${encodeURIComponent(query)}`
+            `/api/steam-search?type=suggest&name=${encodeURIComponent(query)}&store=${encodeURIComponent(storeSource)}`
           );
           if (response.ok) {
             const data = await response.json();
-            const steamResults = Array.isArray(data?.suggestions) ? data.suggestions : [];
-            const combined = Array.from(new Set([...localResults, ...steamResults])).slice(0, 10);
+            const remoteResults = Array.isArray(data?.suggestions) ? data.suggestions : [];
+            const combined = Array.from(new Set([...localResults, ...remoteResults])).slice(0, 10);
             setSuggestions(combined);
           }
         } catch (error) {
-          console.error("Steam suggestions error:", error);
+          console.error("Suggestion fetch error:", error);
         } finally {
-          setIsFetchingSteamSuggestions(false);
+          setIsFetchingSuggestions(false);
         }
       }
     } else {
@@ -83,7 +85,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
     setSearchSuccess(false);
     
     try {
-      const gameReqs = await searchGameRequirements(nameToSearch);
+      const gameReqs = await searchGameRequirements(nameToSearch, storeSource);
       if (gameReqs) {
         onChange({
           minimum: gameReqs.minimum,
@@ -122,48 +124,65 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
               </div>
             )}
           </div>
-          <div className="relative">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => handleSearchInput(e.target.value)}
-                  placeholder="Type game name (e.g., Cyberpunk 2077, Elden Ring)..."
-                  className="border-[var(--border)]"
-                />
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {isFetchingSteamSuggestions && (
-                      <div className="px-3 py-2 text-xs text-[var(--muted-foreground)]">
-                        Loading Steam suggestions...
-                      </div>
-                    )}
-                    {suggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        onClick={() => handleAutoFill(suggestion)}
-                        className="w-full text-left px-3 py-2 hover:bg-[var(--muted)] border-b border-[var(--border)] last:border-b-0 text-sm text-[var(--foreground)]"
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                )}
+          <div className="grid gap-3 sm:grid-cols-[220px_1fr] items-end">
+            <div className="space-y-2">
+              <Label className="text-[var(--foreground)]">Store source</Label>
+              <Select value={storeSource} onValueChange={(value) => setStoreSource(value as any)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All stores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All stores</SelectItem>
+                  <SelectItem value="steam">Steam</SelectItem>
+                  <SelectItem value="epic">Epic Games</SelectItem>
+                  <SelectItem value="ea">EA / Origin</SelectItem>
+                  <SelectItem value="ubisoft">Ubisoft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => handleSearchInput(e.target.value)}
+                    placeholder="Type game name (e.g., Cyberpunk 2077, Elden Ring)..."
+                    className="border-[var(--border)]"
+                  />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {isFetchingSuggestions && (
+                        <div className="px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                          Loading suggestions...
+                        </div>
+                      )}
+                      {suggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => handleAutoFill(suggestion)}
+                          className="w-full text-left px-3 py-2 hover:bg-[var(--muted)] border-b border-[var(--border)] last:border-b-0 text-sm text-[var(--foreground)]"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => handleAutoFill()}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  {isSearching ? "Searching..." : "Search"}
+                </Button>
               </div>
-              <Button
-                type="button"
-                onClick={() => handleAutoFill()}
-                disabled={isSearching || !searchQuery.trim()}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white"
-              >
-                <Search className="w-4 h-4 mr-2" />
-                {isSearching ? "Searching..." : "Search"}
-              </Button>
             </div>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            Search local matches and live Steam suggestions for all Steam games, small and large.
+            Search local matches and live store suggestions from Steam, Epic, EA, and Ubisoft.
           </p>
         </div>
       </Card>
