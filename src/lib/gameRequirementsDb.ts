@@ -1,6 +1,8 @@
 // Popular game system requirements database (can be extended)
 type GameRequirements = {
   title: string;
+  developer?: string;
+  description?: string;
   minimum: {
     os: string;
     processor: string;

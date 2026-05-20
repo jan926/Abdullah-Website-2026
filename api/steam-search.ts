@@ -1,5 +1,7 @@
 type GameRequirements = {
   title: string;
+  developer?: string;
+  description?: string;
   minimum: {
     os: string;
     processor: string;
@@ -160,7 +162,27 @@ async function searchSteamStore(gameName: string): Promise<GameRequirements | nu
     const appData = storeData[String(appId)];
     if (!appData?.success || !appData?.data) return null;
 
-    return parseSteamRequirements(appData.data.pc_requirements);
+    const requirements = parseSteamRequirements(appData.data.pc_requirements);
+    if (!requirements) return null;
+
+    const developer = Array.isArray(appData.data.developers)
+      ? appData.data.developers.join(", ")
+      : String(appData.data.developer || "").trim();
+
+    const description = String(
+      appData.data.short_description ||
+      appData.data.about_the_game ||
+      appData.data.detailed_description ||
+      ""
+    )
+      .replace(/<[^>]+>/gi, "")
+      .trim();
+
+    return {
+      ...requirements,
+      developer: developer || undefined,
+      description: description || undefined,
+    };
   } catch (error) {
     console.error("Steam store lookup failed", error);
     return null;
@@ -293,12 +315,23 @@ async function searchArealGamerStore(gameName: string): Promise<GameRequirements
     const html = await pageResponse.text();
     const titleMatch = /<title>([^<]+)<\/title>/i.exec(html);
     const title = titleMatch ? titleMatch[1].trim() : bestMatch.title;
+
+    const metaDescriptionMatch = /<meta property=["']og:description["'] content=["']([^"']+)["']\/?>/i.exec(html);
+    const rawMetaDescription = metaDescriptionMatch ? metaDescriptionMatch[1] : "";
+    const decodedMeta = rawMetaDescription.replace(/&#8211;/g, "-").replace(/&amp;/g, "&");
+
+    const developerMatch = /Developer:\s*([^<>\n\r]+?)(?:\s*Publisher:|\s*$)/i.exec(decodedMeta);
+    const descriptionMatch = /Description:\s*([^<>\n\r]+)$/i.exec(decodedMeta);
+    const description = descriptionMatch ? descriptionMatch[1].trim() : rawMetaDescription;
+
     const requirementsMatch = /Minimum System Requirements:[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/i.exec(html);
     if (!requirementsMatch) return null;
 
     const minimum = parseRequirementBlock(requirementsMatch[1]);
     return {
       title,
+      developer: developerMatch ? developerMatch[1].trim() : undefined,
+      description: description ? description.trim() : undefined,
       minimum,
       recommended: minimum,
     };

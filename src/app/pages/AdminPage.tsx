@@ -780,6 +780,7 @@ export default function AdminPage() {
                   minimum={formData.systemRequirements.minimum}
                   recommended={formData.systemRequirements.recommended}
                   onChange={(patch) => setFormData({...formData, systemRequirements: {...formData.systemRequirements, ...patch}})}
+                  onMetaFill={(metaPatch) => setFormData({...formData, ...metaPatch})}
                 />
               </Card>
 

@@ -19,6 +19,7 @@ type Props = {
   minimum: SystemReq;
   recommended: SystemReq;
   onChange: (patch: { minimum?: SystemReq; recommended?: SystemReq }) => void;
+  onMetaFill?: (patch: { developer?: string; description?: string }) => void;
 };
 
 const FIELDS = [
@@ -91,6 +92,14 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
           minimum: gameReqs.minimum,
           recommended: gameReqs.recommended,
         });
+
+        const metaPatch: { developer?: string; description?: string } = {};
+        if (gameReqs.developer) metaPatch.developer = gameReqs.developer;
+        if (gameReqs.description) metaPatch.description = gameReqs.description;
+        if (Object.keys(metaPatch).length) {
+          onMetaFill?.(metaPatch);
+        }
+
         setSearchSuccess(true);
         setSearchQuery("");
         setShowSuggestions(false);
