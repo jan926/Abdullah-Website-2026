@@ -19,7 +19,7 @@ type Props = {
   minimum: SystemReq;
   recommended: SystemReq;
   onChange: (patch: { minimum?: SystemReq; recommended?: SystemReq }) => void;
-  onMetaFill?: (patch: { developer?: string; description?: string }) => void;
+  onMetaFill?: (patch: { developer?: string; description?: string; tags?: string }) => void;
 };
 
 const FIELDS = [
@@ -30,7 +30,7 @@ const FIELDS = [
   { key: "storage", label: "Storage Space", icon: HardDrive },
 ];
 
-export function SystemRequirementsEditor({ minimum, recommended, onChange }: Props) {
+export function SystemRequirementsEditor({ minimum, recommended, onChange, onMetaFill }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [storeSource, setStoreSource] = useState<"all" | "steam" | "epic" | "ea" | "ubisoft" | "arealgamer">("all");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -93,9 +93,14 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
           recommended: gameReqs.recommended,
         });
 
-        const metaPatch: { developer?: string; description?: string } = {};
+        const metaPatch: { developer?: string; description?: string; tags?: string } = {};
         if (gameReqs.developer) metaPatch.developer = gameReqs.developer;
         if (gameReqs.description) metaPatch.description = gameReqs.description;
+        if (Array.isArray(gameReqs.tags) && gameReqs.tags.length) {
+          metaPatch.tags = gameReqs.tags.join(", ");
+        } else if (gameReqs.tags) {
+          metaPatch.tags = String(gameReqs.tags);
+        }
         if (Object.keys(metaPatch).length) {
           onMetaFill?.(metaPatch);
         }

@@ -2,6 +2,7 @@ type GameRequirements = {
   title: string;
   developer?: string;
   description?: string;
+  tags?: string[];
   minimum: {
     os: string;
     processor: string;
@@ -178,10 +179,15 @@ async function searchSteamStore(gameName: string): Promise<GameRequirements | nu
       .replace(/<[^>]+>/gi, "")
       .trim();
 
+    const steamTags = Array.isArray(appData.data.genres)
+      ? appData.data.genres.map((genre) => String(genre?.description || "").trim()).filter(Boolean)
+      : [];
+
     return {
       ...requirements,
       developer: developer || undefined,
       description: description || undefined,
+      tags: steamTags.length ? steamTags : undefined,
     };
   } catch (error) {
     console.error("Steam store lookup failed", error);
@@ -318,11 +324,18 @@ async function searchArealGamerStore(gameName: string): Promise<GameRequirements
 
     const metaDescriptionMatch = /<meta property=["']og:description["'] content=["']([^"']+)["']\/?>/i.exec(html);
     const rawMetaDescription = metaDescriptionMatch ? metaDescriptionMatch[1] : "";
-    const decodedMeta = rawMetaDescription.replace(/&#8211;/g, "-").replace(/&amp;/g, "&");
+    const decodedMeta = rawMetaDescription
+      .replace(/&#8211;/g, "-")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"');
 
     const developerMatch = /Developer:\s*([^<>\n\r]+?)(?:\s*Publisher:|\s*$)/i.exec(decodedMeta);
     const descriptionMatch = /Description:\s*([^<>\n\r]+)$/i.exec(decodedMeta);
+    const genreMatch = /Genre:\s*([^<>\n\r]+?)(?:\s*Release Date:|\s*Developer:|\s*$)/i.exec(decodedMeta);
     const description = descriptionMatch ? descriptionMatch[1].trim() : rawMetaDescription;
+    const tags = genreMatch
+      ? genreMatch[1].split(",").map((tag) => tag.trim()).filter(Boolean)
+      : [];
 
     const requirementsMatch = /Minimum System Requirements:[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/i.exec(html);
     if (!requirementsMatch) return null;
@@ -332,6 +345,7 @@ async function searchArealGamerStore(gameName: string): Promise<GameRequirements
       title,
       developer: developerMatch ? developerMatch[1].trim() : undefined,
       description: description ? description.trim() : undefined,
+      tags: tags.length ? tags : undefined,
       minimum,
       recommended: minimum,
     };
