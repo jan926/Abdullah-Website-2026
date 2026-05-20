@@ -31,7 +31,7 @@ const FIELDS = [
 
 export function SystemRequirementsEditor({ minimum, recommended, onChange }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [storeSource, setStoreSource] = useState<"all" | "steam" | "epic" | "ea" | "ubisoft">("all");
+  const [storeSource, setStoreSource] = useState<"all" | "steam" | "epic" | "ea" | "ubisoft" | "arealgamer">("all");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -137,6 +137,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
                   <SelectItem value="epic">Epic Games</SelectItem>
                   <SelectItem value="ea">EA / Origin</SelectItem>
                   <SelectItem value="ubisoft">Ubisoft</SelectItem>
+                  <SelectItem value="arealgamer">ARealGamer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -182,7 +183,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
             </div>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            Search local matches and live store suggestions from Steam, Epic, EA, and Ubisoft.
+            Search local matches and live store suggestions from Steam, Epic, EA, Ubisoft, and ARealGamer.
           </p>
         </div>
       </Card>

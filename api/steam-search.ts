@@ -16,7 +16,7 @@ type GameRequirements = {
   };
 };
 
-const SUPPORTED_STORES = new Set(["steam", "epic", "ea", "ubisoft", "all"]);
+const SUPPORTED_STORES = new Set(["steam", "epic", "ea", "ubisoft", "arealgamer", "all"]);
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -69,6 +69,10 @@ async function getStoreSuggestions(gameName: string, store: string): Promise<str
     return await fetchEpicSuggestions(gameName);
   }
 
+  if (store === "arealgamer") {
+    return await fetchArealGamerSuggestions(gameName);
+  }
+
   if (store === "steam" || store === "all") {
     return await fetchSteamSuggestions(gameName);
   }
@@ -93,11 +97,17 @@ async function getStoreRequirements(gameName: string, store: string): Promise<Ga
     return await searchUbisoftStore(gameName);
   }
 
+  if (store === "arealgamer") {
+    return await searchArealGamerStore(gameName);
+  }
+
   if (store === "all") {
     const steamResult = await searchSteamStore(gameName);
     if (steamResult) return steamResult;
     const epicResult = await searchEpicStore(gameName);
     if (epicResult) return epicResult;
+    const arealResult = await searchArealGamerStore(gameName);
+    if (arealResult) return arealResult;
   }
 
   return null;
@@ -211,6 +221,81 @@ async function fetchEpicSuggestions(gameName: string): Promise<string[]> {
   }
 }
 
+async function fetchArealGamerSearchResults(gameName: string): Promise<Array<{ title: string; url: string }>> {
+  try {
+    const response = await fetch(
+      `https://www.arealgamer.org/?s=${encodeURIComponent(gameName)}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "text/html",
+        },
+      }
+    );
+
+    if (!response.ok) return [];
+
+    const html = await response.text();
+    const results: Array<{ title: string; url: string }> = [];
+    const regex = /<article[^>]*class=["']?[^"'>]*apg-card[^"'>]*["']?[^>]*>[\s\S]*?<a[^>]*class=["']?apg-thumb["']?[^>]*>[\s\S]*?<\/a>[\s\S]*?<a[^>]*href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi;
+    let match: RegExpExecArray | null = null;
+
+    while ((match = regex.exec(html)) !== null && results.length < 20) {
+      const url = String(match[1] || "").trim();
+      const title = String(match[2] || "").trim();
+      if (title && url) {
+        results.push({ title, url });
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error("ARealGamer search failed", error);
+    return [];
+  }
+}
+
+async function fetchArealGamerSuggestions(gameName: string): Promise<string[]> {
+  const results = await fetchArealGamerSearchResults(gameName);
+  return Array.from(new Set(results.map((item) => item.title))).slice(0, 10);
+}
+
+async function searchArealGamerStore(gameName: string): Promise<GameRequirements | null> {
+  try {
+    const results = await fetchArealGamerSearchResults(gameName);
+    if (results.length === 0) return null;
+
+    const exactMatch = results.find(
+      (result) => result.title.toLowerCase() === gameName.toLowerCase()
+    );
+    const bestMatch = exactMatch || results[0];
+
+    const pageResponse = await fetch(bestMatch.url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "text/html",
+      },
+    });
+    if (!pageResponse.ok) return null;
+
+    const html = await pageResponse.text();
+    const titleMatch = /<title>([^<]+)<\/title>/i.exec(html);
+    const title = titleMatch ? titleMatch[1].trim() : bestMatch.title;
+    const requirementsMatch = /Minimum System Requirements:[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/i.exec(html);
+    if (!requirementsMatch) return null;
+
+    const minimum = parseRequirementBlock(requirementsMatch[1]);
+    return {
+      title,
+      minimum,
+      recommended: minimum,
+    };
+  } catch (error) {
+    console.error("ARealGamer lookup failed", error);
+    return null;
+  }
+}
+
 async function searchEpicStore(_gameName: string): Promise<GameRequirements | null> {
   return null;
 }
@@ -286,12 +371,16 @@ function parseRequirementBlock(text) {
       parsed.memory = line.slice(7).trim();
       continue;
     }
-    if (lower.startsWith("graphics:")) {
-      parsed.graphics = line.slice(9).trim();
+    if (lower.startsWith("graphics:") || lower.startsWith("video card:")) {
+      parsed.graphics = line.split(":").slice(1).join(":").trim();
       continue;
     }
-    if (lower.startsWith("storage:")) {
-      parsed.storage = line.slice(8).trim();
+    if (
+      lower.startsWith("storage:") ||
+      lower.startsWith("space required:") ||
+      lower.startsWith("storage required:")
+    ) {
+      parsed.storage = line.split(":").slice(1).join(":").trim();
       continue;
     }
   }

@@ -617,7 +617,7 @@ const GAME_REQUIREMENTS_DB: GameRequirements[] = [
 
 export async function searchGameRequirements(
   gameName: string,
-  store: "steam" | "epic" | "ea" | "ubisoft" | "all" = "all"
+  store: "steam" | "epic" | "ea" | "ubisoft" | "arealgamer" | "all" = "all"
 ): Promise<GameRequirements | null> {
   if (!gameName.trim()) return null;
 
