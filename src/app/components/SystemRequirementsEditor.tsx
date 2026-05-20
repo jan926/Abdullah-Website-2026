@@ -138,7 +138,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange }: Pro
             </div>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
-            Search for popular games to auto-fill system requirements. Supports 100+ games from our database.
+            Search our local game database or use server-side Steam lookup for games outside the list.
           </p>
         </div>
       </Card>

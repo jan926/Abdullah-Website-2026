@@ -640,50 +640,20 @@ export async function searchGameRequirements(
   );
   if (reverse) return reverse;
 
-  // Try Steam API as fallback (public search, limited)
+  // Try server-side Steam lookup as fallback for games outside the local DB.
   try {
-    const steamResult = await searchSteamAppId(gameName);
-    if (steamResult) {
-      return steamResult;
+    const steamResponse = await fetch(
+      `/api/steam-search?name=${encodeURIComponent(gameName)}`
+    );
+    if (steamResponse.ok) {
+      const steamData = (await steamResponse.json()) as GameRequirements;
+      if (steamData) return steamData;
     }
   } catch (error) {
-    console.log("Steam API lookup failed, using local DB only");
+    console.log("Steam lookup failed, using local DB only", error);
   }
 
   return null;
-}
-
-async function searchSteamAppId(gameName: string): Promise<GameRequirements | null> {
-  try {
-    // Using Steam's public API (no auth required for search)
-    const response = await fetch(
-      `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(gameName)}`
-    );
-    if (!response.ok) return null;
-
-    const data = (await response.json()) as Array<{ appid: number; name: string }>;
-    if (!data.length) return null;
-
-    const appId = data[0].appid;
-
-    // Fetch store page data (limited info available without auth)
-    const storeResponse = await fetch(
-      `https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`
-    );
-    if (!storeResponse.ok) return null;
-
-    const storeData = (await storeResponse.json()) as Record<
-      string,
-      { data?: { pc_requirements?: unknown } }
-    >;
-    
-    // Steam data structure is complex and may not always have requirements
-    // For now, return null and let local DB be the primary source
-    return null;
-  } catch (error) {
-    console.log("Steam API error:", error);
-    return null;
-  }
 }
 
 export function getGameRequirementsSuggestions(query: string): string[] {
