@@ -248,12 +248,12 @@ export default function HomePage() {
         `}</style>
       </section>
 
-      <div className="container mx-auto px-6 py-8 space-y-12">
+      <div className="container mx-auto px-3 sm:px-6 py-8 space-y-12">
         {/* Trending Games */}
         {settings.showMostViewed && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Trending Games</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Trending Games</h2>
               <div className="flex gap-2">
                 <button
                   onClick={() => scroll(trendingScrollRef, 'left')}
@@ -275,14 +275,15 @@ export default function HomePage() {
               className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
             >
               {trendingGames.map((game) => (
-                <div key={game.id} className="flex-none w-[240px]">
+                <div key={game.id} className="flex-none w-[180px] sm:w-[220px] md:w-[240px]">
                   <div className="group block">
                     <Link to={`/game/${game.id}`} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
-                        <img
+                        <LazyImage
                           src={game.cover}
                           alt={game.title}
-                          className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                          wrapperClassName="w-full"
+                          className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
@@ -315,7 +316,7 @@ export default function HomePage() {
         {settings.showLatestGames && (
           <section>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Latest Games</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Latest Games</h2>
               <div className="flex gap-2">
               <button
                 onClick={() => scroll(latestScrollRef, 'left')}
@@ -337,14 +338,15 @@ export default function HomePage() {
             className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
           >
             {latestGames.map((game, index) => (
-              <div key={game.id} className="flex-none w-[240px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div key={game.id} className="flex-none w-[180px] sm:w-[220px] md:w-[240px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
                     <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
-                      <img
+                      <LazyImage
                         src={game.cover}
                         alt={game.title}
-                        className="w-full h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                        wrapperClassName="w-full"
+                        className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 p-4 w-full">
@@ -377,7 +379,7 @@ export default function HomePage() {
           <section>
             <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-600 to-red-700 dark:from-yellow-400 dark:via-orange-500 dark:to-red-500">
+              <h2 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 via-red-600 to-red-700 dark:from-yellow-400 dark:via-orange-500 dark:to-red-500">
                 🏆 Game of the Day
               </h2>
               <p className="text-gray-400 text-sm mt-1">Hand-picked favorites from our collection</p>
@@ -403,14 +405,15 @@ export default function HomePage() {
             className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
           >
             {gameOfTheDay.map((game, index) => (
-              <div key={game.id} className="flex-none w-[280px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div key={game.id} className="flex-none w-[200px] sm:w-[240px] md:w-[280px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
                     <div className="relative overflow-hidden rounded-xl mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
-                      <img
+                      <LazyImage
                         src={game.cover}
                         alt={game.title}
-                        className="w-full h-[350px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                        wrapperClassName="w-full"
+                        className="h-[260px] sm:h-[300px] md:h-[350px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
                       <div className="absolute top-3 left-3">
                         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -451,15 +454,16 @@ export default function HomePage() {
 
         {/* All Games Grid (paginated: 5 rows x 6 cols = 30 per page) */}
         <section>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">All Games</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">All Games</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {games.slice((gamesPage - 1) * GAMES_PER_PAGE, (gamesPage - 1) * GAMES_PER_PAGE + GAMES_PER_PAGE).map((game, index) => (
               <Link key={game.id} to={`/game/${game.id}`} className="group block stagger-item" style={{ animationDelay: `${(index % 12) * 0.05}s` }}>
                 <div className="relative overflow-hidden rounded-lg mb-2 card-3d reflection">
-                  <img
+                  <LazyImage
                     src={game.cover}
                     alt={game.title}
-                    className="w-full h-[260px] object-cover transition-transform duration-300 group-hover:scale-110"
+                    wrapperClassName="w-full"
+                    className="h-[180px] sm:h-[220px] md:h-[260px] object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 p-3 w-full">

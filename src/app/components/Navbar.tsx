@@ -42,16 +42,15 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-[var(--card)] border-b border-[var(--border)] shadow-lg">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between gap-6">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
+      <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <Link to="/" className="flex items-center gap-3 group min-w-0">
             {logoUrl ? (
-              <img src={logoUrl} alt="Site logo" className="h-10 w-10 rounded-full object-cover" />
+              <img src={logoUrl} alt="Site logo" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
             ) : (
               <Gamepad2 className="h-10 w-10 text-cyan-400" />
             )}
-            <span className="text-2xl font-bold text-[var(--foreground)]">
+            <span className="block min-w-0 max-w-[220px] sm:max-w-none truncate text-lg sm:text-2xl font-bold text-[var(--foreground)] leading-tight">
               {siteName.split(" ").map((word, index) => (
                 <span key={index} className={index === 1 ? "text-cyan-400" : ""}>
                   {word}{index < siteName.split(" ").length - 1 ? " " : ""}
@@ -60,8 +59,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-xl">
+          <div className="order-3 sm:order-none w-full sm:flex-1 sm:max-w-xl">
             <form onSubmit={handleSearch}>
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -76,8 +74,7 @@ export function Navbar() {
             </form>
           </div>
 
-          {/* Right section */}
-          <div className="flex items-center gap-3">
+          <div className="order-2 sm:order-none flex items-center gap-3 justify-end">
             <ThemeToggle />
             <Link
               to="/categories"

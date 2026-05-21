@@ -72,7 +72,7 @@ export default function GameDetailPage() {
           description: `Download ${currentGame.title} for PC free on ${siteName}. ${currentGame.description.slice(0, 120)}... Size: ${currentGame.size}. Developer: ${currentGame.developer}.`,
           keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
-          url: `https://steamfree.games/game/${currentGame.id}`,
+          url: `${window.location.origin}/game/${currentGame.id}`,
           type: "article",
         });
         injectJsonLd("game-jsonld", buildGameJsonLd(currentGame, siteName));
@@ -133,7 +133,7 @@ export default function GameDetailPage() {
 
   const renderBackgroundMedia = () => {
     if (!game.backgroundImage) {
-      return <div className="h-[420px] w-full bg-gradient-to-br from-slate-800 to-slate-900" />;
+      return <div className="h-[260px] sm:h-[340px] md:h-[420px] w-full bg-gradient-to-br from-slate-800 to-slate-900" />;
     }
 
     const mediaUrl = normalizeMediaUrl(game.backgroundImage);
@@ -144,7 +144,7 @@ export default function GameDetailPage() {
         <iframe
           title="Game background video"
           src={`https://www.youtube.com/embed/${id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${id}`}
-          className="h-[420px] w-full object-cover"
+          className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover"
           allow="autoplay; encrypted-media"
         />
       );
@@ -154,7 +154,7 @@ export default function GameDetailPage() {
       return (
         <video
           src={mediaUrl}
-          className="h-[420px] w-full object-cover"
+          className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover"
           autoPlay
           muted
           loop
@@ -163,14 +163,14 @@ export default function GameDetailPage() {
       );
     }
 
-    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-[420px] w-full object-cover" />;
+    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover" />;
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
-        <Skeleton className="h-[420px] w-full rounded-none" />
-        <div className="container mx-auto grid gap-8 px-6 py-10 lg:grid-cols-[320px_1fr]">
+        <Skeleton className="h-[260px] sm:h-[340px] md:h-[420px] w-full rounded-none" />
+        <div className="container mx-auto grid gap-8 px-3 sm:px-6 py-10 lg:grid-cols-[320px_1fr]">
           <Skeleton className="h-[520px] w-full rounded-3xl" />
           <div className="space-y-4">
             <Skeleton className="h-12 w-2/3" />
@@ -263,7 +263,7 @@ export default function GameDetailPage() {
         <div className="grid gap-6 md:gap-8 lg:gap-10 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
           <div className="space-y-4 md:space-y-6 order-2 lg:order-1">
             <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] shadow-[0_18px_60px_rgba(15,23,42,0.35)]">
-              <ImageWithFallback src={game.cover} alt={game.title} className="h-64 sm:h-80 md:h-96 w-full object-cover" />
+              <ImageWithFallback src={game.cover} alt={game.title} className="h-56 sm:h-80 md:h-96 w-full object-cover" />
               <div className="p-4 md:p-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-white line-clamp-2">{game.title}</h1>
                 <p className="mt-2 md:mt-3 text-xs md:text-sm text-[var(--muted-foreground)] line-clamp-2">{formatCategoryList(game)} • {game.developer}</p>
@@ -326,10 +326,10 @@ export default function GameDetailPage() {
                   <ImageWithFallback
                     src={game.screenshots[currentScreenshot]}
                     alt={`Screenshot ${currentScreenshot + 1}`}
-                    className="mx-auto min-h-[200px] sm:min-h-[280px] md:min-h-[320px] max-h-[420px] w-full object-contain"
+                    className="mx-auto min-h-[160px] sm:min-h-[260px] md:min-h-[320px] max-h-[420px] w-full object-contain"
                   />
                 ) : (
-                  <div className="flex min-h-[200px] md:min-h-[320px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
+                  <div className="flex min-h-[160px] sm:min-h-[260px] md:min-h-[320px] items-center justify-center text-[var(--muted-foreground)]">No screenshots available</div>
                 )}
                 {game.screenshots.length > 1 && (
                   <>
@@ -357,7 +357,7 @@ export default function GameDetailPage() {
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-20 md:h-24 w-full object-contain bg-black/40" />
+                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-16 sm:h-20 md:h-24 w-full object-contain bg-black/40" />
                   </button>
                 ))}
               </div>

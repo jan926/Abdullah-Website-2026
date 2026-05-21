@@ -22,7 +22,7 @@ export default function CategoryPage() {
 
   useEffect(() => {
     if (games.length === 0) setLoading(true);
-    loadGames()
+    loadGames({ background: true })
       .then(setGames)
       .catch((error) => console.error("Failed to load games:", error))
       .finally(() => setLoading(false));
@@ -36,9 +36,9 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className={`bg-gradient-to-r ${gradientClass} py-16 relative overflow-hidden`}>
+      <div className={`bg-gradient-to-r ${gradientClass} py-10 sm:py-16 relative overflow-hidden`}>
         <div className="absolute inset-0 bg-black/30" />
-        <div className="container mx-auto px-6 relative z-10">
+        <div className="container mx-auto px-3 sm:px-6 relative z-10">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-4 transition"
@@ -46,10 +46,10 @@ export default function CategoryPage() {
             <ChevronLeft className="h-5 w-5" />
             Back to Home
           </Link>
-          <h1 className="text-5xl font-bold text-white mb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold text-white mb-4">
             {isAll ? "All Games" : `${categoryName} Games`}
           </h1>
-          <p className="text-white/90 text-lg">
+          <p className="text-white/90 text-base sm:text-lg">
             {loading
               ? "Loading games..."
               : `Discover ${categoryGames.length} amazing ${isAll ? "" : categoryName.toLowerCase() + " "}games`}
@@ -57,7 +57,7 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-3 sm:px-6 py-12">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (

@@ -514,7 +514,7 @@ export default function AdminPage() {
                   {games.slice(0, 5).map(game => (
                     <tr key={game.id} className="hover:bg-[var(--card)]">
                       <td className="px-6 py-4 flex items-center gap-3">
-                        <img src={game.cover} alt="" className="w-10 h-10 rounded object-cover" />
+                        <img src={game.cover} alt="" loading="lazy" decoding="async" className="w-10 h-10 rounded object-cover" />
                         <span className="font-medium text-[var(--foreground)]">{game.title}</span>
                       </td>
                       <td className="px-6 py-4 text-[var(--muted-foreground)]">{game.category}</td>
@@ -609,7 +609,7 @@ export default function AdminPage() {
             <div className="grid gap-4">
               {games.map(game => (
                 <Card key={game.id} className="flex items-center gap-6 p-4 border-[var(--border)] shadow-sm hover:shadow-md transition-shadow">
-                  <img src={game.cover} alt={game.title} className="w-24 h-16 rounded object-cover" />
+                  <img src={game.cover} alt={game.title} loading="lazy" decoding="async" className="w-24 h-16 rounded object-cover" />
                   <div className="flex-1">
                     <h3 className="font-bold text-[var(--foreground)]">{game.title}</h3>
                     <p className="text-sm text-slate-500">{game.category} • {game.developer} • {game.size}</p>
@@ -858,7 +858,7 @@ export default function AdminPage() {
                 <Input value={settings.logoUrl} onChange={e => setSettings({...settings, logoUrl: e.target.value})} className="border-[var(--border)]" />
                 <p className="text-xs text-slate-500 mt-1">Paste a direct image URL. Shown in navbar and browser tab.</p>
                 {settings.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Logo preview" className="mt-2 h-16 w-16 rounded-full object-cover border border-[var(--border)]" />
+                  <img src={settings.logoUrl} alt="Logo preview" loading="lazy" decoding="async" className="mt-2 h-16 w-16 rounded-full object-cover border border-[var(--border)]" />
                 ) : null}
               </div>
 
@@ -917,7 +917,7 @@ export default function AdminPage() {
                     }}
                     className="h-4 w-4"
                   />
-                  <img src={game.cover} alt="" className="h-14 w-20 rounded object-cover" />
+                  <img src={game.cover} alt="" loading="lazy" decoding="async" className="h-14 w-20 rounded object-cover" />
                   <div className="flex-1">
                     <p className="font-semibold text-[var(--foreground)]">{game.title}</p>
                     <p className="text-xs text-slate-500">{game.category}</p>
@@ -991,7 +991,7 @@ export default function AdminPage() {
               <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Current Game of the Day</h2>
               {games.find(g => g.gameOfTheDay) ? (
                 <div className="flex items-center gap-4 p-4 border border-[var(--border)] rounded-lg">
-                  <img src={games.find(g => g.gameOfTheDay)!.cover} alt="cover" className="w-20 h-20 rounded object-cover" />
+                  <img src={games.find(g => g.gameOfTheDay)!.cover} alt="cover" loading="lazy" decoding="async" className="w-20 h-20 rounded object-cover" />
                   <div className="flex-1">
                     <p className="font-semibold text-[var(--foreground)]">{games.find(g => g.gameOfTheDay)?.title}</p>
                     <p className="text-sm text-slate-500">{games.find(g => g.gameOfTheDay)?.category}</p>

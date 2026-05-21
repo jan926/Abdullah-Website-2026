@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { Game } from "../data/games";
-import { loadGames } from "../../lib/gameStore";
+import { getGamesSync, loadGames } from "../../lib/gameStore";
 import { GameCard } from "../components/GameCard";
 import { Input } from "../components/ui/input";
 import { Search } from "lucide-react";
@@ -9,28 +9,31 @@ import { Search } from "lucide-react";
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [results, setResults] = useState<Game[]>([]);
+  const [results, setResults] = useState<Game[]>(() => getGamesSync());
+
+  const filterGames = (games: Game[], query: string) => {
+    if (!query.trim()) return games;
+    const q = query.toLowerCase();
+    return games.filter(
+      (game) =>
+        game.title.toLowerCase().includes(q) ||
+        game.description.toLowerCase().includes(q) ||
+        game.category.toLowerCase().includes(q) ||
+        game.categories?.some((c) => c.toLowerCase().includes(q)) ||
+        game.tags?.some((t) => t.toLowerCase().includes(q)) ||
+        game.developer.toLowerCase().includes(q)
+    );
+  };
 
   useEffect(() => {
     const query = searchParams.get("q") || "";
     setSearchQuery(query);
 
-    loadGames()
+    setResults(filterGames(getGamesSync(), query));
+
+    loadGames({ background: true })
       .then((games) => {
-        if (query.trim()) {
-          const filtered = games.filter(
-            (game) =>
-              game.title.toLowerCase().includes(query.toLowerCase()) ||
-              game.description.toLowerCase().includes(query.toLowerCase()) ||
-              game.category.toLowerCase().includes(query.toLowerCase()) ||
-              game.categories?.some((c) => c.toLowerCase().includes(query.toLowerCase())) ||
-              game.tags?.some((t) => t.toLowerCase().includes(query.toLowerCase())) ||
-              game.developer.toLowerCase().includes(query.toLowerCase())
-          );
-          setResults(filtered);
-        } else {
-          setResults(games);
-        }
+        setResults(filterGames(games, query));
       })
       .catch((error) => console.error("Failed to load games for search:", error));
   }, [searchParams]);
@@ -46,9 +49,9 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-3 sm:px-6 py-12">
         <div className="mb-12">
-          <h1 className="mb-4 bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-4xl font-bold text-transparent">
+          <h1 className="mb-4 bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-3xl sm:text-4xl font-bold text-transparent">
             Search Games
           </h1>
 
@@ -59,7 +62,7 @@ export default function SearchPage() {
               placeholder="Search by title, category, or developer..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-12 bg-[#151b38] border-[#1e2952] text-white placeholder:text-gray-500 focus-visible:ring-cyan-500 text-lg py-6 rounded-lg"
+              className="w-full pl-12 bg-[#151b38] border-[#1e2952] text-white placeholder:text-gray-500 focus-visible:ring-cyan-500 text-base sm:text-lg py-4 sm:py-6 rounded-lg"
             />
           </div>
         </div>

@@ -12,7 +12,7 @@ export default function CategoriesPage() {
   const [categoryList, setCategoryList] = useState<string[]>([]);
 
   useEffect(() => {
-    Promise.all([loadGames(), loadCategories()])
+    Promise.all([loadGames({ background: true }), loadCategories()])
       .then(([loadedGames, loadedCategories]) => {
         setGames(loadedGames);
         setCategoryList(loadedCategories.filter((c) => c !== "All"));
@@ -40,9 +40,9 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="container mx-auto px-6 py-12">
+      <div className="container mx-auto px-3 sm:px-6 py-12">
         <div className="mb-12">
-          <h1 className="mb-4 text-4xl font-bold text-white">Browse by Category</h1>
+          <h1 className="mb-4 text-3xl sm:text-4xl font-bold text-white">Browse by Category</h1>
           <p className="text-gray-200">Explore our collection of games organized by genre</p>
         </div>
 
@@ -76,7 +76,7 @@ export default function CategoriesPage() {
         ) : (
           <div>
             <div className="mb-8 flex items-center justify-between">
-              <h2 className="bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-3xl font-bold text-transparent">
+              <h2 className="bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-2xl sm:text-3xl font-bold text-transparent">
                 {selectedCategory} Games
               </h2>
               <button

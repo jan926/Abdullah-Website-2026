@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import HomePage from "./pages/HomePage";
@@ -8,8 +8,9 @@ import CategoryPage from "./pages/CategoryPage";
 import SearchPage from "./pages/SearchPage";
 import AdminPage from "./pages/AdminPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
     Component: RootLayout,
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
         path: "search",
         Component: SearchPage,
       },
+      {
+        path: "*",
+        Component: NotFoundPage,
+      },
     ],
   },
   {
@@ -47,6 +52,10 @@ export const router = createBrowserRouter([
       {
         path: "login",
         Component: AdminLoginPage,
+      },
+      {
+        path: "*",
+        Component: NotFoundPage,
       },
     ],
   },

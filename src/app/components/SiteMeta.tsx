@@ -18,7 +18,7 @@ export function SiteMeta() {
         const keywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const siteName = settings.siteName || "Download Your Games";
 
-        const siteUrl = "https://steamfree.games";
+        const siteUrl = window.location.origin;
         setDocumentMeta({
           title: `${siteName} — Download PC Games Free | ${siteName}`,
           description: `${siteName} — download the latest PC games free. Browse ${games.length}+ full-version titles, repacks, and updates on ${siteName}.`,
