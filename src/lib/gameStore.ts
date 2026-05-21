@@ -54,7 +54,7 @@ export interface SiteAnalytics {
 }
 
 const defaultSettings: SiteSettings = {
-  siteName: "Download Your Games",
+  siteName: "SF Games PC",
   logoUrl: "",
   showLatestGames: true,
   showMostViewed: true,

@@ -16,7 +16,7 @@ export default function HomePage() {
   const [games, setGames] = useState<Game[]>(() => getGamesSync());
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "Download Your Games",
+    siteName: "SF Games PC",
     logoUrl: "",
     showLatestGames: true,
     showMostViewed: true,

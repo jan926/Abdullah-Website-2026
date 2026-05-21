@@ -63,12 +63,13 @@ export default function GameDetailPage() {
         setGame(currentGame);
 
         const siteSettings = await loadSiteSettings().catch(() => ({
-          siteName: "Download Your Games",
+          siteName: "SF Games PC",
         }));
-        const siteName = siteSettings.siteName || "Download Your Games";
+        const siteName = siteSettings.siteName || "SF Games PC";
+        const baseTitle = `${siteName} - Download Free PC Games`;
 
         setDocumentMeta({
-          title: `${currentGame.title} Download PC Free | ${siteName}`,
+          title: `${currentGame.title} - ${baseTitle}`,
           description: `Download ${currentGame.title} for PC free on ${siteName}. ${currentGame.description.slice(0, 120)}... Size: ${currentGame.size}. Developer: ${currentGame.developer}.`,
           keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
@@ -260,10 +261,35 @@ export default function GameDetailPage() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-16 pt-6 md:pt-8">
+        <div className="lg:hidden relative z-10 -mt-14 sm:-mt-16 mb-6">
+          <div className="rounded-2xl border border-[rgba(226,232,240,0.10)] bg-[rgba(15,23,42,0.85)] backdrop-blur p-3">
+            <div className="flex gap-3">
+              <ImageWithFallback
+                src={game.cover}
+                alt={game.title}
+                className="h-24 w-20 shrink-0 rounded-xl object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base font-bold text-white line-clamp-2">{game.title}</h1>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)] line-clamp-1">
+                  {formatCategoryList(game)} • {game.developer}
+                </p>
+                <div className="mt-3">
+                  <DownloadButton
+                    onClick={handleDownloadClick}
+                    className="w-full neon-glow-cyan text-sm"
+                    label="Download Now"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-6 md:gap-8 lg:gap-10 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
           <div className="space-y-4 md:space-y-6 order-2 lg:order-1">
-            <div className="overflow-hidden rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] shadow-[0_18px_60px_rgba(15,23,42,0.35)]">
-              <ImageWithFallback src={game.cover} alt={game.title} className="h-56 sm:h-80 md:h-96 w-full object-cover" />
+            <div className="hidden lg:block overflow-hidden rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] shadow-[0_18px_60px_rgba(15,23,42,0.35)]">
+              <ImageWithFallback src={game.cover} alt={game.title} className="h-72 xl:h-96 w-full object-cover" />
               <div className="p-4 md:p-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-white line-clamp-2">{game.title}</h1>
                 <p className="mt-2 md:mt-3 text-xs md:text-sm text-[var(--muted-foreground)] line-clamp-2">{formatCategoryList(game)} • {game.developer}</p>

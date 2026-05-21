@@ -59,13 +59,13 @@ export default function CategoryPage() {
 
       <div className="container mx-auto px-3 sm:px-6 py-12">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[380px] w-full rounded-xl" />
             ))}
           </div>
         ) : categoryGames.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {categoryGames.map((game, index) => (
               <div key={game.id} className="stagger-item" style={{ animationDelay: `${index * 0.05}s` }}>
                 <GameCard game={game} />

@@ -9,7 +9,7 @@ import { loadSiteSettings } from "../../lib/gameStore";
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [siteName, setSiteName] = useState("Download Your Game");
+  const [siteName, setSiteName] = useState("SF Games PC");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -18,7 +18,7 @@ export function Navbar() {
     setIsAdminAuthenticated(authenticated === "true");
     loadSiteSettings()
       .then((settings) => {
-        setSiteName(settings.siteName || "Download Your Game");
+        setSiteName(settings.siteName || "SF Games PC");
         setLogoUrl(settings.logoUrl || null);
       })
       .catch((error) => console.error("Failed to load site settings:", error));

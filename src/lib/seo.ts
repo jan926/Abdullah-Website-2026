@@ -130,7 +130,7 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   return Array.from(parts).join(", ");
 };
 
-export const buildGameJsonLd = (game: Game, siteName = "Download Your Games") => ({
+export const buildGameJsonLd = (game: Game, siteName = "SF Games PC") => ({
   "@context": "https://schema.org",
   "@type": "VideoGame",
   name: game.title,

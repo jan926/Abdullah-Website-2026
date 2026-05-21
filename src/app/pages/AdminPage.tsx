@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 
 const defaultAdminSettings: SiteSettings = {
-  siteName: "Download Your Games",
+  siteName: "SF Games PC",
   logoUrl: "",
   showLatestGames: true,
   showMostViewed: true,
@@ -393,7 +393,7 @@ export default function AdminPage() {
           </div>
           <div>
             <h2 className="font-bold text-[var(--foreground)] tracking-tight">Admin Panel</h2>
-            <p className="text-xs text-slate-500">Download Your Game</p>
+            <p className="text-xs text-slate-500">SF Games PC</p>
           </div>
         </div>
         
