@@ -123,6 +123,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+      <h1 className="sr-only">{settings.siteName} free download PC games</h1>
       {/* Hero Section */}
       <section className="relative h-[min(60vh,700px)] min-h-[320px] overflow-hidden">
         {displayHeroGames.map((game, index) => (
@@ -150,9 +151,9 @@ export default function HomePage() {
                       🔥 TRENDING
                     </span>
                   </div>
-                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                  <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
                     {game.title}
-                  </h1>
+                  </h2>
                   <p className="line-clamp-3 text-gray-300 text-base md:text-lg leading-relaxed">
                     {game.description}
                   </p>

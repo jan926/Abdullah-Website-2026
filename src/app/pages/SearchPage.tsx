@@ -13,16 +13,58 @@ export default function SearchPage() {
 
   const filterGames = (games: Game[], query: string) => {
     if (!query.trim()) return games;
-    const q = query.toLowerCase();
-    return games.filter(
-      (game) =>
-        game.title.toLowerCase().includes(q) ||
-        game.description.toLowerCase().includes(q) ||
-        game.category.toLowerCase().includes(q) ||
-        game.categories?.some((c) => c.toLowerCase().includes(q)) ||
-        game.tags?.some((t) => t.toLowerCase().includes(q)) ||
-        game.developer.toLowerCase().includes(q)
-    );
+
+    const normalized = query.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").trim();
+    const stopWords = new Set([
+      "a",
+      "an",
+      "and",
+      "any",
+      "download",
+      "free",
+      "for",
+      "full",
+      "game",
+      "games",
+      "pc",
+      "the",
+      "version",
+    ]);
+    const tokens = normalized
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length > 1 && !stopWords.has(token));
+
+    if (tokens.length === 0) return [];
+
+    return games
+      .map((game) => {
+        const title = game.title.toLowerCase();
+        const developer = game.developer.toLowerCase();
+        const categories = [game.category, ...(game.categories || [])].join(" ").toLowerCase();
+        const tags = (game.tags || []).join(" ").toLowerCase();
+        const description = game.description.toLowerCase();
+        const searchable = `${title} ${developer} ${categories} ${tags} ${description}`;
+
+        let score = 0;
+        if (title.includes(normalized)) score += 60;
+        if (developer.includes(normalized)) score += 30;
+        if (categories.includes(normalized)) score += 20;
+        if (tags.includes(normalized)) score += 12;
+
+        for (const token of tokens) {
+          if (title.includes(token)) score += 15;
+          else if (developer.includes(token)) score += 10;
+          else if (categories.includes(token)) score += 8;
+          else if (tags.includes(token)) score += 5;
+          else if (searchable.includes(token)) score += 1;
+        }
+
+        return { game, score };
+      })
+      .filter((item) => item.score >= Math.min(tokens.length, 2))
+      .sort((a, b) => b.score - a.score || a.game.title.localeCompare(b.game.title))
+      .map((item) => item.game);
   };
 
   useEffect(() => {

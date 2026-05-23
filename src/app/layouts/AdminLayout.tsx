@@ -4,7 +4,7 @@ import { ScrollToTop } from "../components/ScrollToTop";
 
 export function AdminLayout() {
   return (
-    <div className="admin-theme flex h-screen flex-col overflow-hidden font-sans">
+    <div className="admin-theme flex h-dvh flex-col overflow-hidden font-sans">
       <ScrollToTop />
       <style dangerouslySetInnerHTML={{__html: `
         .admin-theme {

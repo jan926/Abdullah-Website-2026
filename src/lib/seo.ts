@@ -16,8 +16,17 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
   };
 
   [
+    "SF Games PC",
+    "SF Games PC free download",
+    "SF Games PC download free PC games",
+    "sf games pc free download",
+    "steamfree games",
+    "steamfree.games",
     "download pc games",
     "free pc games download",
+    "free download pc games",
+    "pc games free download full version",
+    "download free pc games for windows",
     "game download site",
     "latest pc games",
     "full version pc games",
@@ -58,7 +67,7 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
     game.tags?.forEach((tag) => add(tag));
   });
 
-  return Array.from(parts).slice(0, 600).join(", ");
+  return Array.from(parts).slice(0, 300).join(", ");
 };
 
 export const setDocumentMeta = (opts: {

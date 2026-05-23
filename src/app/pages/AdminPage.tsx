@@ -35,6 +35,7 @@ import {
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
 } from "lucide-react";
+import { toast } from "sonner";
 
 const defaultAdminSettings: SiteSettings = {
   siteName: "SF Games PC",
@@ -62,6 +63,7 @@ export default function AdminPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [dbNeedsSetup, setDbNeedsSetup] = useState(false);
+  const [adminGameSearch, setAdminGameSearch] = useState("");
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -356,7 +358,7 @@ export default function AdminPage() {
   const SidebarItem = ({ icon: Icon, label, value }: { icon: any, label: string, value: string }) => (
     <button
       onClick={() => setActiveTab(value)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+      className={`flex w-max shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-4 py-3 transition-all lg:w-full ${
         activeTab === value 
         ? "bg-sky-600 text-white font-medium" 
         : "text-[var(--muted-foreground)] hover:bg-[var(--card)] hover:text-[var(--foreground)]"
@@ -369,12 +371,20 @@ export default function AdminPage() {
 
   if (!isAuthenticated) return null;
 
+  const visibleAdminGames = games.filter((game) => {
+    const q = adminGameSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [game.title, game.category, game.developer, ...(game.tags || [])]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(q));
+  });
+
   return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-[var(--background)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--background)] lg:flex-row">
       {/* Sidebar — fixed height, menu scrolls only on small screens */}
-      <aside className="flex h-full w-64 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)]">
+      <aside className="flex max-h-[46vh] w-full shrink-0 flex-col overflow-y-auto border-b border-[var(--border)] bg-[var(--card)] lg:h-full lg:max-h-none lg:w-64 lg:border-b-0 lg:border-r lg:overflow-visible">
         {/* Back to Home Button */}
-        <div className="p-4 border-b border-[var(--border)]">
+        <div className="shrink-0 p-3 border-b border-[var(--border)] lg:p-4">
           <Button 
             asChild 
             variant="outline" 
@@ -387,7 +397,7 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <div className="p-6 border-b border-[var(--border)] flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--border)] p-4 lg:p-6">
           <div className="bg-sky-500 rounded-lg p-2">
             <Gamepad2 className="h-6 w-6 text-white" />
           </div>
@@ -397,7 +407,7 @@ export default function AdminPage() {
           </div>
         </div>
         
-        <nav className="flex-1 space-y-2 p-4">
+        <nav className="flex gap-2 overflow-x-auto p-3 lg:block lg:flex-1 lg:space-y-2 lg:overflow-x-visible lg:p-4">
           <SidebarItem icon={LayoutDashboard} label="Dashboard" value="dashboard" />
           <SidebarItem icon={BarChart3} label="Analytics" value="analytics" />
           <SidebarItem icon={Gamepad2} label="Manage Games" value="games" />
@@ -408,7 +418,7 @@ export default function AdminPage() {
           <SidebarItem icon={Settings} label="Site Settings" value="settings" />
         </nav>
         
-        <div className="shrink-0 border-t border-slate-200 p-4">
+        <div className="hidden shrink-0 border-t border-slate-200 p-4 lg:block">
           <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-[var(--card)]">
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-indigo-100 font-bold">
               {adminUsername.charAt(0).toUpperCase()}
@@ -431,7 +441,7 @@ export default function AdminPage() {
 
       {/* Har section (Upload, Categories, Settings, …) — sirf yahan ek scroll */}
       <section
-        className="admin-main-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--background)] p-6 md:p-8"
+        className="admin-main-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-[var(--background)] p-4 md:p-6 lg:p-8"
         aria-label="Admin content"
       >
         {dbNeedsSetup && (
@@ -500,7 +510,7 @@ export default function AdminPage() {
             </div>
             
             <h2 className="text-xl font-bold text-[var(--foreground)] mt-8 mb-4">Recent Uploads</h2>
-            <div className="border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-[var(--border)] shadow-sm">
               <table className="w-full text-sm text-left">
                 <thead className="bg-[var(--muted)] border-b border-[var(--border)] text-[var(--muted-foreground)] font-medium uppercase">
                   <tr>
@@ -594,7 +604,7 @@ export default function AdminPage() {
 
         {activeTab === "games" && (
           <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Games</h1>
               <Button onClick={() => { resetForm(); setActiveTab("upload"); }} className="bg-sky-500 hover:bg-sky-600 text-white">
                 <Plus className="h-4 w-4 mr-2" /> Add New Game
@@ -603,14 +613,19 @@ export default function AdminPage() {
             
             <div className="border border-[var(--border)] rounded-xl p-4 flex items-center gap-4 shadow-sm">
               <Search className="h-5 w-5 text-slate-400" />
-              <Input placeholder="Search games by title..." className="border-0 shadow-none focus-visible:ring-0 px-0" />
+              <Input
+                value={adminGameSearch}
+                onChange={(e) => setAdminGameSearch(e.target.value)}
+                placeholder="Search games by title, category, or developer..."
+                className="border-0 shadow-none focus-visible:ring-0 px-0"
+              />
             </div>
 
             <div className="grid gap-4">
-              {games.map(game => (
-                <Card key={game.id} className="flex items-center gap-6 p-4 border-[var(--border)] shadow-sm hover:shadow-md transition-shadow">
-                  <img src={game.cover} alt={game.title} loading="lazy" decoding="async" className="w-24 h-16 rounded object-cover" />
-                  <div className="flex-1">
+              {visibleAdminGames.map(game => (
+                <Card key={game.id} className="flex flex-col gap-4 p-4 border-[var(--border)] shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:gap-6">
+                  <img src={game.cover} alt={game.title} loading="lazy" decoding="async" className="h-32 w-full rounded object-cover sm:h-16 sm:w-24" />
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-[var(--foreground)]">{game.title}</h3>
                     <p className="text-sm text-slate-500">{game.category} • {game.developer} • {game.size}</p>
                     <div className="flex gap-2 mt-2">
@@ -618,7 +633,7 @@ export default function AdminPage() {
                       {game.trending && <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-red-100 text-red-700 rounded-md">Trending</span>}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
                     <Button variant="outline" size="sm" onClick={() => editGame(game)} className="text-slate-600 hover:text-sky-600 hover:border-sky-200 hover:bg-sky-50">
                       <Edit className="h-4 w-4 mr-2" /> Edit
                     </Button>
@@ -628,6 +643,11 @@ export default function AdminPage() {
                   </div>
                 </Card>
               ))}
+              {visibleAdminGames.length === 0 && (
+                <Card className="p-8 text-center text-sm text-[var(--muted-foreground)]">
+                  No games matched your search.
+                </Card>
+              )}
             </div>
           </div>
         )}

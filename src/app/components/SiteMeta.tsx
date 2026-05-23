@@ -17,13 +17,19 @@ export function SiteMeta() {
 
         const keywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const siteName = settings.siteName || "SF Games PC";
-        const baseTitle = `${siteName} - Download Free PC Games`;
+        const baseTitle = `${siteName} Free Download - PC Games`;
 
         const siteUrl = window.location.origin;
         setDocumentMeta({
           title: baseTitle,
-          description: `${baseTitle}. Browse ${games.length}+ full-version titles, repacks, and updates.`,
-          keywords: [siteName, `${siteName} download`, `${siteName} games`, keywords].join(", "),
+          description: `${siteName} free download PC games. Browse ${games.length}+ full-version titles, repacks, updates, and direct download game pages.`,
+          keywords: [
+            siteName,
+            `${siteName} free download`,
+            `${siteName} pc games free download`,
+            `${siteName} download free PC games`,
+            keywords,
+          ].join(", "),
           url: `${siteUrl}${location.pathname}`,
         });
 

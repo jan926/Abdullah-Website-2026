@@ -7,13 +7,29 @@ import { loadSiteSettings, saveSiteSettings } from "../../lib/gameStore";
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
+    let active = true;
     setMounted(true);
     loadSiteSettings()
-      .then((settings) => setTheme(settings.theme))
+      .then((settings) => {
+        if (!active) return;
+        setCurrentTheme(settings.theme);
+        setTheme(settings.theme);
+      })
       .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
   }, [setTheme]);
+
+  useEffect(() => {
+    if (resolvedTheme === "light" || resolvedTheme === "dark") {
+      setCurrentTheme(resolvedTheme);
+    }
+  }, [resolvedTheme]);
 
   if (!mounted) {
     return (
@@ -23,12 +39,12 @@ export function ThemeToggle() {
     );
   }
 
-  const isDark = resolvedTheme === "dark";
+  const isDark = currentTheme === "dark";
 
   const handleThemeChange = () => {
     const newTheme = isDark ? "light" : "dark";
+    setCurrentTheme(newTheme);
     setTheme(newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
 
     loadSiteSettings()
       .then((settings) => saveSiteSettings({ ...settings, theme: newTheme }))
