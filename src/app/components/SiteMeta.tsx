@@ -17,14 +17,17 @@ export function SiteMeta() {
 
         const keywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const siteName = settings.siteName || "AQ Gaming Hub";
-        const baseTitle = `${siteName} Free Download - PC Games`;
+        const baseTitle = `${siteName} - Free PC Games Download`;
 
         const siteUrl = window.location.origin;
         setDocumentMeta({
           title: baseTitle,
-          description: `${siteName} free download PC games. Browse ${games.length}+ full-version titles, repacks, updates, and direct download game pages.`,
+          description: `${siteName} is a PC games download hub. Browse ${games.length}+ full-version titles, repacks, updates, and direct download game pages.`,
           keywords: [
             siteName,
+            siteName.toLowerCase(),
+            `${siteName} official`,
+            `${siteName} PC games`,
             `${siteName} free download`,
             `${siteName} pc games free download`,
             `${siteName} download free PC games`,

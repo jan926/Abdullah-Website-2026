@@ -17,7 +17,12 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
 
   [
     "AQ Gaming Hub",
+    "aq gaming hub",
+    "AQ GamingHub",
+    "AQ Games Hub",
+    "AQ Gaming Hub official",
     "AQ Gaming Hub PC",
+    "AQ Gaming Hub PC games",
     "AQ Gaming Hub free download",
     "AQ Gaming Hub download free PC games",
     "aq gaming hub pc free download",
