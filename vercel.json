@@ -2,16 +2,28 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/sitemap.xml",
-      "destination": "/sitemap.xml"
+      "source": "/categories",
+      "destination": "/"
     },
     {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
+      "source": "/category/:category",
+      "destination": "/"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/game/:id",
+      "destination": "/"
+    },
+    {
+      "source": "/search",
+      "destination": "/"
+    },
+    {
+      "source": "/admin",
+      "destination": "/"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/"
     }
   ]
 }
