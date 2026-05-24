@@ -34,11 +34,6 @@ export function Footer() {
                   Search Games
                 </Link>
               </li>
-              <li>
-                <Link to="/admin/login" className="text-sm hover:text-cyan-400 transition">
-                  Admin Panel
-                </Link>
-              </li>
             </ul>
           </div>
 

@@ -16,14 +16,6 @@
     {
       "source": "/search",
       "destination": "/"
-    },
-    {
-      "source": "/admin",
-      "destination": "/"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "/"
     }
   ]
 }
