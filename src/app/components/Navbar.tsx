@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { Search, Shield, Gamepad2 } from "lucide-react";
-import { Button } from "./ui/button";
+import { Search, Gamepad2 } from "lucide-react";
 import { Input } from "./ui/input";
 import { ThemeToggle } from "./ThemeToggle";
 import { useState, useEffect } from "react";
@@ -8,14 +7,11 @@ import { loadSiteSettings } from "../../lib/gameStore";
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [siteName, setSiteName] = useState("SF Games PC");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const authenticated = localStorage.getItem("adminAuthenticated");
-    setIsAdminAuthenticated(authenticated === "true");
     loadSiteSettings()
       .then((settings) => {
         setSiteName(settings.siteName || "SF Games PC");
@@ -28,15 +24,6 @@ export function Navbar() {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
-  const handleAdminClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isAdminAuthenticated) {
-      navigate("/admin");
-    } else {
-      navigate("/admin/login");
     }
   };
 
@@ -82,15 +69,6 @@ export function Navbar() {
             >
               Browse
             </Link>
-            <Button
-              variant="default"
-              size="sm"
-              className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-4 py-2 rounded-full neon-glow-cyan"
-              onClick={handleAdminClick}
-            >
-              <Shield className="mr-2 h-4 w-4" />
-              Admin
-            </Button>
           </div>
         </div>
       </div>

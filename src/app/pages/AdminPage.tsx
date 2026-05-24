@@ -64,6 +64,9 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [dbNeedsSetup, setDbNeedsSetup] = useState(false);
   const [adminGameSearch, setAdminGameSearch] = useState("");
+  const [analyticsGameSearch, setAnalyticsGameSearch] = useState("");
+  const [heroGameSearch, setHeroGameSearch] = useState("");
+  const [dailyGameSearch, setDailyGameSearch] = useState("");
   
   // New Game Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -371,13 +374,18 @@ export default function AdminPage() {
 
   if (!isAuthenticated) return null;
 
-  const visibleAdminGames = games.filter((game) => {
-    const q = adminGameSearch.trim().toLowerCase();
+  const filterAdminGames = (query: string) => games.filter((game) => {
+    const q = query.trim().toLowerCase();
     if (!q) return true;
     return [game.title, game.category, game.developer, ...(game.tags || [])]
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(q));
   });
+
+  const visibleAdminGames = filterAdminGames(adminGameSearch);
+  const visibleAnalyticsGames = filterAdminGames(analyticsGameSearch);
+  const visibleHeroGames = filterAdminGames(heroGameSearch);
+  const visibleDailyGames = filterAdminGames(dailyGameSearch);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--background)] lg:flex-row">
@@ -546,6 +554,15 @@ export default function AdminPage() {
         {activeTab === "analytics" && (
           <div className="space-y-6 max-w-5xl mx-auto">
             <h1 className="text-2xl font-bold text-[var(--foreground)]">Analytics</h1>
+            <div className="border border-[var(--border)] rounded-xl p-4 flex items-center gap-4 shadow-sm">
+              <Search className="h-5 w-5 text-slate-400" />
+              <Input
+                value={analyticsGameSearch}
+                onChange={(e) => setAnalyticsGameSearch(e.target.value)}
+                placeholder="Search analytics games..."
+                className="border-0 shadow-none focus-visible:ring-0 px-0"
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <p className="text-sm text-slate-500 font-medium">Total Site Views</p>
@@ -566,7 +583,7 @@ export default function AdminPage() {
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Top Viewed Games</h2>
                 <div className="space-y-3">
-                  {[...games]
+                  {[...visibleAnalyticsGames]
                     .sort((a, b) => (b.views || 0) - (a.views || 0))
                     .slice(0, 4)
                     .map((game) => (
@@ -584,7 +601,7 @@ export default function AdminPage() {
               <Card className="p-6 border-[var(--border)] shadow-sm">
                 <h2 className="text-lg font-semibold text-[var(--foreground)] mb-4">Top Downloads</h2>
                 <div className="space-y-3">
-                  {[...games]
+                  {[...visibleAnalyticsGames]
                     .sort((a, b) => (b.downloads || 0) - (a.downloads || 0))
                     .slice(0, 4)
                     .map((game) => (
@@ -920,7 +937,16 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-[var(--foreground)]">Homepage Hero Banner (max 6)</h1>
             <p className="text-sm text-slate-500">Select games for the top homepage carousel. Add a separate Hero Animation URL when uploading each game.</p>
             <Card className="p-6 border-[var(--border)] shadow-sm space-y-3">
-              {games.map((game) => (
+              <div className="border border-[var(--border)] rounded-xl p-4 flex items-center gap-4 shadow-sm">
+                <Search className="h-5 w-5 text-slate-400" />
+                <Input
+                  value={heroGameSearch}
+                  onChange={(e) => setHeroGameSearch(e.target.value)}
+                  placeholder="Search games for hero banner..."
+                  className="border-0 shadow-none focus-visible:ring-0 px-0"
+                />
+              </div>
+              {visibleHeroGames.map((game) => (
                 <label key={game.id} className="flex cursor-pointer items-center gap-4 rounded-lg border border-[var(--border)] p-3 hover:bg-[var(--muted)]">
                   <input
                     type="checkbox"
@@ -944,6 +970,11 @@ export default function AdminPage() {
                   </div>
                 </label>
               ))}
+              {visibleHeroGames.length === 0 && (
+                <div className="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-sm text-[var(--muted-foreground)]">
+                  No games matched your search.
+                </div>
+              )}
               <Button
                 className="bg-sky-500 hover:bg-sky-600 text-white"
                 onClick={async () => {
@@ -969,6 +1000,15 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-[var(--foreground)]">Manage Game of the Day</h1>
             
             <Card className="p-6 border-[var(--border)] shadow-sm space-y-6">
+              <div className="border border-[var(--border)] rounded-xl p-4 flex items-center gap-4 shadow-sm">
+                <Search className="h-5 w-5 text-slate-400" />
+                <Input
+                  value={dailyGameSearch}
+                  onChange={(e) => setDailyGameSearch(e.target.value)}
+                  placeholder="Search games for Game of the Day..."
+                  className="border-0 shadow-none focus-visible:ring-0 px-0"
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-[var(--foreground)]">Select Game of the Day</Label>
                 <Select value={dailyGameId} onValueChange={setDailyGameId}>
@@ -976,13 +1016,16 @@ export default function AdminPage() {
                     <SelectValue placeholder="Choose a game..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {games.map(game => (
+                    {visibleDailyGames.map(game => (
                       <SelectItem key={game.id} value={game.id}>
                         {game.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {visibleDailyGames.length === 0 && (
+                  <p className="text-sm text-[var(--muted-foreground)]">No games matched your search.</p>
+                )}
               </div>
               
               <div className="pt-4 flex justify-end gap-3">
