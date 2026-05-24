@@ -1,12 +1,33 @@
 import { Outlet } from "react-router";
+import { useEffect } from "react";
 import { Toaster } from "../components/ui/sonner";
 import { ScrollToTop } from "../components/ScrollToTop";
 
 export function AdminLayout() {
+  useEffect(() => {
+    document.documentElement.classList.add("admin-route");
+    document.body.classList.add("admin-route");
+
+    return () => {
+      document.documentElement.classList.remove("admin-route");
+      document.body.classList.remove("admin-route");
+    };
+  }, []);
+
   return (
     <div className="admin-theme flex h-dvh flex-col overflow-hidden font-sans">
       <ScrollToTop />
       <style dangerouslySetInnerHTML={{__html: `
+        html.admin-route,
+        body.admin-route {
+          height: 100%;
+          overflow: hidden;
+        }
+        html.admin-route::-webkit-scrollbar,
+        body.admin-route::-webkit-scrollbar {
+          width: 0;
+          height: 0;
+        }
         .admin-theme {
           --background: #f8fafc;
           --foreground: #0f172a;
