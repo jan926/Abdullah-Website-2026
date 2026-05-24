@@ -7,14 +7,14 @@ import { loadSiteSettings } from "../../lib/gameStore";
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [siteName, setSiteName] = useState("SF Games PC");
+  const [siteName, setSiteName] = useState("AQ Gaming Hub");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     loadSiteSettings()
       .then((settings) => {
-        setSiteName(settings.siteName || "SF Games PC");
+        setSiteName(settings.siteName || "AQ Gaming Hub");
         setLogoUrl(settings.logoUrl || null);
       })
       .catch((error) => console.error("Failed to load site settings:", error));

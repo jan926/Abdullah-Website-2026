@@ -16,7 +16,7 @@ export function SiteMeta() {
         ]);
 
         const keywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
-        const siteName = settings.siteName || "SF Games PC";
+        const siteName = settings.siteName || "AQ Gaming Hub";
         const baseTitle = `${siteName} Free Download - PC Games`;
 
         const siteUrl = window.location.origin;

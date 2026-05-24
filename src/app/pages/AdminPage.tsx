@@ -38,7 +38,7 @@ import {
 import { toast } from "sonner";
 
 const defaultAdminSettings: SiteSettings = {
-  siteName: "SF Games PC",
+  siteName: "AQ Gaming Hub",
   logoUrl: "",
   showLatestGames: true,
   showMostViewed: true,
@@ -411,7 +411,7 @@ export default function AdminPage() {
           </div>
           <div>
             <h2 className="font-bold text-[var(--foreground)] tracking-tight">Admin Panel</h2>
-            <p className="text-xs text-slate-500">SF Games PC</p>
+            <p className="text-xs text-slate-500">AQ Gaming Hub</p>
           </div>
         </div>
         

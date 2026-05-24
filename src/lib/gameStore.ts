@@ -54,7 +54,7 @@ export interface SiteAnalytics {
 }
 
 const defaultSettings: SiteSettings = {
-  siteName: "SF Games PC",
+  siteName: "AQ Gaming Hub",
   logoUrl: "",
   showLatestGames: true,
   showMostViewed: true,
@@ -62,6 +62,13 @@ const defaultSettings: SiteSettings = {
   showTrendingGames: true,
   theme: "dark",
 };
+
+const normalizeSiteSettings = (settings: SiteSettings): SiteSettings => ({
+  ...settings,
+  siteName: ["SF Games PC", "Aq Games"].includes(settings.siteName)
+    ? "AQ Gaming Hub"
+    : settings.siteName,
+});
 
 const defaultAnalytics = (): SiteAnalytics => ({
   totalPageViews: 0,
@@ -101,7 +108,7 @@ const loadSiteSettingsLocal = (): SiteSettings => {
   const raw = storage.getItem(SETTINGS_KEY);
   if (!raw) return defaultSettings;
   try {
-    return { ...defaultSettings, ...JSON.parse(raw) };
+    return normalizeSiteSettings({ ...defaultSettings, ...JSON.parse(raw) });
   } catch {
     return defaultSettings;
   }
@@ -348,9 +355,9 @@ export const loadSiteSettings = async (): Promise<SiteSettings> => {
   try {
     const seeded = await ensureDatabaseReady();
     if (!seeded) return loadSiteSettingsLocal();
-    const settings = await getConfigPayload("settings", defaultSettings);
+    const settings = normalizeSiteSettings({ ...defaultSettings, ...(await getConfigPayload("settings", defaultSettings)) });
     saveSiteSettingsLocal(settings);
-    return { ...defaultSettings, ...settings };
+    return settings;
   } catch (error) {
     if (isTableMissingError(error)) return loadSiteSettingsLocal();
     throw error;

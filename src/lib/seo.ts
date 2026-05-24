@@ -16,12 +16,11 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
   };
 
   [
-    "SF Games PC",
-    "SF Games PC free download",
-    "SF Games PC download free PC games",
-    "sf games pc free download",
-    "steamfree games",
-    "steamfree.games",
+    "AQ Gaming Hub",
+    "AQ Gaming Hub PC",
+    "AQ Gaming Hub free download",
+    "AQ Gaming Hub download free PC games",
+    "aq gaming hub pc free download",
     "download pc games",
     "free pc games download",
     "free download pc games",
@@ -139,7 +138,7 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   return Array.from(parts).join(", ");
 };
 
-export const buildGameJsonLd = (game: Game, siteName = "SF Games PC") => ({
+export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => ({
   "@context": "https://schema.org",
   "@type": "VideoGame",
   name: game.title,

@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* About Section */}
           <div>
-            <h3 className="text-white font-bold text-lg mb-4">SF Games PC</h3>
+            <h3 className="text-white font-bold text-lg mb-4">AQ Gaming Hub</h3>
             <p className="text-sm text-gray-400 leading-relaxed">
               Your ultimate destination for downloading the latest and greatest PC games.
               Discover, download, and play today!
@@ -117,7 +117,7 @@ export function Footer() {
         <div className="border-t border-gray-900 pt-6 mt-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
-              © 2026 SF Games PC. All rights reserved.
+              © 2026 AQ Gaming Hub. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="#" className="text-gray-500 hover:text-cyan-400 transition">

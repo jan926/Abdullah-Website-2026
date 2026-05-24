@@ -16,7 +16,7 @@ export default function HomePage() {
   const [games, setGames] = useState<Game[]>(() => getGamesSync());
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "SF Games PC",
+    siteName: "AQ Gaming Hub",
     logoUrl: "",
     showLatestGames: true,
     showMostViewed: true,

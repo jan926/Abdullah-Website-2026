@@ -63,9 +63,9 @@ export default function GameDetailPage() {
         setGame(currentGame);
 
         const siteSettings = await loadSiteSettings().catch(() => ({
-          siteName: "SF Games PC",
+          siteName: "AQ Gaming Hub",
         }));
-        const siteName = siteSettings.siteName || "SF Games PC";
+        const siteName = siteSettings.siteName || "AQ Gaming Hub";
         const baseTitle = `${siteName} - Download Free PC Games`;
 
         setDocumentMeta({
