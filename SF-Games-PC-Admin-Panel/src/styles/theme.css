@@ -1,0 +1,370 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0c4a6e;
+  --primary-foreground: #ffffff;
+  --secondary: #64748b;
+  --secondary-foreground: #0f172a;
+  --muted: #e2e8f0;
+  --muted-foreground: #64748b;
+  --accent: #0891b2;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --input-background: #f8fafc;
+  --switch-background: #e2e8f0;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #0ea5e9;
+  --chart-1: #0ea5e9;
+  --chart-2: #06b6d4;
+  --chart-3: #a855f7;
+  --chart-4: #fb923c;
+  --chart-5: #22c55e;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #334155;
+  --sidebar-border: #cbd5e1;
+  --sidebar-ring: #0ea5e9;
+  --neon-cyan: #06b6d4;
+  --neon-purple: #8b5cf6;
+  --neon-orange: #fb923c;
+  --neon-green: #22c55e;
+  --neon-blue: #3b82f6;
+  --neon-pink: #ec4899;
+  --navbar-dark: #ffffff;
+  --bg-dark: #f8fafc;
+  --bg-darker: #e2e8f0;
+  --bg-card: #ffffff;
+}
+
+.dark {
+  --background: #0a0e27;
+  --foreground: #e2e8f0;
+  --card: #151b38;
+  --card-foreground: #e2e8f0;
+  --popover: #1a2145;
+  --popover-foreground: #e2e8f0;
+  --primary: #22d3ee;
+  --primary-foreground: #0a0e27;
+  --secondary: #475569;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1e2952;
+  --muted-foreground: #94a3b8;
+  --accent: #22d3ee;
+  --accent-foreground: #0a0e27;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #1e2952;
+  --input: #1e2952;
+  --ring: #22d3ee;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #22d3ee;
+  --chart-2: #06b6d4;
+  --chart-3: #a855f7;
+  --chart-4: #f97316;
+  --chart-5: #22c55e;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #0891b2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0891b2;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button, input, textarea, select {
+  color: inherit;
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #151b38;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #22d3ee;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4;
+}
+
+/* Hide scrollbar for horizontal scroll sections */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth transitions */
+* {
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Neon glow effects */
+.neon-glow-cyan {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.1);
+}
+
+.neon-glow-purple {
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3), 0 0 20px rgba(168, 85, 247, 0.1);
+}
+
+.neon-glow-orange {
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.3), 0 0 20px rgba(249, 115, 22, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.4), 0 0 20px rgba(34, 211, 238, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.8), 0 0 30px rgba(34, 211, 238, 0.4);
+  }
+}
+
+@keyframes scroll-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes shine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(34, 211, 238, 0.5), 0 0 10px rgba(34, 211, 238, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.8), 0 0 20px rgba(34, 211, 238, 0.5);
+  }
+}
+
+@keyframes card-shine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes download-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes download-shine {
+  0% { transform: translateX(-120%) skewX(-12deg); }
+  100% { transform: translateX(220%) skewX(-12deg); }
+}
+
+.btn-download {
+  animation: download-bounce 2.2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
+}
+
+.btn-download::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: download-shine 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn-download:hover {
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.55);
+}
+
+.btn-download-icon {
+  animation: download-bounce 2.2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shine {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background-size: 1000px 100%;
+  animation: shine 2s infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.card-hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+  pointer-events: none;
+}
+
+.card-hover-shine:hover::before {
+  left: 100%;
+}
+
+/* Staggered reveal animation */
+.stagger-item {
+  opacity: 0;
+  animation: reveal 0.6s ease-out forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }
+.stagger-item:nth-child(7) { animation-delay: 0.7s; }
+.stagger-item:nth-child(8) { animation-delay: 0.8s; }
+
+/* 3D Card Effects */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.card-3d:hover {
+  transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+}
+
+/* Reflection effect */
+.reflection {
+  position: relative;
+}
+
+.reflection::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.reflection:hover::after {
+  opacity: 1;
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.04); }
+}
+
+.animate-ken-burns img {
+  animation: ken-burns 8s ease-in-out infinite alternate;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.neon-border {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 0 24px rgba(34, 211, 238, 0.2);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}

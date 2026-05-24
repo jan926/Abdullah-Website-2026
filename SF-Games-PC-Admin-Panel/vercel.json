@@ -1,0 +1,29 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/categories",
+      "destination": "/"
+    },
+    {
+      "source": "/category/:category",
+      "destination": "/"
+    },
+    {
+      "source": "/game/:id",
+      "destination": "/"
+    },
+    {
+      "source": "/search",
+      "destination": "/"
+    },
+    {
+      "source": "/admin",
+      "destination": "/"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/"
+    }
+  ]
+}
