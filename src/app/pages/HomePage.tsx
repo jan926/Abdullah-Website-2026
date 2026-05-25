@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { GameCard } from "../components/GameCard";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
@@ -28,12 +28,15 @@ export default function HomePage() {
   const latestScrollRef = useRef<HTMLDivElement>(null);
   const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
 
-  const heroGames = games.filter((g) => g.heroFeatured).slice(0, 6);
-  const fallbackHeroGames = games.slice(0, 6);
-  const displayHeroGames = heroGames.length > 0 ? heroGames : fallbackHeroGames;
+  // Memoize expensive calculations
+  const heroGames = useMemo(() => games.filter((g) => g.heroFeatured).slice(0, 6), [games]);
+  const fallbackHeroGames = useMemo(() => games.slice(0, 6), [games]);
+  const displayHeroGames = useMemo(() => heroGames.length > 0 ? heroGames : fallbackHeroGames, [heroGames, fallbackHeroGames]);
+  
   const [trendingGames, setTrendingGames] = useState<Game[]>(() => {
-    const t = games.filter((game) => game.trending);
-    if (t.length === 0) return games.slice(0, 6);
+    const gamesSync = getGamesSync();
+    const t = gamesSync.filter((game) => game.trending);
+    if (t.length === 0) return gamesSync.slice(0, 6);
     // randomize and pick up to 6
     return shuffleArray(t).slice(0, 6);
   });
@@ -41,16 +44,18 @@ export default function HomePage() {
   // Pagination for All Games: 5 rows x 6 cols = 30 per page
   const [gamesPage, setGamesPage] = useState(1);
   const GAMES_PER_PAGE = 30;
-  const totalGamesPages = Math.max(1, Math.ceil(games.length / GAMES_PER_PAGE));
-  const latestGames = [...games]
+  const totalGamesPages = useMemo(() => Math.max(1, Math.ceil(games.length / GAMES_PER_PAGE)), [games.length]);
+  
+  const latestGames = useMemo(() => [...games]
     .sort((a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
-    .slice(0, 12);
-  const gameOfTheDay = games.filter((game) => game.gameOfTheDay).slice(0, 5);
+    .slice(0, 12), [games]);
+  
+  const gameOfTheDay = useMemo(() => games.filter((game) => game.gameOfTheDay).slice(0, 5), [games]);
 
-  const categoryColors = categories.map((cat) => {
+  const categoryColors = useMemo(() => categories.map((cat) => {
     const style = getCategoryStyle(cat);
     return { name: cat, color: style.color, icon: style.icon };
-  });
+  }), [categories]);
 
   const nextSlide = () => {
     if (displayHeroGames.length === 0) return;

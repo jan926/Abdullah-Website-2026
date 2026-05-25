@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import path from 'path'
+import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
@@ -19,4 +19,54 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  build: {
+    // Enable source maps for production debugging
+    sourcemap: false,
+    // Optimize CSS
+    cssMinify: true,
+    // Target modern browsers
+    target: 'esnext',
+    // Reduce bundle size
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor libraries for better caching
+          'react-vendor': ['react', 'react-dom', 'react-router', 'react-router-dom'],
+          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          'radix-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-select',
+            '@radix-ui/react-popover',
+          ],
+          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge'],
+        },
+      },
+    },
+    // Limit chunk size warnings
+    chunkSizeWarningLimit: 500,
+  },
+
+  // Optimize dependencies
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router',
+      'react-router-dom',
+      '@mui/material',
+      '@radix-ui/react-dialog',
+      'lucide-react',
+    ],
+  },
+
+  server: {
+    // Enable CORS for development
+    cors: true,
+    // Open browser on start
+    open: false,
+  },
 })
