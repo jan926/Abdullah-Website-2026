@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Download, Star } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
 import { getPrimaryCategory } from "../../lib/gameCategories";
+import { buildGameCoverAlt } from "../../lib/seo";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { LazyImage } from "../../components/LazyImage";
@@ -18,7 +19,7 @@ export function GameCard({ game }: GameCardProps) {
         <div className="relative aspect-[3/4] overflow-hidden">
           <LazyImage
             src={game.cover}
-            alt={game.title}
+            alt={buildGameCoverAlt(game)}
             wrapperClassName="h-full w-full"
             className="transition-all duration-500 group-hover:scale-110 group-hover:brightness-110"
           />

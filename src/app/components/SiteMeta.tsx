@@ -7,6 +7,8 @@ export function SiteMeta() {
   const location = useLocation();
 
   useEffect(() => {
+    if (/^\/game\/[^/]+/.test(location.pathname)) return;
+
     const apply = async () => {
       try {
         const [settings, games, categories] = await Promise.all([

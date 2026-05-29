@@ -7,6 +7,7 @@ import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges, getGamesSync } from "../../lib/gameStore";
 import { getCategoryStyle, getCategoryPath } from "../../lib/categoryStyles";
+import { buildGameCoverAlt, buildGameHeroAlt } from "../../lib/seo";
 import { LazyImage } from "../../components/LazyImage";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
@@ -140,7 +141,7 @@ export default function HomePage() {
           >
             <LazyImage
               src={game.heroMedia || game.backgroundImage || game.cover}
-              alt={game.title}
+              alt={buildGameHeroAlt(game)}
               className="h-full w-full object-cover object-center animate-ken-burns"
               wrapperClassName="h-full w-full"
             />
@@ -156,7 +157,7 @@ export default function HomePage() {
                       🔥 TRENDING
                     </span>
                   </div>
-                  <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
                     {game.title}
                   </h2>
                   <p className="line-clamp-3 text-gray-300 text-base md:text-lg leading-relaxed">
@@ -287,7 +288,7 @@ export default function HomePage() {
                       <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
                         <LazyImage
                           src={game.cover}
-                          alt={game.title}
+                          alt={buildGameCoverAlt(game)}
                           wrapperClassName="w-full"
                           className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                         />
@@ -350,7 +351,7 @@ export default function HomePage() {
                     <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
                       <LazyImage
                         src={game.cover}
-                        alt={game.title}
+                        alt={buildGameCoverAlt(game)}
                         wrapperClassName="w-full"
                         className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
@@ -417,7 +418,7 @@ export default function HomePage() {
                     <div className="relative overflow-hidden rounded-xl mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
                       <LazyImage
                         src={game.cover}
-                        alt={game.title}
+                        alt={buildGameCoverAlt(game)}
                         wrapperClassName="w-full"
                         className="h-[260px] sm:h-[300px] md:h-[350px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
                       />
@@ -467,7 +468,7 @@ export default function HomePage() {
                 <div className="relative overflow-hidden rounded-lg mb-2 card-3d reflection">
                   <LazyImage
                     src={game.cover}
-                    alt={game.title}
+                    alt={buildGameCoverAlt(game)}
                     wrapperClassName="w-full"
                     className="h-[180px] sm:h-[220px] md:h-[260px] object-cover transition-transform duration-300 group-hover:scale-110"
                   />

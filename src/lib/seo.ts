@@ -1,7 +1,37 @@
 import type { Game } from "../app/data/games";
 import { getGameCategories } from "./gameCategories";
 
-const SITE_URL = "https://steamfree.games";
+export const SITE_URL = "https://steamfree.games";
+
+const isCompressedGame = (game: Game) =>
+  /compress/i.test(game.title) ||
+  /compress/i.test(game.size) ||
+  game.tags?.some((tag) => /compress/i.test(tag)) === true;
+
+export const buildGamePageTitle = (game: Game) =>
+  isCompressedGame(game)
+    ? `${game.title} Highly Compressed Free Download`
+    : `${game.title} Free Download for PC Full Version`;
+
+export const buildGameMetaDescription = (game: Game) =>
+  `${game.title} PC game free download full version with system requirements, screenshots, and direct installation guide. Size: ${game.size}. Developer: ${game.developer}.`;
+
+export const buildGameCoverAlt = (game: Game) => `${game.title} PC Game Cover`;
+
+export const buildGameScreenshotAlt = (game: Game, index: number) =>
+  `${game.title} PC Game Screenshot ${index + 1}`;
+
+export const buildGameHeroAlt = (game: Game) => `${game.title} PC Game Screenshot`;
+
+const getGameDownloadUrl = (game: Game) =>
+  game.downloadLink ||
+  game.downloadParts?.find((part) => part.link)?.link ||
+  `${SITE_URL}/game/${game.id}`;
+
+const formatSystemRequirements = (game: Game) => {
+  const min = game.systemRequirements.minimum;
+  return `Minimum: ${min.os}, ${min.processor}, ${min.memory} RAM, ${min.graphics}, ${min.storage} storage. Recommended: ${game.systemRequirements.recommended.os}, ${game.systemRequirements.recommended.processor}, ${game.systemRequirements.recommended.memory} RAM, ${game.systemRequirements.recommended.graphics}, ${game.systemRequirements.recommended.storage} storage.`;
+};
 
 export const buildSiteKeywords = (games: Game[], categories: string[]) => {
   const parts = new Set<string>();
@@ -81,6 +111,7 @@ export const setDocumentMeta = (opts: {
   image?: string;
   url?: string;
   type?: string;
+  siteName?: string;
 }) => {
   document.title = opts.title;
 
@@ -94,16 +125,28 @@ export const setDocumentMeta = (opts: {
     el.content = content;
   };
 
+  const canonicalUrl = opts.url || SITE_URL;
+
   setMeta("description", opts.description);
   if (opts.keywords) setMeta("keywords", opts.keywords);
   setMeta("og:title", opts.title, "property");
   setMeta("og:description", opts.description, "property");
   setMeta("og:type", opts.type || "website", "property");
-  setMeta("og:url", opts.url || SITE_URL, "property");
-  setMeta("og:image", opts.image || `${SITE_URL}/og-image.png`, "property");
+  setMeta("og:url", canonicalUrl, "property");
+  setMeta("og:image", opts.image || `${SITE_URL}/aq.png`, "property");
+  if (opts.siteName) setMeta("og:site_name", opts.siteName, "property");
+  setMeta("twitter:card", "summary_large_image");
   setMeta("twitter:title", opts.title);
   setMeta("twitter:description", opts.description);
-  setMeta("twitter:image", opts.image || `${SITE_URL}/og-image.png`);
+  setMeta("twitter:image", opts.image || `${SITE_URL}/aq.png`);
+
+  let canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+  }
+  canonical.href = canonicalUrl;
 };
 
 export const injectJsonLd = (id: string, data: object) => {
@@ -130,6 +173,8 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   add(game.title);
   add(`${game.title} download`);
   add(`${game.title} free download pc`);
+  add(`${game.title} free download for pc full version`);
+  add(`${game.title} highly compressed free download`);
   add(game.developer);
   game.tags?.forEach(add);
   getGameCategories(game).forEach((c) => {
@@ -143,29 +188,74 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   return Array.from(parts).join(", ");
 };
 
-export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => ({
-  "@context": "https://schema.org",
-  "@type": "VideoGame",
-  name: game.title,
-  description: game.description,
-  genre: getGameCategories(game),
-  keywords: game.tags?.join(", "),
-  image: [game.cover, ...(game.screenshots || [])].filter(Boolean),
-  author: { "@type": "Organization", name: game.developer },
-  publisher: { "@type": "Organization", name: siteName },
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: game.rating,
-    ratingCount: Math.max(game.downloads, 1),
-  },
-  offers: {
+export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
+  const gameUrl = `${SITE_URL}/game/${game.id}`;
+  const downloadUrl = getGameDownloadUrl(game);
+  const images = [game.cover, ...(game.screenshots || [])].filter(Boolean);
+
+  const sharedOffer = {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
     availability: "https://schema.org/InStock",
-    url: `https://steamfree.games/game/${game.id}`,
-  },
-});
+    url: gameUrl,
+  };
+
+  const sharedRating = {
+    "@type": "AggregateRating",
+    ratingValue: game.rating,
+    ratingCount: Math.max(game.downloads, 1),
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "VideoGame",
+        name: game.title,
+        description: game.description,
+        genre: getGameCategories(game),
+        keywords: game.tags?.join(", "),
+        image: images,
+        url: gameUrl,
+        author: { "@type": "Organization", name: game.developer },
+        publisher: { "@type": "Organization", name: siteName },
+        aggregateRating: sharedRating,
+        offers: sharedOffer,
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: game.title,
+        description: game.description,
+        operatingSystem: "Windows",
+        applicationCategory: "Game",
+        downloadUrl,
+        fileSize: game.size,
+        softwareVersion: "Full Version",
+        image: game.cover,
+        url: gameUrl,
+        softwareRequirements: formatSystemRequirements(game),
+        author: { "@type": "Organization", name: game.developer },
+        publisher: { "@type": "Organization", name: siteName },
+        offers: sharedOffer,
+      },
+      {
+        "@type": "Game",
+        name: game.title,
+        description: game.description,
+        genre: getGameCategories(game),
+        image: images,
+        url: gameUrl,
+        gamePlatform: "PC",
+        operatingSystem: "Windows",
+        author: { "@type": "Organization", name: game.developer },
+        publisher: { "@type": "Organization", name: siteName },
+        aggregateRating: sharedRating,
+        offers: sharedOffer,
+      },
+    ],
+  };
+};
 
 export const buildSiteJsonLd = (siteName: string, siteUrl: string) => ({
   "@context": "https://schema.org",

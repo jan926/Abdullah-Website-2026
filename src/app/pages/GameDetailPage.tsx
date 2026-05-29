@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
-import { buildGameJsonLd, buildGameMetaKeywords, injectJsonLd, setDocumentMeta } from "../../lib/seo";
+import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, injectJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
 import { loadSiteSettings } from "../../lib/gameStore";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { Skeleton } from "../components/ui/skeleton";
@@ -66,15 +66,15 @@ export default function GameDetailPage() {
           siteName: "AQ Gaming Hub",
         }));
         const siteName = siteSettings.siteName || "AQ Gaming Hub";
-        const baseTitle = `${siteName} - Download Free PC Games`;
 
         setDocumentMeta({
-          title: `${currentGame.title} - ${baseTitle}`,
-          description: `Download ${currentGame.title} for PC free on ${siteName}. ${currentGame.description.slice(0, 120)}... Size: ${currentGame.size}. Developer: ${currentGame.developer}.`,
+          title: buildGamePageTitle(currentGame),
+          description: buildGameMetaDescription(currentGame),
           keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
-          url: `${window.location.origin}/game/${currentGame.id}`,
+          url: `${SITE_URL}/game/${currentGame.id}`,
           type: "article",
+          siteName,
         });
         injectJsonLd("game-jsonld", buildGameJsonLd(currentGame, siteName));
 
@@ -164,7 +164,7 @@ export default function GameDetailPage() {
       );
     }
 
-    return <ImageWithFallback src={mediaUrl} alt={game.title} className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover" />;
+    return <ImageWithFallback src={mediaUrl} alt={`${game.title} PC Game Banner`} className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover" />;
   };
 
   if (loading) {
@@ -266,7 +266,7 @@ export default function GameDetailPage() {
             <div className="flex gap-3">
               <ImageWithFallback
                 src={game.cover}
-                alt={game.title}
+                alt={buildGameCoverAlt(game)}
                 className="h-24 w-20 shrink-0 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">
@@ -289,7 +289,7 @@ export default function GameDetailPage() {
         <div className="grid gap-6 md:gap-8 lg:gap-10 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
           <div className="space-y-4 md:space-y-6 order-2 lg:order-1">
             <div className="hidden lg:block overflow-hidden rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] shadow-[0_18px_60px_rgba(15,23,42,0.35)]">
-              <ImageWithFallback src={game.cover} alt={game.title} className="h-72 xl:h-96 w-full object-cover" />
+              <ImageWithFallback src={game.cover} alt={buildGameCoverAlt(game)} className="h-72 xl:h-96 w-full object-cover" />
               <div className="p-4 md:p-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-white line-clamp-2">{game.title}</h1>
                 <p className="mt-2 md:mt-3 text-xs md:text-sm text-[var(--muted-foreground)] line-clamp-2">{formatCategoryList(game)} • {game.developer}</p>
@@ -351,7 +351,7 @@ export default function GameDetailPage() {
                 {game.screenshots.length > 0 ? (
                   <ImageWithFallback
                     src={game.screenshots[currentScreenshot]}
-                    alt={`Screenshot ${currentScreenshot + 1}`}
+                    alt={buildGameScreenshotAlt(game, currentScreenshot)}
                     className="mx-auto min-h-[160px] sm:min-h-[260px] md:min-h-[320px] max-h-[420px] w-full object-contain"
                   />
                 ) : (
@@ -383,7 +383,7 @@ export default function GameDetailPage() {
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <ImageWithFallback src={screenshot} alt={`Thumbnail ${index + 1}`} className="h-16 sm:h-20 md:h-24 w-full object-contain bg-black/40" />
+                    <ImageWithFallback src={screenshot} alt={buildGameScreenshotAlt(game, index)} className="h-16 sm:h-20 md:h-24 w-full object-contain bg-black/40" />
                   </button>
                 ))}
               </div>
@@ -416,7 +416,7 @@ export default function GameDetailPage() {
               <h2 className="mb-4 md:mb-6 text-lg md:text-xl font-semibold text-[var(--foreground)]">System Requirements</h2>
               <div className="grid gap-4 md:gap-6 sm:grid-cols-2">
                 <div className="rounded-xl md:rounded-3xl bg-[rgba(255,255,255,0.04)] p-3 md:p-4">
-                  <p className="text-xs md:text-sm text-[var(--muted-foreground)] font-semibold">Minimum</p>
+                  <h3 className="text-xs md:text-sm text-[var(--muted-foreground)] font-semibold">Minimum</h3>
                   <ul className="mt-2 md:mt-3 space-y-2 text-[var(--foreground)]">
                     {Object.entries(game.systemRequirements.minimum).map(([key, value]) => (
                       <li key={key} className="flex flex-col sm:flex-row sm:justify-between border-b border-[rgba(226,232,240,0.08)] pb-2 text-xs md:text-sm">
@@ -427,7 +427,7 @@ export default function GameDetailPage() {
                   </ul>
                 </div>
                 <div className="rounded-xl md:rounded-3xl bg-[rgba(255,255,255,0.04)] p-3 md:p-4">
-                  <p className="text-xs md:text-sm text-[var(--muted-foreground)] font-semibold">Recommended</p>
+                  <h3 className="text-xs md:text-sm text-[var(--muted-foreground)] font-semibold">Recommended</h3>
                   <ul className="mt-2 md:mt-3 space-y-2 text-[var(--foreground)]">
                     {Object.entries(game.systemRequirements.recommended).map(([key, value]) => (
                       <li key={key} className="flex flex-col sm:flex-row sm:justify-between border-b border-[rgba(226,232,240,0.08)] pb-2 text-xs md:text-sm">
