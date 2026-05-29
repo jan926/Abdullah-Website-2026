@@ -3,7 +3,7 @@
   <head>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8271244354404702"
      crossorigin="anonymous"></script>
-    <script src="https://5gvci.com/act/files/tag.min.js?z=11045859" data-cfasync="false" async></script>
+
     <meta charset="UTF-8" />
     <meta name="google-adsense-account" content="ca-pub-8271244354404702">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -29,50 +29,23 @@
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" />
     <link rel="icon" type="image/png" href="/aq.png">
     <title>AQ Gaming Hub - Free PC Games Download</title>
-    
-    <!-- Preconnect to external domains for faster loading -->
-    <link rel="preconnect" href="https://5gvci.com" />
-    <link rel="preconnect" href="https://quge5.com" />
-    <link rel="dns-prefetch" href="https://5gvci.com" />
-    <link rel="dns-prefetch" href="https://quge5.com" />
-    
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+    <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
+
     <!-- Preload critical assets -->
     <link rel="preload" as="image" href="/aq.png" />
-    
-    <!-- Defer non-critical third-party scripts -->
-    <script>
-      // Load third-party scripts after page load to improve Core Web Vitals
-      window.addEventListener('load', function() {
-        var scripts = [
-          { src: 'https://5gvci.com/act/files/tag.min.js?z=11045859', attrs: { 'data-cfasync': 'false' } },
-          { src: 'https://quge5.com/88/tag.min.js', attrs: { 'data-zone': '241840', 'data-cfasync': 'false' } }
-        ];
-        
-        scripts.forEach(function(scriptConfig) {
-          var script = document.createElement('script');
-          script.src = scriptConfig.src;
-          script.async = true;
-          Object.keys(scriptConfig.attrs).forEach(function(attr) {
-            script.setAttribute(attr, scriptConfig.attrs[attr]);
-          });
-          document.head.appendChild(script);
-        });
-      });
-    </script>
-    
+
     <!-- Google AdSense -->
     <meta name="google-adsense-account" content="ca-pub-8271244354404702">
-    <meta name="monetag" content="dca9d7757aa615e7394ddd8bb61b9548">
-    <meta name="effectivecpmnetwork" content="https://www.effectivecpmnetwork.com/eume0qgbi6?key=8e91ec632183ebb7c23732544e861106">
-    
+
     <!-- Performance optimizations -->
     <style>
-      /* Critical CSS for above-the-fold content */
       #root {
         min-height: 100vh;
       }
-      
-      /* Reduce motion for users who prefer it */
+
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after {
           animation-duration: 0.01ms !important;
@@ -82,6 +55,7 @@
       }
     </style>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
