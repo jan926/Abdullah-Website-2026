@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
 import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, injectJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
+import { getGameDisplayStats } from "../../lib/gameStats";
 import { loadSiteSettings } from "../../lib/gameStore";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { Skeleton } from "../components/ui/skeleton";
@@ -195,6 +196,7 @@ export default function GameDetailPage() {
   }
 
   const hasDownloadParts = (game.downloadParts?.filter((p) => p.link).length ?? 0) > 0;
+  const displayStats = getGameDisplayStats(game.id);
 
   const nextScreenshot = () => {
     if (game.screenshots.length === 0) return;
@@ -319,11 +321,11 @@ export default function GameDetailPage() {
               <div className="grid gap-2 md:gap-3">
                 <div className="rounded-xl md:rounded-3xl bg-[rgba(255,255,255,0.04)] p-3 md:p-4">
                   <p className="text-xs md:text-sm text-[var(--muted-foreground)]">Rating</p>
-                  <p className="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-[var(--foreground)]">{game.rating} / 5</p>
+                  <p className="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-[var(--foreground)]">{displayStats.rating} / 5</p>
                 </div>
                 <div className="rounded-xl md:rounded-3xl bg-[rgba(255,255,255,0.04)] p-3 md:p-4">
                   <p className="text-xs md:text-sm text-[var(--muted-foreground)]">Downloads</p>
-                  <p className="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-[var(--foreground)]">{game.downloads.toLocaleString()}</p>
+                  <p className="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-[var(--foreground)]">{displayStats.downloads.toLocaleString()}</p>
                 </div>
                 <div className="rounded-xl md:rounded-3xl bg-[rgba(255,255,255,0.04)] p-3 md:p-4">
                   <p className="text-xs md:text-sm text-[var(--muted-foreground)]">Size</p>

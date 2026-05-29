@@ -117,12 +117,29 @@ async function getStoreRequirements(gameName: string, store: string): Promise<Ga
   }
 
   if (store === "all") {
-    const steamResult = await searchSteamStore(gameName);
-    if (steamResult) return steamResult;
-    const epicResult = await searchEpicStore(gameName);
-    if (epicResult) return epicResult;
-    const arealResult = await searchArealGamerStore(gameName);
-    if (arealResult) return arealResult;
+    const [steamResult, epicResult, arealResult] = await Promise.all([
+      searchSteamStore(gameName),
+      searchEpicStore(gameName),
+      searchArealGamerStore(gameName),
+    ]);
+
+    const candidates = [steamResult, epicResult, arealResult].filter(Boolean) as GameRequirements[];
+    if (!candidates.length) return null;
+
+    const minimum = candidates.find((c) => c.minimum)?.minimum || candidates[0].minimum;
+    const recommended = candidates.find((c) => c.recommended)?.recommended || candidates[0].recommended;
+    const developer = candidates.map((c) => c.developer).find(Boolean);
+    const description = candidates.map((c) => c.description).find((d) => d && d.length > 20);
+    const tags = Array.from(new Set(candidates.flatMap((c) => c.tags || [])));
+
+    return {
+      title: candidates[0].title || gameName,
+      developer,
+      description,
+      tags: tags.length ? tags : undefined,
+      minimum,
+      recommended,
+    };
   }
 
   return null;
@@ -185,6 +202,7 @@ async function searchSteamStore(gameName: string): Promise<GameRequirements | nu
 
     return {
       ...requirements,
+      title: String(appData.data.name || gameName),
       developer: developer || undefined,
       description: description || undefined,
       tags: steamTags.length ? steamTags : undefined,

@@ -1,21 +1,103 @@
 // Popular game system requirements database (can be extended)
-type GameRequirements = {
+export type SystemReqBlock = {
+  os: string;
+  processor: string;
+  memory: string;
+  graphics: string;
+  storage: string;
+};
+
+export type GameRequirements = {
   title: string;
   developer?: string;
   description?: string;
-  minimum: {
-    os: string;
-    processor: string;
-    memory: string;
-    graphics: string;
-    storage: string;
-  };
-  recommended: {
-    os: string;
-    processor: string;
-    memory: string;
-    graphics: string;
-    storage: string;
+  tags?: string[];
+  minimum: SystemReqBlock;
+  recommended: SystemReqBlock;
+};
+
+const DEFAULT_REQ: SystemReqBlock = {
+  os: "Windows 10 64-bit",
+  processor: "Intel Core i5 or AMD equivalent",
+  memory: "8 GB RAM",
+  graphics: "NVIDIA GTX 1060 / AMD RX 580",
+  storage: "50 GB available space",
+};
+
+const hasFilledRequirements = (block?: Partial<SystemReqBlock>) =>
+  Boolean(
+    block?.os?.trim() ||
+      block?.processor?.trim() ||
+      block?.memory?.trim() ||
+      block?.graphics?.trim() ||
+      block?.storage?.trim()
+  );
+
+const fillRequirementBlock = (block?: Partial<SystemReqBlock>): SystemReqBlock => ({
+  os: block?.os?.trim() || DEFAULT_REQ.os,
+  processor: block?.processor?.trim() || DEFAULT_REQ.processor,
+  memory: block?.memory?.trim() || DEFAULT_REQ.memory,
+  graphics: block?.graphics?.trim() || DEFAULT_REQ.graphics,
+  storage: block?.storage?.trim() || DEFAULT_REQ.storage,
+});
+
+const findLocalMatch = (gameName: string): GameRequirements | null => {
+  if (!gameName.trim()) return null;
+
+  const searchTerm = gameName.toLowerCase().trim();
+
+  const exact = GAME_REQUIREMENTS_DB.find((g) => g.title.toLowerCase() === searchTerm);
+  if (exact) return exact;
+
+  const partial = GAME_REQUIREMENTS_DB.find((g) => g.title.toLowerCase().includes(searchTerm));
+  if (partial) return partial;
+
+  const reverse = GAME_REQUIREMENTS_DB.find((g) => searchTerm.includes(g.title.toLowerCase()));
+  return reverse || null;
+};
+
+async function fetchRemoteRequirements(
+  gameName: string,
+  store: "steam" | "epic" | "ea" | "ubisoft" | "arealgamer" | "all"
+): Promise<GameRequirements | null> {
+  try {
+    const response = await fetch(
+      `/api/steam-search?name=${encodeURIComponent(gameName)}&store=${encodeURIComponent(store)}`
+    );
+    if (!response.ok) return null;
+    return (await response.json()) as GameRequirements;
+  } catch (error) {
+    console.log(`Store lookup failed for ${store}`, error);
+    return null;
+  }
+}
+
+const mergeGameRequirements = (
+  gameName: string,
+  sources: Array<GameRequirements | null>
+): GameRequirements | null => {
+  const valid = sources.filter(Boolean) as GameRequirements[];
+  if (!valid.length) return null;
+
+  const minimum = valid.find((s) => hasFilledRequirements(s.minimum))?.minimum || valid[0].minimum;
+  const recommended =
+    valid.find((s) => hasFilledRequirements(s.recommended))?.recommended || valid[0].recommended;
+
+  const developer = valid.map((s) => s.developer?.trim()).find(Boolean);
+  const description = valid
+    .map((s) => s.description?.trim())
+    .find((value) => value && value.length > 20);
+
+  const tagSet = new Set<string>();
+  valid.forEach((source) => source.tags?.forEach((tag) => tagSet.add(tag)));
+
+  return {
+    title: valid.find((s) => s.title)?.title || gameName,
+    developer,
+    description,
+    tags: tagSet.size ? Array.from(tagSet) : undefined,
+    minimum: fillRequirementBlock(minimum),
+    recommended: fillRequirementBlock(recommended),
   };
 };
 
@@ -623,41 +705,21 @@ export async function searchGameRequirements(
 ): Promise<GameRequirements | null> {
   if (!gameName.trim()) return null;
 
-  const searchTerm = gameName.toLowerCase().trim();
+  const localMatch = findLocalMatch(gameName);
 
-  // Exact match first
-  const exact = GAME_REQUIREMENTS_DB.find(
-    (g) => g.title.toLowerCase() === searchTerm
-  );
-  if (exact) return exact;
+  if (store === "all") {
+    const [steam, epic, arealgamer, aggregated] = await Promise.all([
+      fetchRemoteRequirements(gameName, "steam"),
+      fetchRemoteRequirements(gameName, "epic"),
+      fetchRemoteRequirements(gameName, "arealgamer"),
+      fetchRemoteRequirements(gameName, "all"),
+    ]);
 
-  // Partial match
-  const partial = GAME_REQUIREMENTS_DB.find((g) =>
-    g.title.toLowerCase().includes(searchTerm)
-  );
-  if (partial) return partial;
-
-  // Reverse partial match
-  const reverse = GAME_REQUIREMENTS_DB.find((g) =>
-    searchTerm.includes(g.title.toLowerCase())
-  );
-  if (reverse) return reverse;
-
-  // Try server-side lookup fallback for games outside the local DB.
-  try {
-    const storeParam = store ? `&store=${encodeURIComponent(store)}` : "";
-    const steamResponse = await fetch(
-      `/api/steam-search?name=${encodeURIComponent(gameName)}${storeParam}`
-    );
-    if (steamResponse.ok) {
-      const steamData = (await steamResponse.json()) as GameRequirements;
-      if (steamData) return steamData;
-    }
-  } catch (error) {
-    console.log("Store lookup failed, using local DB only", error);
+    return mergeGameRequirements(gameName, [localMatch, steam, epic, arealgamer, aggregated]);
   }
 
-  return null;
+  const remoteMatch = await fetchRemoteRequirements(gameName, store);
+  return mergeGameRequirements(gameName, [localMatch, remoteMatch]);
 }
 
 export function getGameRequirementsSuggestions(query: string): string[] {

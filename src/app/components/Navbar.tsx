@@ -1,14 +1,16 @@
 import { Link, useNavigate } from "react-router";
-import { Search, Gamepad2 } from "lucide-react";
+import { Search, Gamepad2, Eye } from "lucide-react";
 import { Input } from "./ui/input";
 import { ThemeToggle } from "./ThemeToggle";
 import { useState, useEffect } from "react";
 import { loadSiteSettings } from "../../lib/gameStore";
+import { useOnlineUsersCounter } from "../../lib/onlineUsers";
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [siteName, setSiteName] = useState("AQ Gaming Hub");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const onlineUsers = useOnlineUsersCounter();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,6 +64,12 @@ export function Navbar() {
           </div>
 
           <div className="order-2 sm:order-none flex items-center gap-3 justify-end">
+            <div className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-xs sm:text-sm text-[var(--muted-foreground)] whitespace-nowrap">
+              <Eye className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>
+                Online: <span className="font-semibold text-[var(--foreground)]">{onlineUsers.toLocaleString()}</span> Users
+              </span>
+            </div>
             <ThemeToggle />
             <Link
               to="/categories"

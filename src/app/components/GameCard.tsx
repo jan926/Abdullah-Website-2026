@@ -3,6 +3,7 @@ import { Download, Star } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
 import { getPrimaryCategory } from "../../lib/gameCategories";
 import { buildGameCoverAlt } from "../../lib/seo";
+import { getGameDisplayStats, formatDownloadCount } from "../../lib/gameStats";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { LazyImage } from "../../components/LazyImage";
@@ -13,6 +14,8 @@ interface GameCardProps {
 }
 
 export function GameCard({ game }: GameCardProps) {
+  const displayStats = getGameDisplayStats(game.id);
+
   return (
     <Card className="group overflow-hidden border-[var(--border)] bg-[var(--card)] backdrop-blur card-3d reflection hover:border-cyan-400 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300">
       <Link to={`/game/${game.id}`} className="block">
@@ -41,7 +44,7 @@ export function GameCard({ game }: GameCardProps) {
             <div className="text-center space-y-3 sm:space-y-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
               <div className="flex items-center justify-center gap-2 text-yellow-400 text-xl sm:text-2xl font-bold">
                 <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
-                <span>{game.rating}</span>
+                <span>{displayStats.rating}</span>
               </div>
               <div className="px-4 sm:px-6 py-2 bg-cyan-500/20 border-2 border-cyan-400 rounded-lg backdrop-blur neon-glow-cyan">
                 <p className="text-xs sm:text-sm text-gray-300 mb-1">File Size</p>
@@ -50,14 +53,14 @@ export function GameCard({ game }: GameCardProps) {
             </div>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 transform transition-transform duration-300">
+          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 transform transition-all duration-300 group-hover:opacity-0 group-hover:pointer-events-none">
             <h3 className="mb-2 line-clamp-2 text-base sm:text-lg font-bold text-[var(--foreground)] drop-shadow-lg">
               {game.title}
             </h3>
             <div className="flex items-center justify-between opacity-100 group-hover:opacity-0 transition-opacity duration-300">
               <div className="flex items-center gap-1 text-yellow-400">
                 <Star className="h-4 w-4 fill-current" />
-                <span className="text-sm font-medium">{game.rating}</span>
+                <span className="text-sm font-medium">{displayStats.rating}</span>
               </div>
               <Badge variant="secondary" className="bg-black/60 text-white border-0 backdrop-blur text-[10px] sm:text-xs">
                 {getPrimaryCategory(game)}
@@ -74,7 +77,7 @@ export function GameCard({ game }: GameCardProps) {
         <div className="mb-3 flex items-center justify-between text-sm text-gray-400">
           <span className="flex items-center gap-1">
             <Download className="h-4 w-4" />
-            {(game.downloads / 1000).toFixed(1)}K
+            {formatDownloadCount(displayStats.downloads)}
           </span>
           <span>{game.size}</span>
         </div>

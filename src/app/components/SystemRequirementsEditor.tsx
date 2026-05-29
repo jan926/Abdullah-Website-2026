@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Cpu, HardDrive, Zap, Database, Search, CheckCircle2 } from "lucide-react";
-import { searchGameRequirements, getGameRequirementsSuggestions } from "../../lib/gameRequirementsDb";
+import { getGameRequirementsSuggestions, searchGameRequirements } from "../../lib/gameRequirementsDb";
 
 type SystemReq = {
   os: string;
@@ -15,10 +15,20 @@ type SystemReq = {
   storage: string;
 };
 
+export type AutoFillResult = {
+  minimum: SystemReq;
+  recommended: SystemReq;
+  developer: string;
+  description: string;
+  tags: string;
+};
+
 type Props = {
   minimum: SystemReq;
   recommended: SystemReq;
   onChange: (patch: { minimum?: SystemReq; recommended?: SystemReq }) => void;
+  onAutoFillComplete?: (result: AutoFillResult) => void;
+  /** @deprecated Use onAutoFillComplete for a single atomic form update */
   onMetaFill?: (patch: { developer?: string; description?: string; tags?: string }) => void;
 };
 
@@ -30,7 +40,25 @@ const FIELDS = [
   { key: "storage", label: "Storage Space", icon: HardDrive },
 ];
 
-export function SystemRequirementsEditor({ minimum, recommended, onChange, onMetaFill }: Props) {
+const buildFallbackDescription = (gameName: string) =>
+  `${gameName} is a PC game available for free download with full version setup, screenshots, and installation guide.`;
+
+const buildFallbackTags = (gameName: string) =>
+  [
+    `${gameName} download`,
+    `${gameName} free download pc`,
+    `${gameName} full version`,
+    "pc game download",
+    "free pc games",
+  ].join(", ");
+
+export function SystemRequirementsEditor({
+  minimum,
+  recommended,
+  onChange,
+  onAutoFillComplete,
+  onMetaFill,
+}: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [storeSource, setStoreSource] = useState<"all" | "steam" | "epic" | "ea" | "ubisoft" | "arealgamer">("all");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -84,38 +112,48 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange, onMet
 
     setIsSearching(true);
     setSearchSuccess(false);
-    
+
     try {
       const gameReqs = await searchGameRequirements(nameToSearch, storeSource);
-      if (gameReqs) {
-        onChange({
-          minimum: gameReqs.minimum,
-          recommended: gameReqs.recommended,
-        });
 
-        const metaPatch: { developer?: string; description?: string; tags?: string } = {};
-        if (gameReqs.developer) metaPatch.developer = gameReqs.developer;
-        if (gameReqs.description) metaPatch.description = gameReqs.description;
-        if (Array.isArray(gameReqs.tags) && gameReqs.tags.length) {
-          metaPatch.tags = gameReqs.tags.join(", ");
-        } else if (gameReqs.tags) {
-          metaPatch.tags = String(gameReqs.tags);
-        }
-        if (Object.keys(metaPatch).length) {
-          onMetaFill?.(metaPatch);
-        }
-
-        setSearchSuccess(true);
-        setSearchQuery("");
-        setShowSuggestions(false);
-        setSuggestions([]);
-        setTimeout(() => setSearchSuccess(false), 3000);
-      } else {
+      if (!gameReqs) {
         alert("Game not found in database. Please enter manually.");
+        return;
       }
+
+      const result: AutoFillResult = {
+        minimum: gameReqs.minimum,
+        recommended: gameReqs.recommended,
+        developer: gameReqs.developer?.trim() || "Independent Studio",
+        description: gameReqs.description?.trim() || buildFallbackDescription(nameToSearch),
+        tags:
+          Array.isArray(gameReqs.tags) && gameReqs.tags.length
+            ? gameReqs.tags.join(", ")
+            : buildFallbackTags(nameToSearch),
+      };
+
+      if (onAutoFillComplete) {
+        onAutoFillComplete(result);
+      } else {
+        onChange({
+          minimum: result.minimum,
+          recommended: result.recommended,
+        });
+        onMetaFill?.({
+          developer: result.developer,
+          description: result.description,
+          tags: result.tags,
+        });
+      }
+
+      setSearchSuccess(true);
+      setSearchQuery("");
+      setShowSuggestions(false);
+      setSuggestions([]);
+      setTimeout(() => setSearchSuccess(false), 3000);
     } catch (error) {
       console.error("Search error:", error);
-      alert("Error searching for game requirements");
+      alert("Error searching for game requirements. Please try again or enter manually.");
     } finally {
       setIsSearching(false);
     }
@@ -141,7 +179,7 @@ export function SystemRequirementsEditor({ minimum, recommended, onChange, onMet
           <div className="grid gap-3 sm:grid-cols-[220px_1fr] items-end">
             <div className="space-y-2">
               <Label className="text-[var(--foreground)]">Store source</Label>
-              <Select value={storeSource} onValueChange={(value) => setStoreSource(value as any)}>
+              <Select value={storeSource} onValueChange={(value) => setStoreSource(value as typeof storeSource)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="All stores" />
                 </SelectTrigger>

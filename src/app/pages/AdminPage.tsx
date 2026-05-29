@@ -816,8 +816,24 @@ export default function AdminPage() {
                 <SystemRequirementsEditor 
                   minimum={formData.systemRequirements.minimum}
                   recommended={formData.systemRequirements.recommended}
-                  onChange={(patch) => setFormData({...formData, systemRequirements: {...formData.systemRequirements, ...patch}})}
-                  onMetaFill={(metaPatch) => setFormData({...formData, ...metaPatch})}
+                  onChange={(patch) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      systemRequirements: { ...prev.systemRequirements, ...patch },
+                    }))
+                  }
+                  onAutoFillComplete={(result) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      developer: result.developer,
+                      description: result.description,
+                      tags: result.tags,
+                      systemRequirements: {
+                        minimum: result.minimum,
+                        recommended: result.recommended,
+                      },
+                    }))
+                  }
                 />
               </Card>
 

@@ -8,6 +8,7 @@ import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges, getGamesSync } from "../../lib/gameStore";
 import { getCategoryStyle, getCategoryPath } from "../../lib/categoryStyles";
 import { buildGameCoverAlt, buildGameHeroAlt } from "../../lib/seo";
+import { getGameDisplayStats } from "../../lib/gameStats";
 import { LazyImage } from "../../components/LazyImage";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
@@ -295,7 +296,7 @@ export default function HomePage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
                             <div className="flex items-center gap-1 text-yellow-400 mb-2">
-                              <span className="text-sm font-bold">★ {game.rating}</span>
+                              <span className="text-sm font-bold">★ {getGameDisplayStats(game.id).rating}</span>
                             </div>
                           </div>
                         </div>
@@ -358,7 +359,7 @@ export default function HomePage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 p-4 w-full">
                           <div className="flex items-center gap-1 text-yellow-400 mb-2">
-                            <span className="text-sm font-bold">★ {game.rating}</span>
+                            <span className="text-sm font-bold">★ {getGameDisplayStats(game.id).rating}</span>
                           </div>
                         </div>
                       </div>
@@ -431,7 +432,7 @@ export default function HomePage() {
                         <div className="absolute bottom-0 p-4 w-full">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1 text-yellow-400">
-                              <span className="text-lg font-bold">★ {game.rating}</span>
+                              <span className="text-lg font-bold">★ {getGameDisplayStats(game.id).rating}</span>
                             </div>
                             <span className="text-white text-sm font-semibold">{game.size}</span>
                           </div>
@@ -475,7 +476,7 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 p-3 w-full">
                       <div className="flex items-center gap-1 text-yellow-400 mb-1">
-                        <span className="text-xs font-bold">★ {game.rating}</span>
+                        <span className="text-xs font-bold">★ {getGameDisplayStats(game.id).rating}</span>
                       </div>
                       <span className="text-xs text-gray-300">{game.category}</span>
                     </div>
