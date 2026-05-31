@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
-import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, injectJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
+import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, buildGamePageH1, injectJsonLd, removeJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
 import { getGameDisplayStats } from "../../lib/gameStats";
 import { loadSiteSettings } from "../../lib/gameStore";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
@@ -69,14 +69,16 @@ export default function GameDetailPage() {
         const siteName = siteSettings.siteName || "AQ Gaming Hub";
 
         setDocumentMeta({
-          title: buildGamePageTitle(currentGame),
-          description: buildGameMetaDescription(currentGame),
+          title: buildGamePageTitle(currentGame, siteName),
+          description: buildGameMetaDescription(currentGame, siteName),
           keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
           url: `${SITE_URL}/game/${currentGame.id}`,
-          type: "article",
+          type: "website",
           siteName,
+          imageAlt: buildGameCoverAlt(currentGame),
         });
+        removeJsonLd("site-jsonld");
         injectJsonLd("game-jsonld", buildGameJsonLd(currentGame, siteName));
 
         incrementGameView(id).then((updated) => {
@@ -263,6 +265,8 @@ export default function GameDetailPage() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-16 pt-6 md:pt-8">
+        <h1 className="sr-only">{buildGamePageH1(game)}</h1>
+
         <div className="lg:hidden relative z-10 -mt-14 sm:-mt-16 mb-6">
           <div className="rounded-2xl border border-[rgba(226,232,240,0.10)] bg-[rgba(15,23,42,0.85)] backdrop-blur p-3">
             <div className="flex gap-3">
@@ -272,7 +276,7 @@ export default function GameDetailPage() {
                 className="h-24 w-20 shrink-0 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">
-                <h1 className="text-base font-bold text-white line-clamp-2">{game.title}</h1>
+                <p className="text-base font-bold text-white line-clamp-2">{game.title}</p>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)] line-clamp-1">
                   {formatCategoryList(game)} • {game.developer}
                 </p>
@@ -293,7 +297,7 @@ export default function GameDetailPage() {
             <div className="hidden lg:block overflow-hidden rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] shadow-[0_18px_60px_rgba(15,23,42,0.35)]">
               <ImageWithFallback src={game.cover} alt={buildGameCoverAlt(game)} className="h-72 xl:h-96 w-full object-cover" />
               <div className="p-4 md:p-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-white line-clamp-2">{game.title}</h1>
+                <p className="text-2xl md:text-3xl font-bold text-white line-clamp-2">{game.title}</p>
                 <p className="mt-2 md:mt-3 text-xs md:text-sm text-[var(--muted-foreground)] line-clamp-2">{formatCategoryList(game)} • {game.developer}</p>
                 <div className="mt-3 md:mt-4 flex flex-wrap gap-2">
                   {getGameCategories(game).map((cat) => (

@@ -130,7 +130,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <h1 className="sr-only">{settings.siteName} free download PC games</h1>
+      <h1 className="sr-only">{settings.siteName} - Free PC Games Download for PC</h1>
       {/* Hero Section */}
       <section className="relative h-[min(60vh,700px)] min-h-[320px] overflow-hidden">
         {displayHeroGames.map((game, index) => (

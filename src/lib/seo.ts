@@ -8,13 +8,51 @@ const isCompressedGame = (game: Game) =>
   /compress/i.test(game.size) ||
   game.tags?.some((tag) => /compress/i.test(tag)) === true;
 
-export const buildGamePageTitle = (game: Game) =>
-  isCompressedGame(game)
-    ? `${game.title} Highly Compressed Free Download`
-    : `${game.title} Free Download for PC Full Version`;
+export const buildHomePageTitle = (siteName = "AQ Gaming Hub") =>
+  `${siteName} - Free PC Games Download for PC`;
 
-export const buildGameMetaDescription = (game: Game) =>
-  `${game.title} PC game free download full version with system requirements, screenshots, and direct installation guide. Size: ${game.size}. Developer: ${game.developer}.`;
+export const buildHomeMetaDescription = (siteName = "AQ Gaming Hub", gameCount = 0) =>
+  `${siteName} offers free PC games download for Windows. Browse ${gameCount > 0 ? `${gameCount}+ ` : ""}full-version titles, repacks, and direct download pages with system requirements and install guides.`;
+
+export const buildCategoryPageTitle = (categoryName: string, siteName = "AQ Gaming Hub") =>
+  categoryName === "All"
+    ? `All PC Games Free Download - ${siteName}`
+    : `${categoryName} Games Free Download for PC - ${siteName}`;
+
+export const buildCategoryMetaDescription = (
+  categoryName: string,
+  gameCount: number,
+  siteName = "AQ Gaming Hub"
+) =>
+  categoryName === "All"
+    ? `Download free PC games at ${siteName}. Browse ${gameCount}+ full-version Windows games with direct download links, screenshots, and system requirements.`
+    : `Download free ${categoryName.toLowerCase()} PC games at ${siteName}. Browse ${gameCount}+ ${categoryName.toLowerCase()} titles with direct download links and full-version installs.`;
+
+export const buildCategoriesHubTitle = (siteName = "AQ Gaming Hub") =>
+  `Browse PC Game Categories - ${siteName}`;
+
+export const buildCategoriesHubDescription = (siteName = "AQ Gaming Hub", categoryCount = 0) =>
+  `Explore ${categoryCount > 0 ? `${categoryCount}+ ` : ""}PC game categories on ${siteName}. Find action, RPG, racing, horror, and more free download pages.`;
+
+export const buildSearchPageTitle = (query: string, siteName = "AQ Gaming Hub") =>
+  query.trim()
+    ? `Search: ${query} - ${siteName}`
+    : `Search PC Games - ${siteName}`;
+
+export const buildSearchPageDescription = (query: string, siteName = "AQ Gaming Hub") =>
+  query.trim()
+    ? `Search results for "${query}" on ${siteName}. Find free PC game downloads, repacks, and full-version titles.`
+    : `Search ${siteName} for free PC games download pages, full-version titles, and category listings.`;
+
+export const buildGamePageTitle = (game: Game, siteName = "AQ Gaming Hub") =>
+  isCompressedGame(game)
+    ? `${game.title} Highly Compressed Free Download for PC - ${siteName}`
+    : `${game.title} Free Download for PC - ${siteName}`;
+
+export const buildGamePageH1 = (game: Game) => `${game.title} Free Download`;
+
+export const buildGameMetaDescription = (game: Game, siteName = "AQ Gaming Hub") =>
+  `Download ${game.title} free for PC at ${siteName}. Full-version Windows game with system requirements, screenshots, and direct download. Size: ${game.size}. Developer: ${game.developer}.`;
 
 export const buildGameCoverAlt = (game: Game) => `${game.title} PC Game Cover`;
 
@@ -58,6 +96,7 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
     "aq gaming hub pc free download",
     "download pc games",
     "free pc games download",
+    "free pc games download for pc",
     "free download pc games",
     "pc games free download full version",
     "download free pc games for windows",
@@ -112,6 +151,8 @@ export const setDocumentMeta = (opts: {
   url?: string;
   type?: string;
   siteName?: string;
+  imageAlt?: string;
+  robots?: string;
 }) => {
   document.title = opts.title;
 
@@ -126,19 +167,25 @@ export const setDocumentMeta = (opts: {
   };
 
   const canonicalUrl = opts.url || SITE_URL;
+  const imageUrl = opts.image || `${SITE_URL}/aq.png`;
+  const imageAlt = opts.imageAlt || opts.title;
 
   setMeta("description", opts.description);
   if (opts.keywords) setMeta("keywords", opts.keywords);
+  setMeta("robots", opts.robots || "index, follow");
   setMeta("og:title", opts.title, "property");
   setMeta("og:description", opts.description, "property");
   setMeta("og:type", opts.type || "website", "property");
   setMeta("og:url", canonicalUrl, "property");
-  setMeta("og:image", opts.image || `${SITE_URL}/aq.png`, "property");
+  setMeta("og:image", imageUrl, "property");
+  setMeta("og:image:alt", imageAlt, "property");
+  setMeta("og:locale", "en_US", "property");
   if (opts.siteName) setMeta("og:site_name", opts.siteName, "property");
   setMeta("twitter:card", "summary_large_image");
   setMeta("twitter:title", opts.title);
   setMeta("twitter:description", opts.description);
-  setMeta("twitter:image", opts.image || `${SITE_URL}/aq.png`);
+  setMeta("twitter:image", imageUrl);
+  setMeta("twitter:image:alt", imageAlt);
 
   let canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
   if (!canonical) {
@@ -150,14 +197,17 @@ export const setDocumentMeta = (opts: {
 };
 
 export const injectJsonLd = (id: string, data: object) => {
-  const existing = document.getElementById(id);
-  if (existing) existing.remove();
+  removeJsonLd(id);
 
   const script = document.createElement("script");
   script.id = id;
   script.type = "application/ld+json";
   script.textContent = JSON.stringify(data);
   document.head.appendChild(script);
+};
+
+export const removeJsonLd = (id: string) => {
+  document.getElementById(id)?.remove();
 };
 
 /** Meta keywords string from game tags (not shown on page). */
@@ -172,7 +222,9 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   };
   add(game.title);
   add(`${game.title} download`);
+  add(`${game.title} free download`);
   add(`${game.title} free download pc`);
+  add(`${game.title} free download for pc`);
   add(`${game.title} free download for pc full version`);
   add(`${game.title} highly compressed free download`);
   add(game.developer);
@@ -183,7 +235,13 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   });
   if (siteName) {
     add(siteName);
+    add(siteName.toLowerCase());
     add(`${game.title} ${siteName}`);
+    add(`${game.title} ${siteName.toLowerCase()}`);
+    add(`${siteName} ${game.title}`);
+    add(`${siteName.toLowerCase()} ${game.title}`);
+    add(`${game.title} aq gaming hub`);
+    add(`aq gaming hub ${game.title}`);
   }
   return Array.from(parts).join(", ");
 };
@@ -192,6 +250,7 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
   const gameUrl = `${SITE_URL}/game/${game.id}`;
   const downloadUrl = getGameDownloadUrl(game);
   const images = [game.cover, ...(game.screenshots || [])].filter(Boolean);
+  const categories = getGameCategories(game);
 
   const sharedOffer = {
     "@type": "Offer",
@@ -214,10 +273,12 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
         "@type": "VideoGame",
         name: game.title,
         description: game.description,
-        genre: getGameCategories(game),
-        keywords: game.tags?.join(", "),
+        genre: categories,
+        keywords: [game.title, siteName, `${game.title} free download`, ...(game.tags || [])].join(", "),
         image: images,
         url: gameUrl,
+        gamePlatform: "PC",
+        operatingSystem: "Windows",
         author: { "@type": "Organization", name: game.developer },
         publisher: { "@type": "Organization", name: siteName },
         aggregateRating: sharedRating,
@@ -228,8 +289,10 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
         name: game.title,
         description: game.description,
         operatingSystem: "Windows",
-        applicationCategory: "Game",
+        applicationCategory: "GameApplication",
+        applicationSubCategory: categories[0] || "Game",
         downloadUrl,
+        installUrl: gameUrl,
         fileSize: game.size,
         softwareVersion: "Full Version",
         image: game.cover,
@@ -243,7 +306,7 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
         "@type": "Game",
         name: game.title,
         description: game.description,
-        genre: getGameCategories(game),
+        genre: categories,
         image: images,
         url: gameUrl,
         gamePlatform: "PC",
@@ -253,19 +316,48 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
         aggregateRating: sharedRating,
         offers: sharedOffer,
       },
+      buildBreadcrumbJsonLd([
+        { name: siteName, url: `${SITE_URL}/` },
+        ...(categories[0]
+          ? [{ name: `${categories[0]} Games`, url: `${SITE_URL}/category/${encodeURIComponent(categories[0].toLowerCase())}` }]
+          : []),
+        { name: `${game.title} Free Download`, url: gameUrl },
+      ]),
     ],
   };
 };
+
+export const buildBreadcrumbJsonLd = (items: { name: string; url: string }[]) => ({
+  "@type": "BreadcrumbList",
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: item.url,
+  })),
+});
 
 export const buildSiteJsonLd = (siteName: string, siteUrl: string) => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: siteName,
-  alternateName: [siteName, `${siteName} download`, `${siteName} games`],
+  alternateName: [
+    "AQ Gaming Hub",
+    "aq gaming hub",
+    "AQ GamingHub",
+    "AQ Games Hub",
+    `${siteName} free download`,
+    `${siteName} games`,
+    "free pc games download for pc",
+  ],
   url: siteUrl,
+  description: `${siteName} is a free PC games download hub for Windows full-version titles, repacks, and direct download pages.`,
   potentialAction: {
     "@type": "SearchAction",
-    target: `${siteUrl}/search?q={search_term_string}`,
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${siteUrl.replace(/\/$/, "")}/search?q={search_term_string}`,
+    },
     "query-input": "required name=search_term_string",
   },
 });

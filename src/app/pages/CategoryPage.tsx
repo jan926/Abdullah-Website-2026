@@ -47,7 +47,7 @@ export default function CategoryPage() {
             Back to Home
           </Link>
           <h1 className="text-3xl sm:text-5xl font-bold text-white mb-4">
-            {isAll ? "All Games" : `${categoryName} Games`}
+            {isAll ? "All PC Games Free Download" : `${categoryName} Games Free Download`}
           </h1>
           <p className="text-white/90 text-base sm:text-lg">
             {loading
