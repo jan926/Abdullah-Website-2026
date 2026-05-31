@@ -813,7 +813,8 @@ export default function AdminPage() {
                   <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-sm">4</span>
                   System Requirements
                 </h3>
-                <SystemRequirementsEditor 
+                <SystemRequirementsEditor
+                  gameTitle={formData.title}
                   minimum={formData.systemRequirements.minimum}
                   recommended={formData.systemRequirements.recommended}
                   onChange={(patch) =>

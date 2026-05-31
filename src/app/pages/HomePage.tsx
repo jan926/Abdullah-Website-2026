@@ -1,20 +1,19 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { GameCard } from "../components/GameCard";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
 import { DownloadButton } from "../components/DownloadButton";
 import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadSiteSettings, SiteSettings, loadCategories, subscribeToDataChanges, getGamesSync } from "../../lib/gameStore";
-import { getCategoryStyle, getCategoryPath } from "../../lib/categoryStyles";
+import { getCategoryStyle } from "../../lib/categoryStyles";
 import { buildGameCoverAlt, buildGameHeroAlt } from "../../lib/seo";
 import { getGameDisplayStats } from "../../lib/gameStats";
 import { LazyImage } from "../../components/LazyImage";
+import { CategoryMarquee } from "../components/CategoryMarquee";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [games, setGames] = useState<Game[]>(() => getGamesSync());
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
@@ -112,38 +111,34 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(nextSlide, 5000);
+    if (displayHeroGames.length <= 1) return;
+    const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
   }, [displayHeroGames.length]);
 
-  // when games change, update trending selection
   useEffect(() => {
     const t = games.filter((g) => g.trending);
     if (t.length === 0) {
-      setTrendingGames(shuffleArray(games).slice(0, 6));
+      setTrendingGames(games.slice(0, 6));
     } else {
-      setTrendingGames(shuffleArray(t).slice(0, 6));
+      setTrendingGames(t.slice(0, 6));
     }
-    // reset page if games length changed
     setGamesPage(1);
   }, [games]);
+
+  const activeHeroGame = displayHeroGames[currentSlide];
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <h1 className="sr-only">{settings.siteName} - Free PC Games Download for PC</h1>
-      {/* Hero Section */}
+      {/* Hero Section — single active slide for performance */}
       <section className="relative h-[min(60vh,700px)] min-h-[320px] overflow-hidden">
-        {displayHeroGames.map((game, index) => (
-          <div
-            key={game.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none"
-            }`}
-          >
+        {activeHeroGame && (
+            <div key={activeHeroGame.id} className="absolute inset-0 z-10 transition-opacity duration-500">
             <LazyImage
-              src={game.heroMedia || game.backgroundImage || game.cover}
-              alt={buildGameHeroAlt(game)}
-              className="h-full w-full object-cover object-center animate-ken-burns"
+              src={activeHeroGame.heroMedia || activeHeroGame.backgroundImage || activeHeroGame.cover}
+              alt={buildGameHeroAlt(activeHeroGame)}
+              className="h-full w-full object-cover object-center"
               wrapperClassName="h-full w-full"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
@@ -154,23 +149,25 @@ export default function HomePage() {
                     <span className="px-3 py-1 bg-cyan-500 text-white text-xs font-bold rounded-full">
                       NEW
                     </span>
-                    <span className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
-                      🔥 TRENDING
-                    </span>
+                    {activeHeroGame.trending && (
+                      <span className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
+                        🔥 TRENDING
+                      </span>
+                    )}
                   </div>
                   <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
-                    {game.title}
+                    {activeHeroGame.title}
                   </h2>
                   <p className="line-clamp-3 text-gray-300 text-base md:text-lg leading-relaxed">
-                    {game.description}
+                    {activeHeroGame.description}
                   </p>
                   <div className="flex items-center gap-3 pt-4">
                     <DownloadButton
                       asChild
                       className="px-6 py-5 text-base rounded-lg neon-glow-cyan"
                     >
-                      <Link to={`/game/${game.id}`}>
-                        <Download className="mr-2 h-5 w-5 btn-download-icon" />
+                      <Link to={`/game/${activeHeroGame.id}`}>
+                        <Download className="mr-2 h-5 w-5" />
                         Download
                       </Link>
                     </DownloadButton>
@@ -179,7 +176,7 @@ export default function HomePage() {
                       variant="outline"
                       className="border-2 border-white/30 bg-white/10 hover:bg-white/20 text-white px-6 py-5 text-base font-semibold rounded-lg backdrop-blur"
                     >
-                      <Link to={`/game/${game.id}`}>
+                      <Link to={`/game/${activeHeroGame.id}`}>
                         <Play className="mr-2 h-5 w-5" />
                         More
                       </Link>
@@ -188,21 +185,24 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
-            {/* Navigation Dots */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-              {displayHeroGames.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`h-2 rounded-full transition-all ${
-                    idx === currentSlide ? "w-8 bg-cyan-500" : "w-2 bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
           </div>
-        ))}
+        )}
+
+        {displayHeroGames.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 flex gap-2">
+            {displayHeroGames.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                aria-label={`Go to slide ${idx + 1}`}
+                onClick={() => setCurrentSlide(idx)}
+                className={`h-2 rounded-full transition-all ${
+                  idx === currentSlide ? "w-8 bg-cyan-500" : "w-2 bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Arrow buttons */}
         <button
@@ -219,42 +219,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* Categories Section - Auto Scrolling */}
-      <section className="py-8 bg-[var(--card)] overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#06091a] via-transparent to-[#06091a] z-10 pointer-events-none" />
-        <div className="flex gap-3 animate-scroll">
-          <div className="flex gap-3 animate-marquee">
-            {[...categoryColors, ...categoryColors].map((cat, idx) => (
-              <Link
-                key={`${cat.name}-${idx}`}
-                to={getCategoryPath(cat.name)}
-                onClick={() => {
-                  setActiveCategory(cat.name);
-                }}
-                className={`flex items-center gap-2 px-6 py-3 ${cat.color} text-white font-bold rounded-full whitespace-nowrap transition-all hover:scale-105 hover:shadow-lg ${
-                  activeCategory === cat.name ? 'ring-2 ring-white shadow-[0_0_20px_rgba(255,255,255,0.5)]' : ''
-                }`}
-              >
-                <span className="text-lg">{cat.icon}</span>
-                <span>{cat.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-        <style>{`
-          @keyframes marquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-marquee {
-            display: flex;
-            animation: marquee 30s linear infinite;
-          }
-          .animate-marquee:hover {
-            animation-play-state: paused;
-          }
-        `}</style>
-      </section>
+      <CategoryMarquee categories={categoryColors} />
 
       <div className="container mx-auto px-3 sm:px-6 py-8 space-y-12">
         {/* Trending Games */}
@@ -286,12 +251,12 @@ export default function HomePage() {
                 <div key={game.id} className="flex-none w-[180px] sm:w-[220px] md:w-[240px]">
                   <div className="group block">
                     <Link to={`/game/${game.id}`} className="block">
-                      <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
+                      <div className="relative overflow-hidden rounded-lg mb-2">
                         <LazyImage
                           src={game.cover}
                           alt={buildGameCoverAlt(game)}
                           wrapperClassName="w-full"
-                          className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                          className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
@@ -345,16 +310,16 @@ export default function HomePage() {
             ref={latestScrollRef}
             className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
           >
-            {latestGames.map((game, index) => (
-              <div key={game.id} className="flex-none w-[180px] sm:w-[220px] md:w-[240px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
+            {latestGames.map((game) => (
+              <div key={game.id} className="flex-none w-[180px] sm:w-[220px] md:w-[240px]">
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
-                    <div className="relative overflow-hidden rounded-lg mb-2 card-hover-shine card-3d">
+                    <div className="relative overflow-hidden rounded-lg mb-2">
                       <LazyImage
                         src={game.cover}
                         alt={buildGameCoverAlt(game)}
                         wrapperClassName="w-full"
-                        className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                        className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-0 p-4 w-full">
@@ -412,16 +377,16 @@ export default function HomePage() {
             ref={gameOfDayScrollRef}
             className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
           >
-            {gameOfTheDay.map((game, index) => (
-              <div key={game.id} className="flex-none w-[200px] sm:w-[240px] md:w-[280px] stagger-item" style={{ animationDelay: `${index * 0.1}s` }}>
+            {gameOfTheDay.map((game) => (
+              <div key={game.id} className="flex-none w-[200px] sm:w-[240px] md:w-[280px]">
                 <div className="group block">
                   <Link to={`/game/${game.id}`} className="block">
-                    <div className="relative overflow-hidden rounded-xl mb-3 card-hover-shine card-3d border-2 border-orange-500/30 hover:border-orange-500">
+                    <div className="relative overflow-hidden rounded-xl mb-3 border-2 border-orange-500/30 hover:border-orange-500 transition-colors">
                       <LazyImage
                         src={game.cover}
                         alt={buildGameCoverAlt(game)}
                         wrapperClassName="w-full"
-                        className="h-[260px] sm:h-[300px] md:h-[350px] object-cover transition-transform duration-300 group-hover:scale-110 animate-shine"
+                        className="h-[260px] sm:h-[300px] md:h-[350px] object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute top-3 left-3">
                         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -438,8 +403,7 @@ export default function HomePage() {
                           </div>
                         </div>
                       </div>
-                      {/* Animated glow border */}
-                      <div className="absolute inset-0 border-2 border-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-[0_0_30px_rgba(251,146,60,0.6)] animate-pulse-glow" />
+                      <div className="absolute inset-0 border-2 border-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
                     </div>
                     <h3 className="text-[var(--foreground)] font-bold text-base line-clamp-2 group-hover:text-orange-400 transition">
                       {game.title}
@@ -464,14 +428,14 @@ export default function HomePage() {
         <section>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-6">All Games</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {games.slice((gamesPage - 1) * GAMES_PER_PAGE, (gamesPage - 1) * GAMES_PER_PAGE + GAMES_PER_PAGE).map((game, index) => (
-              <Link key={game.id} to={`/game/${game.id}`} className="group block stagger-item" style={{ animationDelay: `${(index % 12) * 0.05}s` }}>
-                <div className="relative overflow-hidden rounded-lg mb-2 card-3d reflection">
+            {games.slice((gamesPage - 1) * GAMES_PER_PAGE, (gamesPage - 1) * GAMES_PER_PAGE + GAMES_PER_PAGE).map((game) => (
+              <Link key={game.id} to={`/game/${game.id}`} className="group block">
+                <div className="relative overflow-hidden rounded-lg mb-2">
                   <LazyImage
                     src={game.cover}
                     alt={buildGameCoverAlt(game)}
                     wrapperClassName="w-full"
-                    className="h-[180px] sm:h-[220px] md:h-[260px] object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="h-[180px] sm:h-[220px] md:h-[260px] object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 p-3 w-full">

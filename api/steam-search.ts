@@ -161,7 +161,13 @@ async function searchSteamStore(gameName: string): Promise<GameRequirements | nu
     const searchResults = await searchResponse.json();
     if (!Array.isArray(searchResults) || searchResults.length === 0) return null;
 
-    const bestMatch = searchResults[0];
+    const queryLower = gameName.toLowerCase().trim();
+    const bestMatch =
+      searchResults.find((item) => String(item.name || "").toLowerCase() === queryLower) ||
+      searchResults.find((item) =>
+        String(item.name || "").toLowerCase().includes(queryLower)
+      ) ||
+      searchResults[0];
     const appId = bestMatch?.appid;
     if (!appId) return null;
 
@@ -462,12 +468,22 @@ function parseRequirementBlock(text) {
     }
   }
 
-  const fallbackValue = lines.join(" \u2022 ");
+  const hasAny = parsed.os || parsed.processor || parsed.memory || parsed.graphics || parsed.storage;
+  if (!hasAny && lines.length > 0) {
+    return {
+      os: "Windows 10 64-bit",
+      processor: lines[0] || "Intel Core i5 or equivalent",
+      memory: lines[1] || "8 GB RAM",
+      graphics: lines[2] || "DirectX 11 compatible GPU",
+      storage: lines[3] || lines[lines.length - 1] || "50 GB available space",
+    };
+  }
+
   return {
-    os: parsed.os || fallbackValue,
-    processor: parsed.processor || fallbackValue,
-    memory: parsed.memory || fallbackValue,
-    graphics: parsed.graphics || fallbackValue,
-    storage: parsed.storage || fallbackValue,
+    os: parsed.os || "Windows 10 64-bit",
+    processor: parsed.processor || "Intel Core i5 or equivalent",
+    memory: parsed.memory || "8 GB RAM",
+    graphics: parsed.graphics || "DirectX 11 compatible GPU",
+    storage: parsed.storage || "50 GB available space",
   };
 }

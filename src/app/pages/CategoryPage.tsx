@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, getGamesSync } from "../../lib/gameStore";
@@ -7,6 +7,8 @@ import { getCategoryStyle } from "../../lib/categoryStyles";
 import { GameCard } from "../components/GameCard";
 import { ChevronLeft } from "lucide-react";
 import { Skeleton } from "../components/ui/skeleton";
+
+const GAMES_PER_PAGE = 24;
 
 export default function CategoryPage() {
   const { category } = useParams();
@@ -19,6 +21,7 @@ export default function CategoryPage() {
       : "";
   const [games, setGames] = useState<Game[]>(() => getGamesSync());
   const [loading, setLoading] = useState(() => getGamesSync().length === 0);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (games.length === 0) setLoading(true);
@@ -28,9 +31,21 @@ export default function CategoryPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const categoryGames = isAll
-    ? games
-    : games.filter((game) => gameHasCategory(game, categoryName));
+  useEffect(() => {
+    setPage(1);
+  }, [categoryName, isAll]);
+
+  const categoryGames = useMemo(
+    () => (isAll ? games : games.filter((game) => gameHasCategory(game, categoryName))),
+    [games, isAll, categoryName]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(categoryGames.length / GAMES_PER_PAGE));
+
+  const visibleGames = useMemo(() => {
+    const start = (page - 1) * GAMES_PER_PAGE;
+    return categoryGames.slice(start, start + GAMES_PER_PAGE);
+  }, [categoryGames, page]);
 
   const gradientClass = isAll ? "from-indigo-500 to-purple-700" : getCategoryStyle(categoryName).gradient;
 
@@ -60,18 +75,44 @@ export default function CategoryPage() {
       <div className="container mx-auto px-3 sm:px-6 py-12">
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-[380px] w-full rounded-xl" />
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="h-[320px] w-full rounded-xl" />
             ))}
           </div>
         ) : categoryGames.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {categoryGames.map((game, index) => (
-              <div key={game.id} className="stagger-item" style={{ animationDelay: `${index * 0.05}s` }}>
-                <GameCard game={game} />
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {visibleGames.map((game) => (
+                <GameCard key={game.id} game={game} compact />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  Page {page} of {totalPages} · {categoryGames.length} games
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="px-4 py-2 rounded-lg bg-[var(--card)] text-sm disabled:opacity-40 hover:bg-[var(--muted)] transition"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="px-4 py-2 rounded-lg bg-[var(--card)] text-sm disabled:opacity-40 hover:bg-[var(--muted)] transition"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20">
             <h3 className="text-2xl font-bold text-white mb-2">No games found</h3>

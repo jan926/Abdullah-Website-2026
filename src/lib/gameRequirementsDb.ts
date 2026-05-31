@@ -65,7 +65,15 @@ async function fetchRemoteRequirements(
       `/api/steam-search?name=${encodeURIComponent(gameName)}&store=${encodeURIComponent(store)}`
     );
     if (!response.ok) return null;
-    return (await response.json()) as GameRequirements;
+
+    const data = (await response.json()) as GameRequirements & { error?: string };
+    if (data?.error || !data?.minimum) return null;
+
+    return {
+      ...data,
+      minimum: fillRequirementBlock(data.minimum),
+      recommended: fillRequirementBlock(data.recommended),
+    };
   } catch (error) {
     console.log(`Store lookup failed for ${store}`, error);
     return null;
@@ -708,14 +716,14 @@ export async function searchGameRequirements(
   const localMatch = findLocalMatch(gameName);
 
   if (store === "all") {
-    const [steam, epic, arealgamer, aggregated] = await Promise.all([
-      fetchRemoteRequirements(gameName, "steam"),
-      fetchRemoteRequirements(gameName, "epic"),
-      fetchRemoteRequirements(gameName, "arealgamer"),
-      fetchRemoteRequirements(gameName, "all"),
-    ]);
+    const remote = await fetchRemoteRequirements(gameName, "all");
+    return mergeGameRequirements(gameName, [localMatch, remote]);
+  }
 
-    return mergeGameRequirements(gameName, [localMatch, steam, epic, arealgamer, aggregated]);
+  if (store === "epic" || store === "ea" || store === "ubisoft") {
+    const steamFallback = await fetchRemoteRequirements(gameName, "steam");
+    const remoteMatch = await fetchRemoteRequirements(gameName, store);
+    return mergeGameRequirements(gameName, [localMatch, remoteMatch, steamFallback]);
   }
 
   const remoteMatch = await fetchRemoteRequirements(gameName, store);
