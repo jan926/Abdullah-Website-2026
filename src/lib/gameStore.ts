@@ -1,9 +1,19 @@
-import { gamesData, Game, categories as defaultCategories } from "../app/data/games";
+import {
+  gamesData,
+  Game,
+  categories as defaultCategories,
+} from "../app/data/games";
 import { requireSupabase, isSupabaseConfigured } from "./supabaseClient";
 
-export type DatabaseStatus = "ready" | "missing_tables" | "not_configured" | "error";
+export type DatabaseStatus =
+  | "ready"
+  | "missing_tables"
+  | "not_configured"
+  | "error";
 
-let databaseStatus: DatabaseStatus = isSupabaseConfigured ? "ready" : "not_configured";
+let databaseStatus: DatabaseStatus = isSupabaseConfigured
+  ? "ready"
+  : "not_configured";
 let dbReadyCache: boolean | null = null;
 let gamesMemoryCache: Game[] | null = null;
 let gamesMemoryCacheAt = 0;
@@ -194,9 +204,21 @@ const seedDatabaseIfEmpty = async (): Promise<boolean> => {
   }
 
   const { error: configError } = await client.from("site_config").upsert([
-    { id: "settings", payload: defaultSettings, updated_at: new Date().toISOString() },
-    { id: "categories", payload: defaultCategories, updated_at: new Date().toISOString() },
-    { id: "analytics", payload: defaultAnalytics(), updated_at: new Date().toISOString() },
+    {
+      id: "settings",
+      payload: defaultSettings,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: "categories",
+      payload: defaultCategories,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: "analytics",
+      payload: defaultAnalytics(),
+      updated_at: new Date().toISOString(),
+    },
   ]);
 
   if (configError) {
@@ -238,7 +260,9 @@ const setConfigPayload = async <T>(key: string, payload: T) => {
 
 // --- Public API ---
 
-export const loadGames = async (options?: { background?: boolean }): Promise<Game[]> => {
+export const loadGames = async (options?: {
+  background?: boolean;
+}): Promise<Game[]> => {
   const local = loadGamesLocal();
 
   if (gamesMemoryCache && Date.now() - gamesMemoryCacheAt < GAMES_CACHE_MS) {
@@ -315,17 +339,24 @@ export const saveGames = async (games: Game[]) => {
       updated_at: now,
     }));
 
-    const { data: existing, error: fetchError } = await client.from("games").select("id");
+    const { data: existing, error: fetchError } = await client
+      .from("games")
+      .select("id");
     if (fetchError) {
       handleSupabaseError(fetchError);
       throw new Error("TABLES_MISSING");
     }
 
     const newIds = new Set(games.map((g) => g.id));
-    const toDelete = (existing ?? []).map((r) => r.id).filter((id) => !newIds.has(id));
+    const toDelete = (existing ?? [])
+      .map((r) => r.id)
+      .filter((id) => !newIds.has(id));
 
     if (toDelete.length > 0) {
-      const { error: deleteError } = await client.from("games").delete().in("id", toDelete);
+      const { error: deleteError } = await client
+        .from("games")
+        .delete()
+        .in("id", toDelete);
       if (deleteError) throw deleteError;
     }
 
@@ -336,7 +367,10 @@ export const saveGames = async (games: Game[]) => {
 
     databaseStatus = "ready";
   } catch (error) {
-    if (isTableMissingError(error) || (error as Error).message === "TABLES_MISSING") {
+    if (
+      isTableMissingError(error) ||
+      (error as Error).message === "TABLES_MISSING"
+    ) {
       databaseStatus = "missing_tables";
       throw new Error("TABLES_MISSING");
     }
@@ -355,7 +389,10 @@ export const loadSiteSettings = async (): Promise<SiteSettings> => {
   try {
     const seeded = await ensureDatabaseReady();
     if (!seeded) return loadSiteSettingsLocal();
-    const settings = normalizeSiteSettings({ ...defaultSettings, ...(await getConfigPayload("settings", defaultSettings)) });
+    const settings = normalizeSiteSettings({
+      ...defaultSettings,
+      ...(await getConfigPayload("settings", defaultSettings)),
+    });
     saveSiteSettingsLocal(settings);
     return settings;
   } catch (error) {
@@ -421,19 +458,23 @@ export const saveCategories = async (cats: string[]) => {
   await setConfigPayload("categories", cats);
 };
 
-export const incrementGameView = async (id: string): Promise<Game | undefined> => {
+export const incrementGameView = async (
+  id: string,
+): Promise<Game | undefined> => {
   const games = await loadGames();
   const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, views: (game.views || 0) + 1 } : game
+    game.id === id ? { ...game, views: (game.views || 0) + 1 } : game,
   );
   await saveGames(updatedGames);
   return updatedGames.find((game) => game.id === id);
 };
 
-export const incrementGameDownload = async (id: string): Promise<Game | undefined> => {
+export const incrementGameDownload = async (
+  id: string,
+): Promise<Game | undefined> => {
   const games = await loadGames();
   const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, downloads: (game.downloads || 0) + 1 } : game
+    game.id === id ? { ...game, downloads: (game.downloads || 0) + 1 } : game,
   );
   await saveGames(updatedGames);
   return updatedGames.find((game) => game.id === id);
@@ -467,9 +508,53 @@ export const resetGameStorage = async () => {
   storage.removeItem(ANALYTICS_KEY);
 };
 
+/**
+ * Optimised home-page loader.
+ *
+ * Priority chain:
+ *   1. In-memory cache (instant, 60 s TTL)
+ *   2. /api/games — CDN-cached Vercel edge route (s-maxage=60, stale-while-revalidate=300)
+ *      Avoids the expensive `ensureDatabaseReady()` seeding check for every visitor.
+ *   3. Direct Supabase via loadGames() — full fallback
+ */
+export const loadGamesHome = async (): Promise<Game[]> => {
+  // 1. In-memory cache
+  if (gamesMemoryCache && Date.now() - gamesMemoryCacheAt < GAMES_CACHE_MS) {
+    return gamesMemoryCache;
+  }
+
+  // 2. CDN-cached API route (only when Supabase is configured)
+  if (isSupabaseConfigured) {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 5_000);
+
+      const res = await fetch("/api/games", { signal: controller.signal });
+      clearTimeout(tid);
+
+      if (res.ok) {
+        const body = (await res.json()) as { games: Game[] };
+        if (Array.isArray(body.games) && body.games.length > 0) {
+          saveGamesLocal(body.games);
+          gamesMemoryCache = body.games;
+          gamesMemoryCacheAt = Date.now();
+          databaseStatus = "ready";
+          return body.games;
+        }
+      }
+    } catch {
+      // Timeout, network error, or bad JSON — fall through to direct Supabase
+    }
+  }
+
+  // 3. Direct Supabase fallback
+  return loadGames();
+};
+
 /** Subscribe to live DB changes (optional, for open tabs) */
 export const subscribeToDataChanges = (onChange: () => void) => {
-  if (!isSupabaseConfigured || databaseStatus === "missing_tables") return () => {};
+  if (!isSupabaseConfigured || databaseStatus === "missing_tables")
+    return () => {};
 
   const client = requireSupabase();
   const channel = client
@@ -477,12 +562,12 @@ export const subscribeToDataChanges = (onChange: () => void) => {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "games" },
-      () => onChange()
+      () => onChange(),
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "site_config" },
-      () => onChange()
+      () => onChange(),
     )
     .subscribe();
 
