@@ -3,11 +3,15 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:desktop": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_START_URL=http://127.0.0.1:5173 electron .\"",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "vite",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -70,11 +74,39 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
     "@tailwindcss/vite": "4.1.12",
     "@types/node": "^25.9.1",
     "@vitejs/plugin-react": "4.7.0",
+    "electron": "^36.5.0",
+    "electron-builder": "^26.0.12",
     "tailwindcss": "4.1.12",
+    "wait-on": "^8.0.3",
     "vite": "6.3.5"
+  },
+  "build": {
+    "appId": "games.steamfree.aqhub",
+    "productName": "AQ Gaming Hub",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "electron/**"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "peerDependencies": {
     "react": "18.3.1",

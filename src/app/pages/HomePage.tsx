@@ -1,42 +1,19 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { GameCard } from "../components/GameCard";
-import { Button } from "../components/ui/button";
-import { DownloadButton } from "../components/DownloadButton";
-import { Link } from "react-router";
-import { Game } from "../data/games";
-import {
-  loadGamesHome,
-  loadSiteSettings,
-  SiteSettings,
-  loadCategories,
-  subscribeToDataChanges,
-  getGamesSync,
-} from "../../lib/gameStore";
-import { getCategoryStyle } from "../../lib/categoryStyles";
-import { buildGameCoverAlt, buildGameHeroAlt } from "../../lib/seo";
-import { getGameDisplayStats } from "../../lib/gameStats";
-import { LazyImage } from "../../components/LazyImage";
-import { CategoryMarquee } from "../components/CategoryMarquee";
-import { HomePageSkeleton } from "../components/HomePageSkeleton";
-import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
+// HomePage Component - Main user dashboard with games
+import React, { useEffect, useState } from 'react';
+import { GameCard } from '@/app/components/games/GameCard';
+import { FeaturedSlider } from '@/app/components/games/FeaturedSlider';
+import { LoadingSpinner } from '@/app/components/common/LoadingSpinner';
+import { gameService, type Game } from '@/services/gameService';
 
+/**
+ * HomePage
+ * Main dashboard showing featured games slider and game grid
+ */
 export default function HomePage() {
+  const [featured, setFeatured] = useState<Game[]>([]);
+  const [allGames, setAllGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [games, setGames] = useState<Game[]>(() => getGamesSync());
-  const [categories, setCategories] = useState<string[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>({
-    siteName: "AQ Gaming Hub",
-    logoUrl: "",
-    showLatestGames: true,
-    showMostViewed: true,
-    showGameOfTheDay: true,
-    showTrendingGames: true,
-    theme: "dark",
-  });
-  const trendingScrollRef = useRef<HTMLDivElement>(null);
-  const latestScrollRef = useRef<HTMLDivElement>(null);
-  const gameOfDayScrollRef = useRef<HTMLDivElement>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'rating'>('popular');
 
   // Memoize expensive calculations
   const heroGames = useMemo(

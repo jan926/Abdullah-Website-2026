@@ -1,0 +1,142 @@
+/* Cyberpunk Theme - Color variables and design tokens */
+
+:root {
+  /* ============ Base Colors ============ */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-overlay: rgba(10, 10, 10, 0.95);
+
+  /* ============ Neon Accents ============ */
+  --neon-purple: #a855f7;
+  --neon-purple-dark: #9333ea;
+  --neon-cyan: #06b6d4;
+  --neon-cyan-light: #22d3ee;
+  --neon-green: #22c55e;
+  --neon-pink: #ec4899;
+  --neon-yellow: #eab308;
+
+  /* ============ Text Colors ============ */
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+
+  /* ============ Semantic Colors ============ */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* ============ Shadows & Glows ============ */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+
+  --glow-purple: 0 0 20px rgba(168, 85, 247, 0.5);
+  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.5);
+  --glow-pink: 0 0 20px rgba(236, 72, 153, 0.5);
+
+  /* ============ Border Radius ============ */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ============ Transitions ============ */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ============ Z-Index ============ */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ============ Global Styles ============ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ============ Scrollbar Styling ============ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-purple);
+  border-radius: 5px;
+  transition: background var(--transition-base);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+/* ============ Selection ============ */
+
+::selection {
+  background-color: var(--neon-purple);
+  color: var(--text-primary);
+}
+
+::-moz-selection {
+  background-color: var(--neon-purple);
+  color: var(--text-primary);
+}
+
+/* ============ Links ============ */
+
+a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+a:hover {
+  color: var(--neon-cyan-light);
+  text-shadow: 0 0 10px var(--neon-cyan);
+}
+
+/* ============ Transitions ============ */
+
+*[class*='transition'] {
+  transition: all var(--transition-base) !important;
+}
+
+/* ============ Print Styles ============ */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+}

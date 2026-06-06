@@ -1,5 +1,6 @@
 import { RouterProvider } from "react-router";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "@/context/AuthContext";
 import { router } from "./routes";
 
 export default function App() {
@@ -11,7 +12,9 @@ export default function App() {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

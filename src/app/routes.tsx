@@ -6,36 +6,107 @@ import CategoriesPage from "./pages/CategoriesPage";
 import CategoryPage from "./pages/CategoryPage";
 import SearchPage from "./pages/SearchPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminPage from "./pages/AdminPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import UnauthorizedPage from "./pages/UnauthorizedPage";
+import { ProtectedRoute, AdminRoute, PublicRoute } from "@/middleware/ProtectedRoute";
 
 export const router = createBrowserRouter([
+  // Public Auth Routes
+  {
+    path: "/login",
+    element: (
+      <PublicRoute>
+        <LoginPage />
+      </PublicRoute>
+    ),
+  },
+  {
+    path: "/signup",
+    element: (
+      <PublicRoute>
+        <SignupPage />
+      </PublicRoute>
+    ),
+  },
+  {
+    path: "/admin/login",
+    element: (
+      <PublicRoute>
+        <AdminLoginPage />
+      </PublicRoute>
+    ),
+  },
+  
+  // Authorization Error Page
+  {
+    path: "/unauthorized",
+    element: <UnauthorizedPage />,
+  },
+
+  // Main App Routes
   {
     path: "/",
     Component: RootLayout,
     children: [
       {
         index: true,
-        Component: HomePage,
+        element: (
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "game/:id",
-        Component: GameDetailPage,
+        element: (
+          <ProtectedRoute>
+            <GameDetailPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "categories",
-        Component: CategoriesPage,
+        element: (
+          <ProtectedRoute>
+            <CategoriesPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "category/:category",
-        Component: CategoryPage,
+        element: (
+          <ProtectedRoute>
+            <CategoryPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "search",
-        Component: SearchPage,
-      },
-      {
-        path: "*",
-        Component: NotFoundPage,
+        element: (
+          <ProtectedRoute>
+            <SearchPage />
+          </ProtectedRoute>
+        ),
       },
     ],
+  },
+
+  // Admin Routes
+  {
+    path: "/admin",
+    element: (
+      <AdminRoute>
+        <AdminPage />
+      </AdminRoute>
+    ),
+  },
+
+  // 404 Fallback
+  {
+    path: "*",
+    Component: NotFoundPage,
   },
 ]);

@@ -1,0 +1,260 @@
+/* Neon & Animation Effects - Cyberpunk visual effects */
+
+/* ============ Neon Glow Effects ============ */
+
+.neon-glow {
+  text-shadow: 
+    0 0 10px var(--neon-purple),
+    0 0 20px var(--neon-purple),
+    0 0 30px var(--neon-purple),
+    0 0 40px var(--neon-cyan);
+  animation: neon-flicker 3s infinite alternate;
+}
+
+.neon-glow-cyan {
+  text-shadow: 
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan),
+    0 0 30px var(--neon-cyan);
+  animation: neon-flicker-cyan 2.5s infinite alternate;
+}
+
+.neon-glow-pink {
+  text-shadow: 
+    0 0 10px var(--neon-pink),
+    0 0 20px var(--neon-pink),
+    0 0 30px var(--neon-pink);
+}
+
+/* Box glow */
+.box-glow {
+  box-shadow: var(--glow-purple);
+  transition: box-shadow var(--transition-base);
+}
+
+.box-glow:hover {
+  box-shadow: 
+    var(--glow-purple),
+    0 0 40px rgba(168, 85, 247, 0.6);
+}
+
+.box-glow-cyan {
+  box-shadow: var(--glow-cyan);
+}
+
+.box-glow-cyan:hover {
+  box-shadow: 
+    var(--glow-cyan),
+    0 0 40px rgba(6, 182, 212, 0.6);
+}
+
+/* ============ Animations ============ */
+
+@keyframes neon-flicker {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px var(--neon-purple),
+      0 0 20px var(--neon-purple),
+      0 0 30px var(--neon-purple),
+      0 0 40px var(--neon-cyan);
+  }
+  50% {
+    text-shadow: 
+      0 0 5px var(--neon-purple),
+      0 0 10px var(--neon-purple),
+      0 0 15px var(--neon-purple),
+      0 0 20px var(--neon-cyan);
+  }
+}
+
+@keyframes neon-flicker-cyan {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px var(--neon-cyan),
+      0 0 20px var(--neon-cyan),
+      0 0 30px var(--neon-cyan);
+  }
+  50% {
+    text-shadow: 
+      0 0 5px var(--neon-cyan),
+      0 0 10px var(--neon-cyan),
+      0 0 15px var(--neon-cyan);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+  }
+}
+
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============ Animation Utilities ============ */
+
+.animate-slide-left {
+  animation: slide-in-left var(--transition-base) ease-out;
+}
+
+.animate-slide-right {
+  animation: slide-in-right var(--transition-base) ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in var(--transition-base) ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in var(--transition-base) ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============ Hover Effects ============ */
+
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.hover-glow {
+  transition: all var(--transition-base);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--glow-purple);
+}
+
+.hover-glow-cyan:hover {
+  box-shadow: var(--glow-cyan);
+}
+
+/* ============ Loading Spinner ============ */
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+
+.spinner::before,
+.spinner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  border-top-color: var(--neon-purple);
+  animation: rotate-border 1s linear infinite;
+}
+
+.spinner::after {
+  border-color: transparent transparent var(--neon-cyan) transparent;
+  animation-duration: 1.5s;
+  animation-direction: reverse;
+}
+
+/* ============ Gradient Backgrounds ============ */
+
+.gradient-purple-cyan {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+}
+
+.gradient-cyber {
+  background: linear-gradient(
+    135deg,
+    rgba(168, 85, 247, 0.2),
+    rgba(6, 182, 212, 0.2),
+    rgba(236, 72, 153, 0.2)
+  );
+}
+
+/* ============ Text Styles ============ */
+
+.text-neon {
+  color: var(--neon-purple);
+  font-weight: 600;
+}
+
+.text-neon-cyan {
+  color: var(--neon-cyan);
+  font-weight: 600;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
