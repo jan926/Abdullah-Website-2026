@@ -3,15 +3,26 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "main": "dist/electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "vite"
+    "electron:dev": "concurrently \"pnpm dev\" \"pnpm run build:electron:watch\" \"wait-on http://localhost:5173 && electron .\"",
+    "start": "electron .",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron:watch": "tsc -p tsconfig.electron.json --watch",
+    "build": "pnpm run build:renderer && pnpm run build:electron && pnpm run package",
+    "package": "electron-builder --publish never",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "axios": "^1.7.0",
+    "cors": "^2.8.5",
+    "electron": "^26.2.0",
+    "electron-store": "^8.1.0",
+    "express": "^4.18.2",
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
     "@popperjs/core": "2.11.8",
@@ -71,9 +82,15 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
+    "@types/express": "^4.17.17",
     "@types/node": "^25.9.1",
     "@vitejs/plugin-react": "4.7.0",
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "electron-builder": "^24.7.0",
     "tailwindcss": "4.1.12",
+    "typescript": "^5.6.2",
+    "wait-on": "^9.0.10",
     "vite": "6.3.5"
   },
   "peerDependencies": {
@@ -91,6 +108,29 @@
   "pnpm": {
     "overrides": {
       "vite": "6.3.5"
+    }
+  },
+  "build": {
+    "appId": "com.steamfree.desktop",
+    "productName": "SteamFree",
+    "files": [
+      "dist/**",
+      "dist/electron/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "public"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "aqgaminghub.exe",
+      "icon": "public/icon.ico"
     }
   }
 }

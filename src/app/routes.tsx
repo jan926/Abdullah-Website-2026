@@ -1,36 +1,33 @@
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
-import HomePage from "./pages/HomePage";
-import GameDetailPage from "./pages/GameDetailPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import CategoryPage from "./pages/CategoryPage";
-import SearchPage from "./pages/SearchPage";
+import { RouteErrorView } from "./layouts/RouteErrorView";
+import StorePage from "./pages/StorePage";
+import LibraryPage from "./pages/LibraryPage";
+import DownloadsPage from "./pages/DownloadsPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: RootLayout,
+    errorElement: <RouteErrorView />,
     children: [
       {
         index: true,
-        Component: HomePage,
+        Component: StorePage,
       },
       {
-        path: "game/:id",
-        Component: GameDetailPage,
+        path: "library",
+        Component: LibraryPage,
       },
       {
-        path: "categories",
-        Component: CategoriesPage,
+        path: "downloads",
+        Component: DownloadsPage,
       },
       {
-        path: "category/:category",
-        Component: CategoryPage,
-      },
-      {
-        path: "search",
-        Component: SearchPage,
+        path: "profile",
+        Component: ProfilePage,
       },
       {
         path: "*",
