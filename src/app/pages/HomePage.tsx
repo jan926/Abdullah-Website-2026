@@ -310,7 +310,7 @@ export default function HomePage() {
                   key={game.id}
                   className="flex-none w-[180px] sm:w-[220px] md:w-[240px]"
                 >
-                  <div className="group block">
+                  <div className="group block flex flex-col h-full">
                     <Link to={`/game/${game.id}`} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2">
                         <LazyImage
@@ -333,7 +333,7 @@ export default function HomePage() {
                         {game.title}
                       </h3>
                     </Link>
-                    <div className="mt-3">
+                    <div className="mt-auto">
                       <Button
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"
@@ -383,7 +383,7 @@ export default function HomePage() {
                   key={game.id}
                   className="flex-none w-[180px] sm:w-[220px] md:w-[240px]"
                 >
-                  <div className="group block">
+                  <div className="group block flex flex-col h-full">
                     <Link to={`/game/${game.id}`} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2">
                         <LazyImage
@@ -406,7 +406,7 @@ export default function HomePage() {
                         {game.title}
                       </h3>
                     </Link>
-                    <div className="mt-3">
+                    <div className="mt-auto">
                       <Button
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"
@@ -461,7 +461,7 @@ export default function HomePage() {
                   key={game.id}
                   className="flex-none w-[200px] sm:w-[240px] md:w-[280px]"
                 >
-                  <div className="group block">
+                  <div className="group block flex flex-col h-full">
                     <Link to={`/game/${game.id}`} className="block">
                       <div className="relative overflow-hidden rounded-xl mb-3 border-2 border-orange-500/30 hover:border-orange-500 transition-colors">
                         <LazyImage
@@ -498,7 +498,7 @@ export default function HomePage() {
                         {game.category}
                       </p>
                     </Link>
-                    <div className="mt-3">
+                    <div className="mt-auto">
                       <Button
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"

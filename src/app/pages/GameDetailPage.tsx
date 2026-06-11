@@ -167,7 +167,7 @@ export default function GameDetailPage() {
       );
     }
 
-    return <ImageWithFallback src={mediaUrl} alt={`${game.title} PC Game Banner`} className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover" />;
+    return <ImageWithFallback src={mediaUrl} alt={buildGameHeroAlt(game)} className="h-[260px] sm:h-[340px] md:h-[420px] w-full object-cover" />;
   };
 
   if (loading) {
@@ -265,7 +265,7 @@ export default function GameDetailPage() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 pb-12 md:pb-16 pt-6 md:pt-8">
-        <h1 className="sr-only">{buildGamePageH1(game)}</h1>
+        <h1 className="mb-6 text-2xl sm:text-3xl md:text-4xl font-bold text-white">{buildGamePageH1(game)}</h1>
 
         <div className="lg:hidden relative z-10 -mt-14 sm:-mt-16 mb-6">
           <div className="rounded-2xl border border-[rgba(226,232,240,0.10)] bg-[rgba(15,23,42,0.85)] backdrop-blur p-3">

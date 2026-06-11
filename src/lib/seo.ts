@@ -3,10 +3,42 @@ import { getGameCategories } from "./gameCategories";
 
 export const SITE_URL = "https://steamfree.games";
 
-const isCompressedGame = (game: Game) =>
-  /compress/i.test(game.title) ||
-  /compress/i.test(game.size) ||
-  game.tags?.some((tag) => /compress/i.test(tag)) === true;
+const META_DESCRIPTION_MIN_LENGTH = 150;
+const META_DESCRIPTION_MAX_LENGTH = 160;
+
+const normalizeMetaText = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const fitMetaDescription = (value: string) => {
+  const normalized = normalizeMetaText(value);
+
+  if (normalized.length > META_DESCRIPTION_MAX_LENGTH) {
+    const hardLimit = META_DESCRIPTION_MAX_LENGTH - 3;
+    const candidate = normalized.slice(0, hardLimit);
+    const lastSpace = candidate.lastIndexOf(" ");
+    const cut =
+      lastSpace >= META_DESCRIPTION_MIN_LENGTH - 3
+        ? candidate.slice(0, lastSpace)
+        : candidate;
+    return `${cut.trimEnd()}...`;
+  }
+
+  if (normalized.length >= META_DESCRIPTION_MIN_LENGTH) return normalized;
+
+  const fillerWords =
+    "Includes screenshots, system requirements, and direct download details.".split(
+      " "
+    );
+  let padded = normalized;
+
+  for (const word of fillerWords) {
+    const next = `${padded} ${word}`;
+    if (next.length > META_DESCRIPTION_MAX_LENGTH) break;
+    padded = next;
+    if (padded.length >= META_DESCRIPTION_MIN_LENGTH) break;
+  }
+
+  return padded;
+};
 
 export const buildHomePageTitle = (siteName = "AQ Gaming Hub") =>
   `${siteName} - Free PC Games Download for PC`;
@@ -45,21 +77,29 @@ export const buildSearchPageDescription = (query: string, siteName = "AQ Gaming 
     : `Search ${siteName} for free PC games download pages, full-version titles, and category listings.`;
 
 export const buildGamePageTitle = (game: Game, siteName = "AQ Gaming Hub") =>
-  isCompressedGame(game)
-    ? `${game.title} Highly Compressed Free Download for PC - ${siteName}`
-    : `${game.title} Free Download for PC - ${siteName}`;
+  `${game.title} Free Download for PC (Full Version) | ${siteName}`;
 
-export const buildGamePageH1 = (game: Game) => `${game.title} Free Download`;
+export const buildGamePageH1 = (game: Game) =>
+  `${game.title} Free Download for PC`;
 
-export const buildGameMetaDescription = (game: Game, siteName = "AQ Gaming Hub") =>
-  `Download ${game.title} free for PC at ${siteName}. Full-version Windows game with system requirements, screenshots, and direct download. Size: ${game.size}. Developer: ${game.developer}.`;
+export const buildGameMetaDescription = (game: Game, siteName = "AQ Gaming Hub") => {
+  const genre = getGameCategories(game).filter((category) => category !== "All").join("/");
+  const genrePart = genre || game.category || "PC";
+  const sizePart = game.size ? `, ${game.size}` : "";
 
-export const buildGameCoverAlt = (game: Game) => `${game.title} PC Game Cover`;
+  return fitMetaDescription(
+    `${game.title} free download for PC at ${siteName}. Full version ${genrePart} game${sizePart}, with screenshots, system requirements, and direct download details.`
+  );
+};
+
+export const buildGameCoverAlt = (game: Game) =>
+  `${game.title} free download for PC cover image`;
 
 export const buildGameScreenshotAlt = (game: Game, index: number) =>
-  `${game.title} PC Game Screenshot ${index + 1}`;
+  `${game.title} free download for PC screenshot ${index + 1}`;
 
-export const buildGameHeroAlt = (game: Game) => `${game.title} PC Game Screenshot`;
+export const buildGameHeroAlt = (game: Game) =>
+  `${game.title} free download for PC banner`;
 
 const getGameDownloadUrl = (game: Game) =>
   game.downloadLink ||
@@ -246,11 +286,28 @@ export const buildGameMetaKeywords = (game: Game, siteName?: string) => {
   return Array.from(parts).join(", ");
 };
 
+/** Helper to omit null/undefined values from schema objects */
+const cleanSchemaObject = (obj: Record<string, any>): Record<string, any> => {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== null && value !== undefined && value !== "" && (Array.isArray(value) ? value.length > 0 : true)) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+};
+
 export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
   const gameUrl = `${SITE_URL}/game/${game.id}`;
   const downloadUrl = getGameDownloadUrl(game);
   const images = [game.cover, ...(game.screenshots || [])].filter(Boolean);
-  const categories = getGameCategories(game);
+  const categories = getGameCategories(game).filter(c => c !== "All");
+
+  const sharedRating = {
+    "@type": "AggregateRating",
+    ratingValue: game.rating,
+    ratingCount: Math.max(game.downloads, 1),
+  };
 
   const sharedOffer = {
     "@type": "Offer",
@@ -260,70 +317,70 @@ export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
     url: gameUrl,
   };
 
-  const sharedRating = {
-    "@type": "AggregateRating",
-    ratingValue: game.rating,
-    ratingCount: Math.max(game.downloads, 1),
+  // Primary VideoGame schema with only required/relevant fields
+  const videoGameSchema = cleanSchemaObject({
+    "@type": "VideoGame",
+    name: game.title || undefined,
+    description: game.description || undefined,
+    ...(categories.length > 0 && { genre: categories }),
+    ...(images.length > 0 && { image: images.length === 1 ? images[0] : images }),
+    url: gameUrl,
+    gamePlatform: "PC",
+    operatingSystem: "Windows",
+    applicationCategory: "Game",
+    ...(game.developer && { author: { "@type": "Organization", name: game.developer } }),
+    ...(siteName && { publisher: { "@type": "Organization", name: siteName } }),
+    aggregateRating: sharedRating,
+    offers: sharedOffer,
+  });
+
+  // SoftwareApplication schema for enhanced visibility
+  const softwareAppSchema = cleanSchemaObject({
+    "@type": "SoftwareApplication",
+    name: game.title || undefined,
+    description: game.description || undefined,
+    operatingSystem: "Windows",
+    applicationCategory: "GameApplication",
+    ...(categories.length > 0 && { applicationSubCategory: categories[0] }),
+    ...(downloadUrl && { downloadUrl }),
+    installUrl: gameUrl,
+    ...(game.size && { fileSize: game.size }),
+    softwareVersion: "Full Version",
+    ...(game.cover && { image: game.cover }),
+    url: gameUrl,
+    ...(game.developer && { author: { "@type": "Organization", name: game.developer } }),
+    ...(siteName && { publisher: { "@type": "Organization", name: siteName } }),
+    offers: sharedOffer,
+  });
+
+  // BreadcrumbList schema
+  const breadcrumbItems: { name: string; url: string }[] = [
+    { name: siteName, url: `${SITE_URL}/` },
+  ];
+  if (categories.length > 0) {
+    breadcrumbItems.push({
+      name: `${categories[0]} Games`,
+      url: `${SITE_URL}/category/${encodeURIComponent(categories[0].toLowerCase())}`,
+    });
+  }
+  breadcrumbItems.push({
+    name: buildGamePageH1(game),
+    url: gameUrl,
+  });
+
+  const breadcrumbSchema = {
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   };
 
   return {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "VideoGame",
-        name: game.title,
-        description: game.description,
-        genre: categories,
-        keywords: [game.title, siteName, `${game.title} free download`, ...(game.tags || [])].join(", "),
-        image: images,
-        url: gameUrl,
-        gamePlatform: "PC",
-        operatingSystem: "Windows",
-        author: { "@type": "Organization", name: game.developer },
-        publisher: { "@type": "Organization", name: siteName },
-        aggregateRating: sharedRating,
-        offers: sharedOffer,
-      },
-      {
-        "@type": "SoftwareApplication",
-        name: game.title,
-        description: game.description,
-        operatingSystem: "Windows",
-        applicationCategory: "GameApplication",
-        applicationSubCategory: categories[0] || "Game",
-        downloadUrl,
-        installUrl: gameUrl,
-        fileSize: game.size,
-        softwareVersion: "Full Version",
-        image: game.cover,
-        url: gameUrl,
-        softwareRequirements: formatSystemRequirements(game),
-        author: { "@type": "Organization", name: game.developer },
-        publisher: { "@type": "Organization", name: siteName },
-        offers: sharedOffer,
-      },
-      {
-        "@type": "Game",
-        name: game.title,
-        description: game.description,
-        genre: categories,
-        image: images,
-        url: gameUrl,
-        gamePlatform: "PC",
-        operatingSystem: "Windows",
-        author: { "@type": "Organization", name: game.developer },
-        publisher: { "@type": "Organization", name: siteName },
-        aggregateRating: sharedRating,
-        offers: sharedOffer,
-      },
-      buildBreadcrumbJsonLd([
-        { name: siteName, url: `${SITE_URL}/` },
-        ...(categories[0]
-          ? [{ name: `${categories[0]} Games`, url: `${SITE_URL}/category/${encodeURIComponent(categories[0].toLowerCase())}` }]
-          : []),
-        { name: `${game.title} Free Download`, url: gameUrl },
-      ]),
-    ],
+    "@graph": [videoGameSchema, softwareAppSchema, breadcrumbSchema],
   };
 };
 

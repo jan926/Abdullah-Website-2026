@@ -267,7 +267,7 @@ export default function AdminPage() {
         }
         await saveGames(updatedGames);
         setGames(updatedGames);
-        toast.success("Game uploaded successfully!");
+        toast.success("Game uploaded successfully! 🎮 Sitemap updated automatically - Google will discover this page on next crawl.");
       }
 
       resetForm();

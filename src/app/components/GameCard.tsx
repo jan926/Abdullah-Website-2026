@@ -21,7 +21,7 @@ export const GameCard = memo(function GameCard({ game, compact = false }: GameCa
 
   return (
     <Card
-      className={`group overflow-hidden border-[var(--border)] bg-[var(--card)] transition-all duration-200 hover:border-cyan-400/80 hover:shadow-lg hover:shadow-cyan-500/15 ${
+      className={`group overflow-hidden border-[var(--border)] bg-[var(--card)] transition-all duration-200 hover:border-cyan-400/80 hover:shadow-lg hover:shadow-cyan-500/15 flex flex-col h-full ${
         compact ? "" : "backdrop-blur card-3d reflection hover:shadow-cyan-500/30"
       }`}
     >
@@ -82,7 +82,7 @@ export const GameCard = memo(function GameCard({ game, compact = false }: GameCa
         </div>
       </Link>
 
-      <div className="p-3 sm:p-4 bg-[var(--card)]">
+      <div className="p-3 sm:p-4 bg-[var(--card)] mt-auto">
         <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <Download className="h-3.5 w-3.5" />
