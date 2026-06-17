@@ -1,45 +1,31 @@
-# Download Your Games — Local Setup & Vercel Deployment
+# Hi, I'm Malik Abdullah Jan Zia 👋
 
-This project is a Vite + React site for listing downloadable games. Below are quick steps to run locally and deploy to Vercel, plus how to enable the AI (Gemini Free) integration.
+## About Me
+💻 Web Developer
 
-## Local setup
+🚀 React & TypeScript Developer
 
-1. Install dependencies:
+🤖 AI Enthusiast
 
-```bash
-npm install
-```
+🎮 Gaming Content Creator
 
-2. Copy the example env:
+🌐 Founder of SteamFree Games
 
-```bash
-cp .env.example .env
-# then edit .env with your keys
-```
+## Skills
 
-3. Run dev server:
+- React
+- TypeScript
+- JavaScript
+- Vite
+- Node.js
+- GitHub
 
-```bash
-npm run dev
-```
+## Current Projects
 
-Open http://localhost:5173 (vite default) to view.
+- Abdullah Website 2026
+- Gaming Related Web Applications
+- AI Tools & Automation Projects
 
-## Vercel deployment
+## Contact
 
-1. Create a new project on Vercel and link your Git repository.
-2. In Vercel Project Settings → Environment Variables, add:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_GEMINI_API_KEY` (optional)
-   - `VITE_GEMINI_API_URL` (optional)
-
-3. Build & Output settings (defaults usually work):
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-
-4. Deploy — Vercel will run the build and publish the site.
-
-## Notes
-- Do not commit secret keys to source control. Use Vercel's environment variables or a secure secret manager.
-- If you want a server-side proxy (recommended for private keys), create a serverless endpoint that stores the key and proxies requests from the client. I can scaffold that for you if you prefer.
+📧 malikwork72@gmail.com
