@@ -1,14 +1,14 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
-import { removeJsonLd, setDocumentMeta } from "../../lib/seo";
+import { removeJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
 
 export default function NotFoundPage() {
   useEffect(() => {
     setDocumentMeta({
       title: "404 - Page Not Found | AQ Gaming Hub",
       description: "The page you requested was not found on AQ Gaming Hub.",
-      url: `${window.location.origin}${window.location.pathname}`,
+      url: `${SITE_URL}${window.location.pathname}`,
       robots: "noindex, follow",
     });
     removeJsonLd("site-jsonld");

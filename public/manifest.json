@@ -1,7 +1,7 @@
 {
   "name": "AQ Gaming Hub",
   "short_name": "AQ Games",
-  "description": "AQ Gaming Hub - Free PC Games Download for Windows. Browse full-version titles, repacks, and direct download pages with system requirements.",
+  "description": "AQ Gaming Hub on steamfree.games - Free PC Games Download for Windows with full-version titles, repacks, direct download pages, and system requirements.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

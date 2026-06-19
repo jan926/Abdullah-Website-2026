@@ -16,6 +16,7 @@ import {
   injectJsonLd,
   removeJsonLd,
   setDocumentMeta,
+  SITE_URL,
 } from "../../lib/seo";
 
 function parseCategoryFromPath(pathname: string) {
@@ -46,7 +47,7 @@ export function SiteMeta() {
         ]);
 
         const siteName = settings.siteName || "AQ Gaming Hub";
-        const siteUrl = window.location.origin.replace(/\/$/, "");
+        const siteUrl = SITE_URL.replace(/\/$/, "");
         const pageUrl = `${siteUrl}${location.pathname}${location.search}`;
         const catalogKeywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const categoryFromPath = parseCategoryFromPath(location.pathname);
@@ -91,13 +92,17 @@ export function SiteMeta() {
             `${siteName} free download`,
             `${siteName} pc games free download`,
             `${siteName} download free PC games`,
+            `${siteName} steamfree.games`,
+            "steamfree.games AQ Gaming Hub",
+            "SteamFree Games",
+            "steamfree.games",
             "free pc games download for pc",
             "free pc games download",
             catalogKeywords,
           ].join(", "),
           url: pageUrl,
           siteName,
-          imageAlt: `${siteName} - Free PC Games Download`,
+          imageAlt: `${siteName} on steamfree.games - Free PC Games Download`,
         });
 
         removeJsonLd("game-jsonld");

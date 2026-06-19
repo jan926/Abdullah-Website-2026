@@ -2,6 +2,8 @@ import type { Game } from "../app/data/games";
 import { getGameCategories } from "./gameCategories";
 
 export const SITE_URL = "https://steamfree.games";
+export const SITE_DOMAIN = "steamfree.games";
+export const DEFAULT_SITE_NAME = "AQ Gaming Hub";
 
 const META_DESCRIPTION_MIN_LENGTH = 150;
 const META_DESCRIPTION_MAX_LENGTH = 160;
@@ -40,11 +42,11 @@ const fitMetaDescription = (value: string) => {
   return padded;
 };
 
-export const buildHomePageTitle = (siteName = "AQ Gaming Hub") =>
-  `${siteName} - Free PC Games Download for PC`;
+export const buildHomePageTitle = (siteName = DEFAULT_SITE_NAME) =>
+  `${siteName} – Free PC Games Download | ${SITE_DOMAIN}`;
 
-export const buildHomeMetaDescription = (siteName = "AQ Gaming Hub", gameCount = 0) =>
-  `${siteName} offers free PC games download for Windows. Browse ${gameCount > 0 ? `${gameCount}+ ` : ""}full-version titles, repacks, and direct download pages with system requirements and install guides.`;
+export const buildHomeMetaDescription = (siteName = DEFAULT_SITE_NAME, gameCount = 0) =>
+  `${siteName} on ${SITE_DOMAIN} offers free PC games download for Windows. Browse ${gameCount > 0 ? `${gameCount}+ ` : ""}full-version titles, repacks, and direct download pages with system requirements.`;
 
 export const buildCategoryPageTitle = (categoryName: string, siteName = "AQ Gaming Hub") =>
   categoryName === "All"
@@ -134,6 +136,10 @@ export const buildSiteKeywords = (games: Game[], categories: string[]) => {
     "AQ Gaming Hub free download",
     "AQ Gaming Hub download free PC games",
     "aq gaming hub pc free download",
+    "AQ Gaming Hub steamfree.games",
+    "steamfree.games AQ Gaming Hub",
+    "steamfree.games",
+    "SteamFree Games",
     "download pc games",
     "free pc games download",
     "free pc games download for pc",
@@ -403,12 +409,16 @@ export const buildSiteJsonLd = (siteName: string, siteUrl: string) => ({
     "aq gaming hub",
     "AQ GamingHub",
     "AQ Games Hub",
+    SITE_DOMAIN,
+    "SteamFree Games",
+    `${siteName} ${SITE_DOMAIN}`,
+    `${SITE_DOMAIN} ${siteName}`,
     `${siteName} free download`,
     `${siteName} games`,
     "free pc games download for pc",
   ],
   url: siteUrl,
-  description: `${siteName} is a free PC games download hub for Windows full-version titles, repacks, and direct download pages.`,
+  description: `${siteName} on ${SITE_DOMAIN} is a free PC games download hub for Windows full-version titles, repacks, and direct download pages.`,
   potentialAction: {
     "@type": "SearchAction",
     target: {

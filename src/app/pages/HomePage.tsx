@@ -13,7 +13,7 @@ import {
   getGamesSync,
 } from "../../lib/gameStore";
 import { getCategoryStyle } from "../../lib/categoryStyles";
-import { buildGameCoverAlt, buildGameHeroAlt } from "../../lib/seo";
+import { buildGameCoverAlt, buildGameHeroAlt, buildHomePageTitle } from "../../lib/seo";
 import { getGameDisplayStats } from "../../lib/gameStats";
 import { LazyImage } from "../../components/LazyImage";
 import { CategoryMarquee } from "../components/CategoryMarquee";
@@ -177,7 +177,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <h1 className="sr-only">
-        {settings.siteName} - Free PC Games Download for PC
+        {buildHomePageTitle(settings.siteName)}
       </h1>
       {/* Hero Section — single active slide for performance */}
       <section className="relative h-[min(60vh,700px)] min-h-[320px] overflow-hidden">
