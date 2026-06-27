@@ -1,8 +1,5 @@
-import {
-  gamesData,
-  Game,
-  categories as defaultCategories,
-} from "../app/data/games";
+import type { Game } from "../app/data/games";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabase, isSupabaseConfigured } from "./supabaseClient";
 
 export type DatabaseStatus =
@@ -48,6 +45,21 @@ const SETTINGS_KEY = "dyg-site-settings-v1";
 const CATEGORIES_KEY = "dyg-categories-v1";
 const ANALYTICS_KEY = "dyg-site-analytics-v1";
 
+const defaultCategories = [
+  "All",
+  "Action",
+  "Adventure",
+  "Racing",
+  "RPG",
+  "Survival",
+  "Horror",
+  "Sports",
+  "Fighting",
+  "Strategy",
+  "Simulation",
+  "Multiplayer",
+];
+
 export interface SiteSettings {
   siteName: string;
   logoUrl: string;
@@ -90,26 +102,37 @@ const safeLocalStorage = () => {
   return window.localStorage;
 };
 
+const loadSeedGames = async (): Promise<Game[]> => {
+  const { gamesData } = await import("../app/data/games");
+  return gamesData;
+};
+
 // --- localStorage fallback (offline / missing env) ---
 
 const loadGamesLocal = (): Game[] => {
   const storage = safeLocalStorage();
-  if (!storage) return gamesData;
+  if (!storage) return [];
   const raw = storage.getItem(GAMES_KEY);
-  if (!raw) {
-    storage.setItem(GAMES_KEY, JSON.stringify(gamesData));
-    return gamesData;
-  }
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as Game[];
-    return Array.isArray(parsed) ? parsed : gamesData;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return gamesData;
+    return [];
   }
 };
 
 const saveGamesLocal = (games: Game[]) => {
   safeLocalStorage()?.setItem(GAMES_KEY, JSON.stringify(games));
+};
+
+const loadGamesLocalWithSeed = async (): Promise<Game[]> => {
+  const local = loadGamesLocal();
+  if (local.length > 0) return local;
+
+  const seed = await loadSeedGames();
+  saveGamesLocal(seed);
+  return seed;
 };
 
 const loadSiteSettingsLocal = (): SiteSettings => {
@@ -177,7 +200,7 @@ const ensureDatabaseReady = async (): Promise<boolean> => {
 };
 
 const seedDatabaseIfEmpty = async (): Promise<boolean> => {
-  const client = requireSupabase();
+  const client = await requireSupabase();
   const { count, error: countError } = await client
     .from("games")
     .select("*", { count: "exact", head: true });
@@ -191,6 +214,7 @@ const seedDatabaseIfEmpty = async (): Promise<boolean> => {
 
   if (count && count > 0) return true;
 
+  const gamesData = await loadSeedGames();
   const rows = gamesData.map((game) => ({
     id: game.id,
     payload: game,
@@ -230,7 +254,7 @@ const seedDatabaseIfEmpty = async (): Promise<boolean> => {
 };
 
 const getConfigPayload = async <T>(key: string, fallback: T): Promise<T> => {
-  const client = requireSupabase();
+  const client = await requireSupabase();
   const { data, error } = await client
     .from("site_config")
     .select("payload")
@@ -246,7 +270,7 @@ const getConfigPayload = async <T>(key: string, fallback: T): Promise<T> => {
 };
 
 const setConfigPayload = async <T>(key: string, payload: T) => {
-  const client = requireSupabase();
+  const client = await requireSupabase();
   const { error } = await client.from("site_config").upsert({
     id: key,
     payload,
@@ -271,9 +295,10 @@ export const loadGames = async (options?: {
 
   if (!isSupabaseConfigured) {
     databaseStatus = "not_configured";
-    gamesMemoryCache = local;
+    const fallback = local.length > 0 ? local : await loadGamesLocalWithSeed();
+    gamesMemoryCache = fallback;
     gamesMemoryCacheAt = Date.now();
-    return local;
+    return fallback;
   }
 
   if (options?.background && local.length > 0) {
@@ -284,12 +309,13 @@ export const loadGames = async (options?: {
   try {
     const seeded = await ensureDatabaseReady();
     if (!seeded) {
-      gamesMemoryCache = local;
+      const fallback = local.length > 0 ? local : await loadGamesLocalWithSeed();
+      gamesMemoryCache = fallback;
       gamesMemoryCacheAt = Date.now();
-      return local;
+      return fallback;
     }
 
-    const client = requireSupabase();
+    const client = await requireSupabase();
     const { data, error } = await client
       .from("games")
       .select("id, payload")
@@ -297,9 +323,10 @@ export const loadGames = async (options?: {
 
     if (error) {
       handleSupabaseError(error);
-      gamesMemoryCache = local;
+      const fallback = local.length > 0 ? local : await loadGamesLocalWithSeed();
+      gamesMemoryCache = fallback;
       gamesMemoryCacheAt = Date.now();
-      return local;
+      return fallback;
     }
 
     databaseStatus = "ready";
@@ -310,9 +337,10 @@ export const loadGames = async (options?: {
     return games;
   } catch (error) {
     if (isTableMissingError(error)) {
-      gamesMemoryCache = local;
+      const fallback = local.length > 0 ? local : await loadGamesLocalWithSeed();
+      gamesMemoryCache = fallback;
       gamesMemoryCacheAt = Date.now();
-      return local;
+      return fallback;
     }
     throw error;
   }
@@ -331,7 +359,7 @@ export const saveGames = async (games: Game[]) => {
       throw new Error("TABLES_MISSING");
     }
 
-    const client = requireSupabase();
+    const client = await requireSupabase();
     const now = new Date().toISOString();
     const rows = games.map((game) => ({
       id: game.id,
@@ -493,7 +521,7 @@ export const incrementSiteViews = async (): Promise<SiteAnalytics> => {
 
 export const resetGameStorage = async () => {
   if (isSupabaseConfigured) {
-    const client = requireSupabase();
+    const client = await requireSupabase();
     await client.from("games").delete().neq("id", "");
     await client.from("site_config").delete().neq("id", "");
     await ensureDatabaseReady();
@@ -556,22 +584,34 @@ export const subscribeToDataChanges = (onChange: () => void) => {
   if (!isSupabaseConfigured || databaseStatus === "missing_tables")
     return () => {};
 
-  const client = requireSupabase();
-  const channel = client
-    .channel("dyg-sync")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "games" },
-      () => onChange(),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "site_config" },
-      () => onChange(),
-    )
-    .subscribe();
+  let disposed = false;
+  let channel: ReturnType<SupabaseClient["channel"]> | null = null;
+  let client: SupabaseClient | null = null;
+
+  requireSupabase()
+    .then((loadedClient) => {
+      if (disposed) return;
+      client = loadedClient;
+      channel = loadedClient
+        .channel("dyg-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "games" },
+          () => onChange(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "site_config" },
+          () => onChange(),
+        )
+        .subscribe();
+    })
+    .catch(() => undefined);
 
   return () => {
-    client.removeChannel(channel);
+    disposed = true;
+    if (client && channel) {
+      client.removeChannel(channel);
+    }
   };
 };

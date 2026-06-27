@@ -34,6 +34,8 @@ export const GameCard = memo(function GameCard({ game, compact = false }: GameCa
             className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
               compact ? "" : "group-hover:brightness-110"
             }`}
+            width={300}
+            height={400}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 

@@ -28,24 +28,6 @@ export default defineConfig({
     // Target modern browsers
     target: 'esnext',
     // Reduce bundle size
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split vendor libraries for better caching
-          'react-vendor': ['react', 'react-dom', 'react-router', 'react-router-dom'],
-          'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          'radix-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-select',
-            '@radix-ui/react-popover',
-          ],
-          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge'],
-        },
-      },
-    },
     // Limit chunk size warnings
     chunkSizeWarningLimit: 500,
   },

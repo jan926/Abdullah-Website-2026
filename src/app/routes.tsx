@@ -1,11 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
 import HomePage from "./pages/HomePage";
-import GameDetailPage from "./pages/GameDetailPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import CategoryPage from "./pages/CategoryPage";
-import SearchPage from "./pages/SearchPage";
-import NotFoundPage from "./pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -18,23 +13,38 @@ export const router = createBrowserRouter([
       },
       {
         path: "game/:id",
-        Component: GameDetailPage,
+        lazy: async () => {
+          const { default: Component } = await import("./pages/GameDetailPage");
+          return { Component };
+        },
       },
       {
         path: "categories",
-        Component: CategoriesPage,
+        lazy: async () => {
+          const { default: Component } = await import("./pages/CategoriesPage");
+          return { Component };
+        },
       },
       {
         path: "category/:category",
-        Component: CategoryPage,
+        lazy: async () => {
+          const { default: Component } = await import("./pages/CategoryPage");
+          return { Component };
+        },
       },
       {
         path: "search",
-        Component: SearchPage,
+        lazy: async () => {
+          const { default: Component } = await import("./pages/SearchPage");
+          return { Component };
+        },
       },
       {
         path: "*",
-        Component: NotFoundPage,
+        lazy: async () => {
+          const { default: Component } = await import("./pages/NotFoundPage");
+          return { Component };
+        },
       },
     ],
   },

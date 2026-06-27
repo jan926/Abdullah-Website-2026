@@ -366,13 +366,17 @@ export default function GameDetailPage() {
                 {game.screenshots.length > 1 && (
                   <>
                     <button
+                      type="button"
                       onClick={prevScreenshot}
+                      aria-label="Show previous screenshot"
                       className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 rounded-full bg-[rgba(15,23,42,0.7)] p-2 md:p-3 text-white transition hover:bg-[rgba(15,23,42,0.9)]"
                     >
                       <ChevronLeft className="h-4 md:h-5 w-4 md:w-5" />
                     </button>
                     <button
+                      type="button"
                       onClick={nextScreenshot}
+                      aria-label="Show next screenshot"
                       className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 rounded-full bg-[rgba(15,23,42,0.7)] p-2 md:p-3 text-white transition hover:bg-[rgba(15,23,42,0.9)]"
                     >
                       <ChevronRight className="h-4 md:h-5 w-4 md:w-5" />
@@ -384,7 +388,9 @@ export default function GameDetailPage() {
                 {game.screenshots.map((screenshot, index) => (
                   <button
                     key={index}
+                    type="button"
                     onClick={() => setCurrentScreenshot(index)}
+                    aria-label={`Show screenshot ${index + 1} for ${game.title}`}
                     className={`overflow-hidden rounded-lg md:rounded-3xl border transition ${
                       index === currentScreenshot ? "border-cyan-500" : "border-transparent opacity-70 hover:opacity-100"
                     }`}
@@ -460,6 +466,7 @@ export default function GameDetailPage() {
                       key={star}
                       type="button"
                       onClick={() => setUserRating(star)}
+                      aria-label={`Rate ${star} out of 5`}
                       className="transition hover:scale-110"
                     >
                       <Star

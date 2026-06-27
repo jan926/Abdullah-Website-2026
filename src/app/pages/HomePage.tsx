@@ -21,9 +21,9 @@ import { HomePageSkeleton } from "../components/HomePageSkeleton";
 import { ChevronLeft, ChevronRight, Play, Download } from "lucide-react";
 
 export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [games, setGames] = useState<Game[]>(() => getGamesSync());
+  const [isLoading, setIsLoading] = useState(() => getGamesSync().length === 0);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [categories, setCategories] = useState<string[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
     siteName: "AQ Gaming Hub",
@@ -262,13 +262,17 @@ export default function HomePage() {
 
         {/* Arrow buttons */}
         <button
+          type="button"
           onClick={prevSlide}
+          aria-label="Show previous featured game"
           className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white backdrop-blur transition hover:bg-black/70"
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
         <button
+          type="button"
           onClick={nextSlide}
+          aria-label="Show next featured game"
           className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white backdrop-blur transition hover:bg-black/70"
         >
           <ChevronRight className="h-6 w-6" />
@@ -287,13 +291,17 @@ export default function HomePage() {
               </h2>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => scroll(trendingScrollRef, "left")}
+                  aria-label="Scroll trending games left"
                   className="p-2 rounded-full bg-[var(--card)] text-cyan-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => scroll(trendingScrollRef, "right")}
+                  aria-label="Scroll trending games right"
                   className="p-2 rounded-full bg-[var(--card)] text-cyan-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -318,6 +326,8 @@ export default function HomePage() {
                           alt={buildGameCoverAlt(game)}
                           wrapperClassName="w-full"
                           className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-105"
+                          width={240}
+                          height={280}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
@@ -360,13 +370,17 @@ export default function HomePage() {
               </h2>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => scroll(latestScrollRef, "left")}
+                  aria-label="Scroll latest games left"
                   className="p-2 rounded-full bg-[var(--card)] text-cyan-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => scroll(latestScrollRef, "right")}
+                  aria-label="Scroll latest games right"
                   className="p-2 rounded-full bg-[var(--card)] text-cyan-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -391,6 +405,8 @@ export default function HomePage() {
                           alt={buildGameCoverAlt(game)}
                           wrapperClassName="w-full"
                           className="h-[220px] sm:h-[260px] md:h-[280px] object-cover transition-transform duration-300 group-hover:scale-105"
+                          width={240}
+                          height={280}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="absolute bottom-0 p-4 w-full">
@@ -438,13 +454,17 @@ export default function HomePage() {
               </div>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => scroll(gameOfDayScrollRef, "left")}
+                  aria-label="Scroll game of the day left"
                   className="p-2 rounded-full bg-[var(--card)] text-orange-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
+                  type="button"
                   onClick={() => scroll(gameOfDayScrollRef, "right")}
+                  aria-label="Scroll game of the day right"
                   className="p-2 rounded-full bg-[var(--card)] text-orange-400 hover:bg-[var(--background)] transition"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -469,6 +489,8 @@ export default function HomePage() {
                           alt={buildGameCoverAlt(game)}
                           wrapperClassName="w-full"
                           className="h-[260px] sm:h-[300px] md:h-[350px] object-cover transition-transform duration-300 group-hover:scale-105"
+                          width={280}
+                          height={350}
                         />
                         <div className="absolute top-3 left-3">
                           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -539,6 +561,8 @@ export default function HomePage() {
                       alt={buildGameCoverAlt(game)}
                       wrapperClassName="w-full"
                       className="h-[180px] sm:h-[220px] md:h-[260px] object-cover transition-transform duration-300 group-hover:scale-105"
+                      width={220}
+                      height={260}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 p-3 w-full">
@@ -568,17 +592,21 @@ export default function HomePage() {
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 disabled={gamesPage <= 1}
                 onClick={() => setGamesPage((p) => Math.max(1, p - 1))}
+                aria-label="Show previous games page"
                 className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
               >
                 Previous
               </button>
               <button
+                type="button"
                 disabled={gamesPage >= totalGamesPages}
                 onClick={() =>
                   setGamesPage((p) => Math.min(totalGamesPages, p + 1))
                 }
+                aria-label="Show next games page"
                 className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
               >
                 Next

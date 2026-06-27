@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { Game } from "../data/games";
 import { loadGames, loadCategories, getGamesSync } from "../../lib/gameStore";
 import { gameHasCategory } from "../../lib/gameCategories";
 import { GameCard } from "../components/GameCard";
 import { Card } from "../components/ui/card";
-import { getCategoryStyle } from "../../lib/categoryStyles";
+import { getCategoryPath, getCategoryStyle } from "../../lib/categoryStyles";
 
 export default function CategoriesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -49,16 +50,18 @@ export default function CategoriesPage() {
         {!selectedCategory ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {categoryStats.map((category) => (
-              <Card
+              <Link
                 key={category.name}
-                className="group cursor-pointer overflow-hidden border-[#1e2952] bg-[#151b38] backdrop-blur transition-all hover:border-cyan-500 hover:shadow-xl hover:shadow-cyan-500/20"
-                onClick={() => setSelectedCategory(category.name)}
+                to={getCategoryPath(category.name)}
+                aria-label={`Browse ${category.name} games`}
+                className="group block"
               >
+                <Card className="h-full cursor-pointer overflow-hidden border-[#1e2952] bg-[#151b38] backdrop-blur transition-all hover:border-cyan-500 hover:shadow-xl hover:shadow-cyan-500/20">
                 <div className="relative h-48 overflow-hidden">
                   <div className={`absolute inset-0 bg-gradient-to-br ${category.style.gradient} opacity-80 transition-transform group-hover:scale-110`} />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <span className="mb-2 block text-4xl">{category.style.icon}</span>
+                      <span className="mb-2 block text-4xl" aria-hidden>{category.style.icon}</span>
                       <h2 className="mb-2 text-3xl font-bold text-white">{category.name}</h2>
                       <p className="text-lg text-gray-300">{category.count} Games</p>
                     </div>
@@ -70,7 +73,8 @@ export default function CategoriesPage() {
                     <span className="font-semibold text-cyan-400">View All →</span>
                   </div>
                 </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         ) : (
@@ -80,7 +84,9 @@ export default function CategoriesPage() {
                 {selectedCategory} Games
               </h2>
               <button
+                type="button"
                 onClick={() => setSelectedCategory(null)}
+                aria-label="Back to categories"
                 className="font-semibold text-cyan-400 hover:text-cyan-300"
               >
                 ← Back to Categories
@@ -95,15 +101,19 @@ export default function CategoriesPage() {
               <div className="text-sm text-gray-400">Page {catPage} of {totalCatPages}</div>
               <div className="flex gap-2">
                 <button
+                  type="button"
                   disabled={catPage <= 1}
                   onClick={() => setCatPage((p) => Math.max(1, p - 1))}
+                  aria-label="Show previous category page"
                   className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
                 >
                   Previous
                 </button>
                 <button
+                  type="button"
                   disabled={catPage >= totalCatPages}
                   onClick={() => setCatPage((p) => Math.min(totalCatPages, p + 1))}
+                  aria-label="Show next category page"
                   className="px-3 py-2 bg-[var(--card)] rounded-md text-sm disabled:opacity-50"
                 >
                   Next

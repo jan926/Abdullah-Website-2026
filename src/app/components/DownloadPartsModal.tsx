@@ -63,6 +63,7 @@ export function DownloadPartsModal({
                   onClick={() => handleCopyLink(mainLink)}
                   variant="outline"
                   className="border-cyan-500/30"
+                  aria-label={`Copy main download link for ${gameTitle}`}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -105,6 +106,7 @@ export function DownloadPartsModal({
                       variant="outline"
                       size="sm"
                       className="border-[var(--border)]"
+                      aria-label={`Copy ${part.name || `part ${index + 1}`} download link`}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -113,6 +115,7 @@ export function DownloadPartsModal({
                       variant="outline"
                       size="sm"
                       className="border-[var(--border)]"
+                      aria-label={`Open ${part.name || `part ${index + 1}`} download link`}
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
