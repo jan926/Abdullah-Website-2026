@@ -48,7 +48,7 @@
     },
     {
       "source": "/game/:id",
-      "destination": "/"
+      "destination": "/api/game?slug=:id"
     },
     {
       "source": "/search",

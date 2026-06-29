@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { Download, Star } from "lucide-react";
 import { DownloadButton } from "./DownloadButton";
 import { getPrimaryCategory } from "../../lib/gameCategories";
-import { buildGameCoverAlt } from "../../lib/seo";
+import { buildGameCoverAlt, getGamePath } from "../../lib/seo";
 import { getGameDisplayStats, formatDownloadCount } from "../../lib/gameStats";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
@@ -18,14 +18,15 @@ interface GameCardProps {
 
 export const GameCard = memo(function GameCard({ game, compact = false }: GameCardProps) {
   const displayStats = getGameDisplayStats(game.id);
+  const gamePath = getGamePath(game);
 
   return (
     <Card
       className={`group overflow-hidden border-[var(--border)] bg-[var(--card)] transition-all duration-200 hover:border-cyan-400/80 hover:shadow-lg hover:shadow-cyan-500/15 flex flex-col h-full ${
-        compact ? "" : "backdrop-blur card-3d reflection hover:shadow-cyan-500/30"
+        compact ? "" : "hover:shadow-cyan-500/30"
       }`}
     >
-      <Link to={`/game/${game.id}`} className="block">
+      <Link to={gamePath} className="block">
         <div className="relative aspect-[3/4] overflow-hidden">
           <LazyImage
             src={game.cover}
@@ -94,8 +95,8 @@ export const GameCard = memo(function GameCard({ game, compact = false }: GameCa
         </div>
 
         <DownloadButton asChild className="w-full">
-          <Link to={`/game/${game.id}`}>
-            <Download className="mr-2 h-4 w-4 btn-download-icon" />
+          <Link to={gamePath}>
+            <Download className="mr-2 h-4 w-4" />
             Download
           </Link>
         </DownloadButton>

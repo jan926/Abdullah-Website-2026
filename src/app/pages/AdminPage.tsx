@@ -31,6 +31,7 @@ import {
   subscribeToDataChanges,
   getDatabaseStatus,
 } from "../../lib/gameStore";
+import { buildUniqueGameId, slugifyGameTitle } from "../../lib/gameUrls";
 import { 
   Upload, Trash2, Edit, Plus, LogOut, LayoutDashboard, Gamepad2, 
   Tags, Settings, Search, Save, CheckCircle2, XCircle, Home, BarChart3, AlertTriangle, Sparkles, Wand2
@@ -255,7 +256,7 @@ export default function AdminPage() {
         setGames(updatedGames);
         toast.success("Game updated successfully!");
       } else {
-        const newId = Math.random().toString(36).substr(2, 9);
+        const newId = buildUniqueGameId(formData.title, games);
         const newGame = buildGameFromForm(newId);
         let updatedGames = formData.gameOfTheDay
           ? [newGame, ...games.map((g) => ({ ...g, gameOfTheDay: false }))]
@@ -386,6 +387,9 @@ export default function AdminPage() {
   const visibleAnalyticsGames = filterAdminGames(analyticsGameSearch);
   const visibleHeroGames = filterAdminGames(heroGameSearch);
   const visibleDailyGames = filterAdminGames(dailyGameSearch);
+  const previewGameSlug = isEditing
+    ? slugifyGameTitle(currentEditId)
+    : buildUniqueGameId(formData.title, games);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--background)] lg:flex-row">
@@ -699,6 +703,9 @@ export default function AdminPage() {
                         placeholder="e.g. Need for Speed Heat"
                       />
                     </div>
+                    <p className="text-xs text-slate-500">
+                      SEO URL: steamfree.games/game/{previewGameSlug || "game-name"}
+                    </p>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[var(--foreground)]">Categories (select one or more)</Label>
@@ -935,7 +942,6 @@ export default function AdminPage() {
                 <Button onClick={async () => {
                   try {
                     await saveSiteSettings(settings);
-                    document.documentElement.classList.toggle("dark", settings.theme === "dark");
                     toast.success("Settings saved successfully!");
                   } catch (error) {
                     handleSaveError(error);

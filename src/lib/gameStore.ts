@@ -1,5 +1,6 @@
 import type { Game } from "../app/data/games";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { findGameByRouteParam } from "./gameUrls";
 import { requireSupabase, isSupabaseConfigured } from "./supabaseClient";
 
 export type DatabaseStatus =
@@ -189,7 +190,10 @@ const saveCategoriesLocal = (cats: string[]) => {
 type GameRow = { id: string; payload: Game };
 type ConfigRow = { id: string; payload: unknown };
 
-const rowToGame = (row: GameRow): Game => row.payload;
+const rowToGame = (row: GameRow): Game => ({
+  ...row.payload,
+  id: row.payload.id || row.id,
+});
 
 const ensureDatabaseReady = async (): Promise<boolean> => {
   if (dbReadyCache === true) return true;
@@ -408,7 +412,55 @@ export const saveGames = async (games: Game[]) => {
 
 export const getGameById = async (id: string): Promise<Game | undefined> => {
   const games = await loadGames();
-  return games.find((game) => game.id === id);
+  return findGameByRouteParam(games, id);
+};
+
+const updateSingleGame = async (
+  id: string,
+  updater: (game: Game) => Game,
+): Promise<Game | undefined> => {
+  const games = await loadGames();
+  const currentGame = findGameByRouteParam(games, id);
+  if (!currentGame) return undefined;
+
+  const updatedGame = updater(currentGame);
+  const updatedGames = games.map((game) =>
+    game.id === currentGame.id ? updatedGame : game,
+  );
+
+  saveGamesLocal(updatedGames);
+  gamesMemoryCache = updatedGames;
+  gamesMemoryCacheAt = Date.now();
+
+  if (!isSupabaseConfigured) return updatedGame;
+
+  try {
+    const seeded = await ensureDatabaseReady();
+    if (!seeded) {
+      databaseStatus = "missing_tables";
+      return updatedGame;
+    }
+
+    const client = await requireSupabase();
+    const { error } = await client
+      .from("games")
+      .update({ payload: updatedGame })
+      .eq("id", currentGame.id);
+
+    if (error) {
+      handleSupabaseError(error);
+      return updatedGame;
+    }
+
+    databaseStatus = "ready";
+    return updatedGame;
+  } catch (error) {
+    if (isTableMissingError(error)) {
+      databaseStatus = "missing_tables";
+      return updatedGame;
+    }
+    throw error;
+  }
 };
 
 export const loadSiteSettings = async (): Promise<SiteSettings> => {
@@ -489,23 +541,17 @@ export const saveCategories = async (cats: string[]) => {
 export const incrementGameView = async (
   id: string,
 ): Promise<Game | undefined> => {
-  const games = await loadGames();
-  const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, views: (game.views || 0) + 1 } : game,
+  return updateSingleGame(id, (game) =>
+    ({ ...game, views: (game.views || 0) + 1 }),
   );
-  await saveGames(updatedGames);
-  return updatedGames.find((game) => game.id === id);
 };
 
 export const incrementGameDownload = async (
   id: string,
 ): Promise<Game | undefined> => {
-  const games = await loadGames();
-  const updatedGames = games.map((game) =>
-    game.id === id ? { ...game, downloads: (game.downloads || 0) + 1 } : game,
+  return updateSingleGame(id, (game) =>
+    ({ ...game, downloads: (game.downloads || 0) + 1 }),
   );
-  await saveGames(updatedGames);
-  return updatedGames.find((game) => game.id === id);
 };
 
 export const incrementSiteViews = async (): Promise<SiteAnalytics> => {

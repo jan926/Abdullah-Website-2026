@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { Game } from "../data/games";
 import { getGameById, saveGames, loadGames, incrementGameView, incrementGameDownload, incrementSiteViews, getGamesSync } from "../../lib/gameStore";
-import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, buildGamePageH1, injectJsonLd, removeJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
+import { buildGameJsonLd, buildGameMetaKeywords, buildGameCoverAlt, buildGameScreenshotAlt, buildGameMetaDescription, buildGamePageTitle, buildGamePageH1, getGameUrl, injectJsonLd, removeJsonLd, setDocumentMeta, SITE_URL } from "../../lib/seo";
 import { getGameDisplayStats } from "../../lib/gameStats";
 import { loadSiteSettings } from "../../lib/gameStore";
+import { findGameByRouteParam } from "../../lib/gameUrls";
 import { DownloadPartsModal } from "../components/DownloadPartsModal";
 import { Skeleton } from "../components/ui/skeleton";
 import { Button } from "../components/ui/button";
@@ -42,7 +43,7 @@ export default function GameDetailPage() {
     if (!id) return;
 
     let active = true;
-    const cached = getGamesSync().find((g) => g.id === id);
+    const cached = findGameByRouteParam(getGamesSync(), id);
     if (cached) {
       setGame(cached);
       setLoading(false);
@@ -73,7 +74,7 @@ export default function GameDetailPage() {
           description: buildGameMetaDescription(currentGame, siteName),
           keywords: buildGameMetaKeywords(currentGame, siteName),
           image: currentGame.cover,
-          url: `${SITE_URL}/game/${currentGame.id}`,
+          url: getGameUrl(currentGame, SITE_URL),
           type: "website",
           siteName,
           imageAlt: buildGameCoverAlt(currentGame),
@@ -283,6 +284,7 @@ export default function GameDetailPage() {
                 <div className="mt-3">
                   <DownloadButton
                     onClick={handleDownloadClick}
+                    animated
                     className="w-full neon-glow-cyan text-sm"
                     label="Download Now"
                   />
@@ -308,7 +310,7 @@ export default function GameDetailPage() {
                   {game.gameOfTheDay && <Badge className="bg-orange-500/10 text-orange-300 border-orange-500/20 text-xs">Game of the Day</Badge>}
                 </div>
                 <div className="mt-4 md:mt-6 space-y-3 md:space-y-4">
-                  <DownloadButton onClick={handleDownloadClick} className="w-full neon-glow-cyan text-sm md:text-base" label="Download Now" />
+                  <DownloadButton onClick={handleDownloadClick} animated className="w-full neon-glow-cyan text-sm md:text-base" label="Download Now" />
                   {game.filePassword && (
                     <div className="rounded-xl md:rounded-2xl border-2 border-amber-400/60 bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/10 p-3 md:p-4 text-center shadow-lg shadow-amber-500/10">
                       <p className="text-xs font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] text-amber-200">Download Password</p>

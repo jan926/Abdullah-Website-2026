@@ -13,7 +13,7 @@ import {
   getGamesSync,
 } from "../../lib/gameStore";
 import { getCategoryStyle } from "../../lib/categoryStyles";
-import { buildGameCoverAlt, buildGameHeroAlt, buildHomePageTitle } from "../../lib/seo";
+import { buildGameCoverAlt, buildGameHeroAlt, buildHomePageTitle, getGamePath } from "../../lib/seo";
 import { getGameDisplayStats } from "../../lib/gameStats";
 import { LazyImage } from "../../components/LazyImage";
 import { CategoryMarquee } from "../components/CategoryMarquee";
@@ -138,10 +138,6 @@ export default function HomePage() {
         setGames(loadedGames);
         setSettings(loadedSettings);
         setCategories(loadedCategories);
-        document.documentElement.classList.toggle(
-          "dark",
-          loadedSettings.theme === "dark",
-        );
       } catch (error) {
         console.error("Failed to load homepage data:", error);
       } finally {
@@ -220,9 +216,10 @@ export default function HomePage() {
                   <div className="flex items-center gap-3 pt-4">
                     <DownloadButton
                       asChild
+                      animated
                       className="px-6 py-5 text-base rounded-lg neon-glow-cyan"
                     >
-                      <Link to={`/game/${activeHeroGame.id}`}>
+                      <Link to={getGamePath(activeHeroGame)}>
                         <Download className="mr-2 h-5 w-5" />
                         Download
                       </Link>
@@ -232,7 +229,7 @@ export default function HomePage() {
                       variant="outline"
                       className="border-2 border-white/30 bg-white/10 hover:bg-white/20 text-white px-6 py-5 text-base font-semibold rounded-lg backdrop-blur"
                     >
-                      <Link to={`/game/${activeHeroGame.id}`}>
+                      <Link to={getGamePath(activeHeroGame)}>
                         <Play className="mr-2 h-5 w-5" />
                         More
                       </Link>
@@ -319,7 +316,7 @@ export default function HomePage() {
                   className="flex-none w-[180px] sm:w-[220px] md:w-[240px]"
                 >
                   <div className="group block flex flex-col h-full">
-                    <Link to={`/game/${game.id}`} className="block">
+                    <Link to={getGamePath(game)} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2">
                         <LazyImage
                           src={game.cover}
@@ -348,7 +345,7 @@ export default function HomePage() {
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"
                       >
-                        <Link to={`/game/${game.id}`}>
+                        <Link to={getGamePath(game)}>
                           <Download className="mr-2 h-4 w-4 inline-block" />
                           Download
                         </Link>
@@ -398,7 +395,7 @@ export default function HomePage() {
                   className="flex-none w-[180px] sm:w-[220px] md:w-[240px]"
                 >
                   <div className="group block flex flex-col h-full">
-                    <Link to={`/game/${game.id}`} className="block">
+                    <Link to={getGamePath(game)} className="block">
                       <div className="relative overflow-hidden rounded-lg mb-2">
                         <LazyImage
                           src={game.cover}
@@ -427,7 +424,7 @@ export default function HomePage() {
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"
                       >
-                        <Link to={`/game/${game.id}`}>
+                        <Link to={getGamePath(game)}>
                           <Download className="mr-2 h-4 w-4 inline-block" />
                           Download
                         </Link>
@@ -482,7 +479,7 @@ export default function HomePage() {
                   className="flex-none w-[200px] sm:w-[240px] md:w-[280px]"
                 >
                   <div className="group block flex flex-col h-full">
-                    <Link to={`/game/${game.id}`} className="block">
+                    <Link to={getGamePath(game)} className="block">
                       <div className="relative overflow-hidden rounded-xl mb-3 border-2 border-orange-500/30 hover:border-orange-500 transition-colors">
                         <LazyImage
                           src={game.cover}
@@ -525,7 +522,7 @@ export default function HomePage() {
                         asChild
                         className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 text-sm font-semibold rounded-lg"
                       >
-                        <Link to={`/game/${game.id}`}>
+                        <Link to={getGamePath(game)}>
                           <Download className="mr-2 h-4 w-4 inline-block" />
                           Download
                         </Link>
@@ -552,7 +549,7 @@ export default function HomePage() {
               .map((game) => (
                 <Link
                   key={game.id}
-                  to={`/game/${game.id}`}
+                  to={getGamePath(game)}
                   className="group block"
                 >
                   <div className="relative overflow-hidden rounded-lg mb-2">

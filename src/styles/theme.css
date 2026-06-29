@@ -129,8 +129,17 @@ select {
     display: none;
 }
 
-/* Smooth transitions */
-* {
+/* Keep transitions opt-in so large grids do not repaint on every state change. */
+a,
+button,
+input,
+textarea,
+select,
+.transition,
+.transition-all,
+.transition-colors,
+.transition-opacity,
+.transition-transform {
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -300,7 +309,6 @@ select {
 }
 
 .btn-download {
-    animation: download-bounce 2.2s ease-in-out infinite;
     box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
 }
 
@@ -315,8 +323,15 @@ select {
         transparent
     );
     transform: translateX(-120%) skewX(-12deg);
-    animation: download-shine 2.8s ease-in-out infinite;
     pointer-events: none;
+}
+
+.btn-download:hover {
+    animation: download-bounce 1.8s ease-in-out infinite;
+}
+
+.btn-download:hover::after {
+    animation: download-shine 1.8s ease-in-out;
 }
 
 .btn-download:hover {
@@ -324,7 +339,7 @@ select {
 }
 
 .btn-download-icon {
-    animation: download-bounce 2.2s ease-in-out infinite;
+    animation: none;
 }
 
 .animate-float {
@@ -410,7 +425,7 @@ select {
 }
 
 .card-3d:hover {
-    transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) scale(1.05);
+    transform: translateY(-2px);
 }
 
 /* Reflection effect */
@@ -436,7 +451,7 @@ select {
 }
 
 .reflection:hover::after {
-    opacity: 1;
+    opacity: 0;
 }
 
 @keyframes ken-burns {

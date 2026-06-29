@@ -5,18 +5,21 @@ import { cn } from "./ui/utils";
 interface DownloadButtonProps extends ButtonProps {
   label?: string;
   showIcon?: boolean;
+  animated?: boolean;
 }
 
 export function DownloadButton({
   label = "Download",
   showIcon = true,
+  animated = false,
   className,
   children,
   asChild,
   ...props
 }: DownloadButtonProps) {
   const classes = cn(
-    "btn-download relative overflow-hidden bg-cyan-500 font-semibold text-white hover:bg-cyan-600",
+    "relative overflow-hidden bg-cyan-500 font-semibold text-white hover:bg-cyan-600",
+    animated && "btn-download",
     className
   );
 
@@ -30,7 +33,7 @@ export function DownloadButton({
 
   return (
     <Button className={classes} {...props}>
-      {showIcon && <Download className="mr-2 h-4 w-4 btn-download-icon" />}
+      {showIcon && <Download className={cn("mr-2 h-4 w-4", animated && "btn-download-icon")} />}
       {children ?? label}
     </Button>
   );

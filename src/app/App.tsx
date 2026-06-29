@@ -10,6 +10,7 @@ export default function App() {
       storageKey="dyg-theme"
       enableSystem={false}
       disableTransitionOnChange
+      themes={["light", "dark"]}
     >
       <RouterProvider router={router} />
     </ThemeProvider>

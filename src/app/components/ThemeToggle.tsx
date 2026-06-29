@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
-import { loadSiteSettings, saveSiteSettings } from "../../lib/gameStore";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -10,20 +9,8 @@ export function ThemeToggle() {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
-    let active = true;
     setMounted(true);
-    loadSiteSettings()
-      .then((settings) => {
-        if (!active) return;
-        setCurrentTheme(settings.theme);
-        setTheme(settings.theme);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, [setTheme]);
+  }, []);
 
   useEffect(() => {
     if (resolvedTheme === "light" || resolvedTheme === "dark") {
@@ -45,10 +32,6 @@ export function ThemeToggle() {
     const newTheme = isDark ? "light" : "dark";
     setCurrentTheme(newTheme);
     setTheme(newTheme);
-
-    loadSiteSettings()
-      .then((settings) => saveSiteSettings({ ...settings, theme: newTheme }))
-      .catch((error) => console.error("Failed to save theme:", error));
   };
 
   return (
@@ -58,6 +41,7 @@ export function ThemeToggle() {
       className="rounded-full border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--muted)]"
       onClick={handleThemeChange}
       aria-label={isDark ? "Switch to day mode" : "Switch to night mode"}
+      aria-pressed={isDark}
     >
       {isDark ? (
         <Sun className="mr-2 h-4 w-4 text-yellow-300" />

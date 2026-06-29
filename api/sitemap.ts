@@ -10,7 +10,6 @@ const STATIC_PATHS = [
   { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
   { loc: `${SITE_URL}/categories`, changefreq: "weekly", priority: "0.8" },
   { loc: `${SITE_URL}/category/all`, changefreq: "daily", priority: "0.85" },
-  { loc: `${SITE_URL}/search`, changefreq: "weekly", priority: "0.7" },
 ];
 
 const escapeXml = (value: string) =>
@@ -25,6 +24,26 @@ const toCategoryPath = (name: string) =>
   name.toLowerCase() === "all"
     ? `${SITE_URL}/category/all`
     : `${SITE_URL}/category/${encodeURIComponent(name.toLowerCase())}`;
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+
+const toGamePath = (row: GameRow) => {
+  const titleSlug = slugify(row.payload?.title || "") || "game";
+  const idSlug = slugify(row.id);
+  const routeSlug =
+    idSlug === titleSlug || idSlug.startsWith(`${titleSlug}-`)
+      ? idSlug
+      : titleSlug;
+
+  return `${SITE_URL}/game/${routeSlug}`;
+};
 
 async function fetchSupabaseRows<T>(table: string, select: string): Promise<T[]> {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -64,7 +83,7 @@ export default async function handler(req, res) {
 
     const gameEntries = gameRows.map((row) => {
       const lastmod = row.updated_at || row.payload?.releaseDate;
-      return buildUrlEntry(`${SITE_URL}/game/${row.id}`, "weekly", "0.9", lastmod?.slice(0, 10));
+      return buildUrlEntry(toGamePath(row), "weekly", "0.9", lastmod?.slice(0, 10));
     });
 
     const categoryEntries = categories.map((category) =>

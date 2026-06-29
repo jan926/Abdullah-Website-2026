@@ -1,5 +1,6 @@
 import type { Game } from "../app/data/games";
 import { getGameCategories } from "./gameCategories";
+import { getGamePath, getGameUrl } from "./gameUrls";
 
 export const SITE_URL = "https://steamfree.games";
 export const SITE_DOMAIN = "steamfree.games";
@@ -43,7 +44,7 @@ const fitMetaDescription = (value: string) => {
 };
 
 export const buildHomePageTitle = (siteName = DEFAULT_SITE_NAME) =>
-  `${siteName} – Free PC Games Download | ${SITE_DOMAIN}`;
+  `${siteName} - Free PC Games Download | ${SITE_DOMAIN}`;
 
 export const buildHomeMetaDescription = (siteName = DEFAULT_SITE_NAME, gameCount = 0) =>
   `${siteName} on ${SITE_DOMAIN} offers free PC games download for Windows. Browse ${gameCount > 0 ? `${gameCount}+ ` : ""}full-version titles, repacks, and direct download pages with system requirements.`;
@@ -106,7 +107,7 @@ export const buildGameHeroAlt = (game: Game) =>
 const getGameDownloadUrl = (game: Game) =>
   game.downloadLink ||
   game.downloadParts?.find((part) => part.link)?.link ||
-  `${SITE_URL}/game/${game.id}`;
+  getGameUrl(game, SITE_URL);
 
 const formatSystemRequirements = (game: Game) => {
   const min = game.systemRequirements.minimum;
@@ -304,7 +305,7 @@ const cleanSchemaObject = (obj: Record<string, any>): Record<string, any> => {
 };
 
 export const buildGameJsonLd = (game: Game, siteName = "AQ Gaming Hub") => {
-  const gameUrl = `${SITE_URL}/game/${game.id}`;
+  const gameUrl = getGameUrl(game, SITE_URL);
   const downloadUrl = getGameDownloadUrl(game);
   const images = [game.cover, ...(game.screenshots || [])].filter(Boolean);
   const categories = getGameCategories(game).filter(c => c !== "All");
@@ -402,29 +403,63 @@ export const buildBreadcrumbJsonLd = (items: { name: string; url: string }[]) =>
 
 export const buildSiteJsonLd = (siteName: string, siteUrl: string) => ({
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: siteName,
-  alternateName: [
-    "AQ Gaming Hub",
-    "aq gaming hub",
-    "AQ GamingHub",
-    "AQ Games Hub",
-    SITE_DOMAIN,
-    "SteamFree Games",
-    `${siteName} ${SITE_DOMAIN}`,
-    `${SITE_DOMAIN} ${siteName}`,
-    `${siteName} free download`,
-    `${siteName} games`,
-    "free pc games download for pc",
-  ],
-  url: siteUrl,
-  description: `${siteName} on ${SITE_DOMAIN} is a free PC games download hub for Windows full-version titles, repacks, and direct download pages.`,
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${siteUrl.replace(/\/$/, "")}/search?q={search_term_string}`,
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl.replace(/\/$/, "")}/#organization`,
+      name: siteName,
+      url: siteUrl,
+      logo: `${SITE_URL}/aq.png`,
+      sameAs: [SITE_URL],
     },
-    "query-input": "required name=search_term_string",
-  },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl.replace(/\/$/, "")}/#website`,
+      name: siteName,
+      alternateName: [
+        "AQ Gaming Hub",
+        "aq gaming hub",
+        "AQ GamingHub",
+        "AQ Games Hub",
+        SITE_DOMAIN,
+        "SteamFree Games",
+        `${siteName} ${SITE_DOMAIN}`,
+        `${SITE_DOMAIN} ${siteName}`,
+        `${siteName} free download`,
+        `${siteName} games`,
+        "free pc games download for pc",
+      ],
+      url: siteUrl,
+      publisher: { "@id": `${siteUrl.replace(/\/$/, "")}/#organization` },
+      description: `${siteName} on ${SITE_DOMAIN} is a free PC games download hub for Windows full-version titles, repacks, and direct download pages.`,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${siteUrl.replace(/\/$/, "")}/search?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
 });
+
+export const buildGameItemListJsonLd = (
+  games: Game[],
+  name: string,
+  url: string,
+) => ({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name,
+  url,
+  numberOfItems: games.length,
+  itemListElement: games.slice(0, 100).map((game, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    url: getGameUrl(game, SITE_URL),
+    name: game.title,
+  })),
+});
+
+export { getGamePath, getGameUrl };

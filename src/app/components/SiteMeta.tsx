@@ -11,6 +11,7 @@ import {
   buildHomePageTitle,
   buildSearchPageDescription,
   buildSearchPageTitle,
+  buildGameItemListJsonLd,
   buildSiteJsonLd,
   buildSiteKeywords,
   injectJsonLd,
@@ -48,13 +49,17 @@ export function SiteMeta() {
 
         const siteName = settings.siteName || "AQ Gaming Hub";
         const siteUrl = SITE_URL.replace(/\/$/, "");
-        const pageUrl = `${siteUrl}${location.pathname}${location.search}`;
+        const pageUrl =
+          location.pathname === "/search"
+            ? `${siteUrl}/search`
+            : `${siteUrl}${location.pathname}${location.search}`;
         const catalogKeywords = buildSiteKeywords(games, categories.filter((c) => c !== "All"));
         const categoryFromPath = parseCategoryFromPath(location.pathname);
         const searchQuery = new URLSearchParams(location.search).get("q")?.trim() || "";
 
         let title = buildHomePageTitle(siteName);
         let description = buildHomeMetaDescription(siteName, games.length);
+        let itemListGames = games;
 
         if (location.pathname === "/") {
           title = buildHomePageTitle(siteName);
@@ -69,6 +74,7 @@ export function SiteMeta() {
           const categoryGames = categoryFromPath === "All"
             ? games
             : games.filter((game) => gameHasCategory(game, categoryFromPath));
+          itemListGames = categoryGames;
 
           title = buildCategoryPageTitle(categoryFromPath, siteName);
           description = buildCategoryMetaDescription(
@@ -101,12 +107,20 @@ export function SiteMeta() {
             catalogKeywords,
           ].join(", "),
           url: pageUrl,
+          robots: location.pathname === "/search" ? "noindex, follow" : "index, follow",
           siteName,
           imageAlt: `${siteName} on steamfree.games - Free PC Games Download`,
         });
 
         removeJsonLd("game-jsonld");
         injectJsonLd("site-jsonld", buildSiteJsonLd(siteName, `${siteUrl}/`));
+        removeJsonLd("itemlist-jsonld");
+        if (location.pathname === "/" || categoryFromPath) {
+          injectJsonLd(
+            "itemlist-jsonld",
+            buildGameItemListJsonLd(itemListGames, title, pageUrl)
+          );
+        }
 
         if (settings.logoUrl) {
           let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;

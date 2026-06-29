@@ -20,6 +20,7 @@ function applyAdSafetyBlur(root: ParentNode = document.body) {
   AD_SELECTORS.forEach((selector) => {
     root.querySelectorAll(selector).forEach((node) => {
       const element = node as HTMLElement;
+      if (element.dataset.adSafetyBlur === "true") return;
       element.style.filter = BLUR_STYLE;
       element.style.webkitFilter = BLUR_STYLE;
       element.style.backdropFilter = BLUR_STYLE;
@@ -44,11 +45,9 @@ export function AdSafetyBlur() {
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-    const interval = window.setInterval(() => applyAdSafetyBlur(), 4000);
 
     return () => {
       observer.disconnect();
-      window.clearInterval(interval);
     };
   }, []);
 
