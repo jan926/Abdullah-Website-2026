@@ -1,10 +1,12 @@
 type GameRow = {
   id: string;
-  payload?: { title?: string; releaseDate?: string };
+  payload?: { title?: string; releaseDate?: string; tags?: string[] };
   updated_at?: string;
 };
 
 const SITE_URL = "https://steamfree.games";
+const SITEMAP_CACHE_MS = 10 * 60_000; // 10 minutes
+let sitemapCache: { xml: string; ts: number } | null = null;
 
 const STATIC_PATHS = [
   { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
@@ -73,6 +75,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (sitemapCache && Date.now() - sitemapCache.ts < SITEMAP_CACHE_MS) {
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
+      return res.status(200).send(sitemapCache.xml);
+    }
+
     const [gameRows, configRows] = await Promise.all([
       fetchSupabaseRows<GameRow>("games", "id,payload,updated_at"),
       fetchSupabaseRows<{ id: string; payload: string[] }>("site_config", "id,payload"),
@@ -86,18 +94,37 @@ export default async function handler(req, res) {
       return buildUrlEntry(toGamePath(row), "weekly", "0.9", lastmod?.slice(0, 10));
     });
 
+    const tagSet = new Set<string>();
+    gameRows.forEach((row) => {
+      const tags = row.payload?.tags;
+      if (Array.isArray(tags)) {
+        tags.forEach((tag) => {
+          const normalized = String(tag || "").trim();
+          if (normalized) tagSet.add(normalized);
+        });
+      }
+    });
+
+    const tagEntries = Array.from(tagSet)
+      .sort((a, b) => a.localeCompare(b))
+      .map((tag) =>
+        buildUrlEntry(`${SITE_URL}/search?q=${encodeURIComponent(tag)}`, "weekly", "0.7"),
+      );
+
     const categoryEntries = categories.map((category) =>
-      buildUrlEntry(toCategoryPath(category), "weekly", "0.75")
+      buildUrlEntry(toCategoryPath(category), "weekly", "0.75"),
     );
 
     const staticEntries = STATIC_PATHS.map((entry) =>
-      buildUrlEntry(entry.loc, entry.changefreq, entry.priority)
+      buildUrlEntry(entry.loc, entry.changefreq, entry.priority),
     );
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[...staticEntries, ...categoryEntries, ...gameEntries].join("\n")}
+${[...staticEntries, ...categoryEntries, ...gameEntries, ...tagEntries].join("\n")}
 </urlset>`;
+
+    sitemapCache = { xml, ts: Date.now() };
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
