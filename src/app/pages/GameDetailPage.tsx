@@ -27,6 +27,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { InstallGuide } from "../components/InstallGuide";
 
 export default function GameDetailPage() {
   const { id } = useParams();
@@ -320,6 +321,11 @@ export default function GameDetailPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Install guide shown on the right column on large screens */}
+            <div className="hidden lg:block">
+              <InstallGuide />
             </div>
 
             <div className="rounded-2xl md:rounded-3xl border border-[rgba(226,232,240,0.08)] bg-[var(--card)] p-4 md:p-6 shadow-[0_18px_60px_rgba(15,23,42,0.18)]">

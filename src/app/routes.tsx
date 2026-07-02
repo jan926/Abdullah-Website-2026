@@ -40,6 +40,27 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "privacy",
+        lazy: async () => {
+          const { default: Component } = await import("./pages/PrivacyPage");
+          return { Component };
+        },
+      },
+      {
+        path: "dmca",
+        lazy: async () => {
+          const { default: Component } = await import("./pages/DMCA");
+          return { Component };
+        },
+      },
+      {
+        path: "contact",
+        lazy: async () => {
+          const { default: Component } = await import("./pages/ContactPage");
+          return { Component };
+        },
+      },
+      {
         path: "*",
         lazy: async () => {
           const { default: Component } = await import("./pages/NotFoundPage");

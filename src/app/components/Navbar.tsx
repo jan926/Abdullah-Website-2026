@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { loadSiteSettings } from "../../lib/gameStore";
 import { useOnlineUsersCounter } from "../../lib/onlineUsers";
 
-const AFFILIATE_URL = "https://omg10.com/4/11227305";
+// Affiliate redirects disabled for AdSense review
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,12 +26,6 @@ export function Navbar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (Math.random() < 0.18) {
-      window.location.href = AFFILIATE_URL;
-      return;
-    }
-
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }

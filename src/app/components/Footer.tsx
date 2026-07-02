@@ -1,8 +1,6 @@
 import { Link } from "react-router";
 import { Facebook, Twitter, Instagram, Youtube, Mail } from "lucide-react";
 
-const AFFILIATE_URL = "https://omg10.com/4/11227305";
-
 export function Footer() {
   return (
     <footer className="bg-black border-t border-gray-900 text-gray-300">
@@ -71,7 +69,9 @@ export function Footer() {
             <h3 className="text-white font-bold text-lg mb-4">Connect With Us</h3>
             <div className="flex gap-3 mb-4">
               <a
-                href="#"
+                href="https://www.facebook.com/profile.php?id=61582089132682"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-cyan-500 p-2 rounded-full transition"
               >
                 <Facebook className="h-5 w-5" />
@@ -83,7 +83,9 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/aq_gaming_hub_official/"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-cyan-500 p-2 rounded-full transition"
               >
                 <Instagram className="h-5 w-5" />
@@ -121,44 +123,23 @@ export function Footer() {
             <p className="text-sm text-gray-500">
               © 2026 AQ Gaming Hub. All rights reserved.
             </p>
-            <div className="flex gap-6 text-sm">
-              <a href="#" className="text-gray-500 hover:text-cyan-400 transition">
-                Privacy Policy
-              </a>
-              <a href="#" className="text-gray-500 hover:text-cyan-400 transition">
-                Terms of Service
-              </a>
-              <a href="#" className="text-gray-500 hover:text-cyan-400 transition">
-                DMCA
-              </a>
-            </div>
+              <div className="flex gap-6 text-sm">
+                <a href="/privacy" className="text-gray-500 hover:text-cyan-400 transition">
+                  Privacy Policy
+                </a>
+                <a href="/terms" className="text-gray-500 hover:text-cyan-400 transition">
+                  Terms of Service
+                </a>
+                <a href="/dmca" className="text-gray-500 hover:text-cyan-400 transition">
+                  DMCA
+                </a>
+                <a href="/contact" className="text-gray-500 hover:text-cyan-400 transition">
+                  Contact
+                </a>
+              </div>
           </div>
 
-          <div className="mt-6">
-            <a
-              href={AFFILIATE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block mx-auto max-w-full overflow-hidden rounded-3xl border border-gray-800 bg-gradient-to-r from-orange-500 via-red-600 to-fuchsia-500 p-1 shadow-xl transition hover:shadow-2xl"
-            >
-              <div className="bg-[#0f172a] px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/80 font-semibold">
-                    AliExpress
-                  </p>
-                  <p className="mt-2 text-lg sm:text-xl font-bold text-white">
-                    Shop smarter, save more!
-                  </p>
-                  <p className="mt-1 text-sm text-gray-300">
-                    Get 10% off with exclusive coupon codes.
-                  </p>
-                </div>
-                <div className="flex h-16 w-40 items-center justify-center rounded-2xl bg-white/10 text-center text-2xl font-bold text-white">
-                  10% OFF
-                </div>
-              </div>
-            </a>
-          </div>
+          {/* Affiliate banner removed for AdSense review */}
         </div>
       </div>
     </footer>
