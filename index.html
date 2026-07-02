@@ -63,8 +63,17 @@
 
     <!-- Performance optimizations -->
     <style>
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+        background: #020617;
+        color: #e2e8f0;
+      }
+
       #root {
         min-height: 100vh;
+        visibility: hidden;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -80,7 +89,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script src="https://pl29528397.effectivecpmnetwork.com/12/b1/3f/12b13f9eceb8109103feccf4a056ab76.js" defer></script>
-     
   </body>
 </html>
