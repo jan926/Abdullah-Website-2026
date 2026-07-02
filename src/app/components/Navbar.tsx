@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { loadSiteSettings } from "../../lib/gameStore";
 import { useOnlineUsersCounter } from "../../lib/onlineUsers";
 
+const AFFILIATE_URL = "https://omg10.com/4/11227305";
+
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [siteName, setSiteName] = useState("AQ Gaming Hub");
@@ -24,6 +26,12 @@ export function Navbar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (Math.random() < 0.18) {
+      window.location.href = AFFILIATE_URL;
+      return;
+    }
+
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
@@ -50,15 +58,21 @@ export function Navbar() {
 
           <div className="order-3 sm:order-none w-full sm:flex-1 sm:max-w-xl">
             <form onSubmit={handleSearch}>
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <Input
                   type="search"
                   placeholder="Search for games..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-full"
+                  className="w-full pl-12 pr-24 py-3 rounded-full"
                 />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 hover:bg-cyan-400 transition"
+                >
+                  Search
+                </button>
               </div>
             </form>
           </div>

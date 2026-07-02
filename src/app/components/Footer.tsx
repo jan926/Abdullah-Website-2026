@@ -1,6 +1,8 @@
 import { Link } from "react-router";
 import { Facebook, Twitter, Instagram, Youtube, Mail } from "lucide-react";
 
+const AFFILIATE_URL = "https://omg10.com/4/11227305";
+
 export function Footer() {
   return (
     <footer className="bg-black border-t border-gray-900 text-gray-300">
@@ -130,6 +132,32 @@ export function Footer() {
                 DMCA
               </a>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <a
+              href={AFFILIATE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block mx-auto max-w-full overflow-hidden rounded-3xl border border-gray-800 bg-gradient-to-r from-orange-500 via-red-600 to-fuchsia-500 p-1 shadow-xl transition hover:shadow-2xl"
+            >
+              <div className="bg-[#0f172a] px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/80 font-semibold">
+                    AliExpress
+                  </p>
+                  <p className="mt-2 text-lg sm:text-xl font-bold text-white">
+                    Shop smarter, save more!
+                  </p>
+                  <p className="mt-1 text-sm text-gray-300">
+                    Get 10% off with exclusive coupon codes.
+                  </p>
+                </div>
+                <div className="flex h-16 w-40 items-center justify-center rounded-2xl bg-white/10 text-center text-2xl font-bold text-white">
+                  10% OFF
+                </div>
+              </div>
+            </a>
           </div>
         </div>
       </div>
