@@ -124,18 +124,18 @@ export function Footer() {
               © 2026 AQ Gaming Hub. All rights reserved.
             </p>
               <div className="flex gap-6 text-sm">
-                <a href="/privacy" className="text-gray-500 hover:text-cyan-400 transition">
+                <Link to="/privacy" className="text-gray-500 hover:text-cyan-400 transition">
                   Privacy Policy
-                </a>
-                <a href="/terms" className="text-gray-500 hover:text-cyan-400 transition">
+                </Link>
+                <Link to="/terms" className="text-gray-500 hover:text-cyan-400 transition">
                   Terms of Service
-                </a>
-                <a href="/dmca" className="text-gray-500 hover:text-cyan-400 transition">
+                </Link>
+                <Link to="/dmca" className="text-gray-500 hover:text-cyan-400 transition">
                   DMCA
-                </a>
-                <a href="/contact" className="text-gray-500 hover:text-cyan-400 transition">
+                </Link>
+                <Link to="/contact" className="text-gray-500 hover:text-cyan-400 transition">
                   Contact
-                </a>
+                </Link>
               </div>
           </div>
 

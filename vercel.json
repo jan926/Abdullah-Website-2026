@@ -53,6 +53,22 @@
     {
       "source": "/search",
       "destination": "/"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/"
+    },
+    {
+      "source": "/dmca",
+      "destination": "/"
+    },
+    {
+      "source": "/contact",
+      "destination": "/"
+    },
+    {
+      "source": "/terms",
+      "destination": "/"
     }
   ]
 }

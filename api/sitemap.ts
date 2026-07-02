@@ -12,6 +12,10 @@ const STATIC_PATHS = [
   { loc: `${SITE_URL}/`, changefreq: "daily", priority: "1.0" },
   { loc: `${SITE_URL}/categories`, changefreq: "weekly", priority: "0.8" },
   { loc: `${SITE_URL}/category/all`, changefreq: "daily", priority: "0.85" },
+  { loc: `${SITE_URL}/privacy`, changefreq: "monthly", priority: "0.5" },
+  { loc: `${SITE_URL}/dmca`, changefreq: "monthly", priority: "0.5" },
+  { loc: `${SITE_URL}/contact`, changefreq: "monthly", priority: "0.5" },
+  { loc: `${SITE_URL}/terms`, changefreq: "monthly", priority: "0.5" },
 ];
 
 const escapeXml = (value: string) =>
